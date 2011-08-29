@@ -11,7 +11,7 @@
  */
 
 class DrupalSolrQueryTests extends DrupalWebTestCase {
-  function getInfo() {
+  public static function getInfo() {
     return array(
       'name' => 'Query handling',
       'description' => 'Throw various queries at the query object and make sure they all parse correctly.',

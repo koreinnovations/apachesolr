@@ -6,7 +6,7 @@
  */
 
 class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
-  function getInfo() {
+  public static function getInfo() {
     return array(
       'name' => 'Node Access',
       'description' => 'Test Access Control',

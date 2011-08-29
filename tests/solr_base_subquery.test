@@ -6,7 +6,7 @@
  */
 
 class DrupalSolrSubQueryTests extends DrupalWebTestCase {
-  function getInfo() {
+  public static function getInfo() {
     return array('name' => 'Subquery handling',
       'description' => 'Tests for subqueries.',
       'group' => 'ApacheSolr');
