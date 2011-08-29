@@ -1,7 +1,7 @@
 <?php
 
 class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
-  function getInfo() {
+  public static function getInfo() {
     return array(
       'name' => 'Node Access',
       'description' => 'Test Access Control',
@@ -73,7 +73,7 @@ class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
     apachesolr_access_apachesolr_update_index($document, $author_restricted_node, 'apachesolr_search');
     $field = 'access_node_' . apachesolr_site_hash() . '_nodeaccess_author';
     $this->assertEqual($document->{$field}[0], $basic_user->uid, 'Solr Document being indexed is restricted by the proper author');
- 
+
     // Test addition of filters to query.
     $subquery = apachesolr_access_build_subquery($basic_user);
 
@@ -122,4 +122,3 @@ class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
     }
   }
 }
-
