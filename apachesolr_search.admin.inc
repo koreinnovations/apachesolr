@@ -15,7 +15,7 @@ function _apachesolr_search_browse_form($default_value) {
   }
   else {
     $description .= t('Remember to enable filters on the <a href="!filterslink">enabled filters page</a> and assign blocks to regions on the <a href="!blocklink">block settings page</a>', array(
-      '!filterslink' => url('admin/config/search/apachesolr/enabled-filters'),
+      '!filterslink' => url('admin/config/search/apachesolr/facets'),
       '!blocklink' => url('admin/structure/block'),
     ));
   }
