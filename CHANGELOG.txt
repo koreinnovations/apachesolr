@@ -4,6 +4,7 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#1237472 by DeFr, sfyn: Fix for _constructURL method misforms urls with username/password.
 #1258658 by pwolanin: Fix failing node access test due to core 7.3 change.
 #1248366 by Dave Reid: Fix declaration of getInfo() test functions.
 #1219178 by cpliakas: Added support for customizable minimum facet counts.
