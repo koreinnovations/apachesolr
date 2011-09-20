@@ -38,6 +38,9 @@ For example, do NOT install the solr or solr-jetty packages.
 Download the latest Solr 1.4.x or 3.x release (e.g. 1.4.1 or 3.4.0) from:
 http://www.apache.org/dyn/closer.cgi/lucene/solr/
 
+Apache Lucene 3.1, 3.2 or 3.3, have a possible index corruption bug on
+server crash or power loss (LUCENE-3418), so Solr  3.4.0 is preferred.
+
 Unpack the tarball somewhere not visible to the web (not in your webserver
 docroot and not inside of your Drupal directory).
 

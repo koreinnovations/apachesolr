@@ -2049,6 +2049,29 @@ function field_apachesolr_field_mappings() {
 }
 
 /**
+ * Implements hook_apachesolr_field_mappings() on behalf of date module.
+ */
+function date_apachesolr_field_mappings() {
+  $mappings = array();
+  $default = array(
+    'indexing_callback' => 'apachesolr_date_default_indexing_callback',
+    'index_type' => 'date',
+    'facets' => TRUE,
+    'query type' => 'date',
+  );
+
+  // DATE and DATETIME fields can use the same indexing callback.
+  $mappings['date'] = $default;
+  $mappings['datetime'] = $default;
+
+  // DATESTAMP fields need a different callback.
+  $mappings['datestamp'] = $default;
+  $mappings['datestamp']['indexing_callback'] = 'apachesolr_datestamp_default_indexing_callback';
+
+  return $mappings;
+}
+
+/**
  * Implements hook_apachesolr_field_mappings() on behalf of CCK.
  * @see http://drupal.org/node/1059372
  */
