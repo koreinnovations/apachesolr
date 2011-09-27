@@ -1697,6 +1697,7 @@ function apachesolr_entity_fields($entity_type = 'node') {
         'name_callback' => '',
         'facets' => FALSE,
         'facet missing allowed' => FALSE,
+        'facet mincount allowed' => FALSE,
         // Field API allows any field to be multi-valued.
         'multiple' => TRUE,
       );
