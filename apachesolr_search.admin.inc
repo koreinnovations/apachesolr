@@ -89,6 +89,11 @@ function apachesolr_search_page_list_page() {
     '#rows' => $rows,
     '#empty' => t('No available search pages.'),
   );
+  $build['pager'] = array(
+    '#theme' => 'pager',
+    '#quantity' => 20,
+    '#weight' => 10,
+  );
 
   return $build;
 }
