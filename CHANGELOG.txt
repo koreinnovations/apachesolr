@@ -4,6 +4,7 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#1167136 by cpliakas: fix for fields attached to nodes added as facets regardless off the collection type.
 #1225554 by pwolanin: fix for pagination missing in the search page administration.
 #817286  by pfrenssen: API docs cleanup.
 #901376  by LiuShaz, pwolanin: insure UTF-8 encoding is used for POST searches.

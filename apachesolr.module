@@ -273,7 +273,7 @@ function apachesolr_facetapi_query_types() {
  */
 function apachesolr_facetapi_facet_info($searcher_info) {
   $facets = array();
-  if ('apachesolr' == $searcher_info['adapter']) {
+  if ('apachesolr' == $searcher_info['adapter'] && isset($searcher_info['types']['node'])) {
     foreach (apachesolr_entity_fields('node') as $field_nm => $field_info) {
       if ($field_info['facets']) {
         $field = apachesolr_index_key($field_info);
