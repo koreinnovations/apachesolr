@@ -4,6 +4,7 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#901376  by LiuShaz, pwolanin: insure UTF-8 encoding is used for POST searches.
 #1288080 by Nick_vh, brianV: make facets based on date fields work.
 #1201534 by BrianV, pwolanin: restore date field indexing.
 #1230380 by Shawn_Smiley: fix for Undefined index: 'facet mincount allowed'.

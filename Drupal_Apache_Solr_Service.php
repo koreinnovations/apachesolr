@@ -745,7 +745,7 @@ class DrupalApacheSolrService {
     else if ($method == 'POST') {
       $searchUrl = $this->_constructUrl(self::SEARCH_SERVLET);
       $options['data'] = $queryString;
-      $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
+      $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
       return $this->_sendRawPost($searchUrl, $options);
     }
     else {
