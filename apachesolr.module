@@ -1509,19 +1509,27 @@ function apachesolr_environment_variable_del($env_id, $name) {
  * @return boolean TRUE if the server can be pinged, FALSE otherwise.
  */
 function apachesolr_server_status($url, $class = NULL) {
+  $status = &drupal_static(__FUNCTION__, array());
+
   if (empty($class)) {
     $class = variable_get('apachesolr_service_class', 'DrupalApacheSolrService');
   }
-  $ping = FALSE;
-  try {
-    // Takes advantage of auto-loading.
-    $solr = new $class($url);
-    $ping = @$solr->ping(variable_get('apachesolr_ping_timeout', 4));
+
+  $key = $url . '|' . $class;
+  // Static store insures we don't ping the server more than once per page load.
+  if (!isset($status[$key])) {
+    $ping = FALSE;
+    try {
+      // Takes advantage of auto-loading.
+      $solr = new $class($url);
+      $ping = @$solr->ping(variable_get('apachesolr_ping_timeout', 4));
+    }
+    catch (Exception $e) {
+      watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
+    }
+    $status[$key] = $ping;
   }
-  catch (Exception $e) {
-    watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
-  }
-  return $ping;
+  return $status[$key];
 }
 
 /**

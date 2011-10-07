@@ -216,18 +216,6 @@ function apachesolr_environment_save_submit($form, &$form_state) {
  */
 function apachesolr_settings($form, &$form_state) {
   $form = array();
-  $collapse_host = TRUE;
-
-  // Perform a check to ensure the server is there
-  if (empty($_POST)) {
-    module_load_install('apachesolr');
-    foreach (apachesolr_requirements('runtime') as $requirement) {
-      $status = $requirement['severity'] == REQUIREMENT_ERROR ? 'error' : 'status';
-      if ($status == 'error') {
-        drupal_set_message($requirement['title'] . ': ' . $requirement['value'], $status);
-      }
-    }
-  }
 
   // Environment settings
   $form['apachesolr_host_settings'] = array(
@@ -239,43 +227,69 @@ function apachesolr_settings($form, &$form_state) {
 
   $id = apachesolr_default_environment();
   $environments = apachesolr_load_all_environments();
+  $default_environment = apachesolr_default_environment();
+
   $rows = array();
+  // Reserve a row for the default one
+  $rows[$default_environment] = array();
   $headers = array(
-    t('Default'),
-    t('Name'),
+    array('data' => t('Name'), 'colspan' => 2),
     t('URL'),
     array('data' => t('Operations'), 'colspan' => 3),
   );
 
   foreach ($environments as $environment_id => $data) {
-    $is_default = $environment_id == apachesolr_default_environment();
-    $clone_link = array('class' => 'operation', 'data' => l(t('clone'), 'admin/config/search/apachesolr-env/' . $data['env_id'] . '/clone'));
-    if ($is_default) {
-      $type = 'selected';
+    $clone_link = array(
+      'class' => 'operation',
+      'data' => l(t('clone'), 'admin/config/search/apachesolr-env/' . $data['env_id'] . '/clone'),
+    );
+    $delete_link = array(
+      'class' => 'operation',
+      'data' => l(t('delete'), 'admin/config/search/apachesolr-env/' . $data['env_id'] . '/delete'),
+    );
+
+    if ($environment_id == $default_environment) {
+      $env_name = t('@environment <em>(Default)</em>', array('@environment' => $data['name']));
+      $env_class_row = 'default-environment';
       $delete_link = '';
     }
     else {
-      $type = 'none';
-      $delete_link = array('class' => 'operation', 'data' => l(t('delete'), 'admin/config/search/apachesolr-env/' . $data['env_id'] . '/delete'));
+      $name = check_plain($data['name']);
+      $env_class_row = '';
     }
-    $rows[] = array('data' =>
+
+    $class = '';
+    // When we do are receiving a post (so the page does not show) we do not want
+    // to check the statusses
+    if(empty($form_state['input'])) {
+      $class = apachesolr_server_status($data['url']) ? 'ok' : 'error';
+    }
+
+    $rows[$environment_id] = array('data' =>
       array(
         // Cells
-        array('class' => 'icon'),
-        check_plain($data['name']),
+        array(
+          'class' => 'status-icon',
+          'data' => '<div title="' . $class . '"><span class="element-invisible">' . $class . '</span></div>',
+        ),
+        array(
+          'class' => $env_class_row,
+          'data' => $name,
+        ),
         check_plain($data['url']),
-        array('class' => 'operation',
-              'data' => l(t('edit'),
-              'admin/config/search/apachesolr-env/' . $data['env_id'],
-              array('query' => array('destination' => $_GET['q'])))
-             ),
+        array(
+          'class' => 'operation',
+          'data' => l(t('edit'),
+          'admin/config/search/apachesolr-env/' . $data['env_id'],
+          array('query' => array('destination' => $_GET['q']))),
+        ),
         $clone_link,
         $delete_link,
       ),
-      // Attributes for tr
-      'class' => array(drupal_html_class('apachesolr-' . $type)),
+      'class' => array(drupal_html_class($class)),
     );
   }
+
   $actions[] = array(
     '#theme' => 'menu_local_action',
     '#link' => array('title' => t('Add new search environment'), 'href' => 'admin/config/search/apachesolr-env/add', 'options' => array()),
@@ -287,7 +301,7 @@ function apachesolr_settings($form, &$form_state) {
   $form['apachesolr_host_settings']['table'] = array(
     '#theme' => 'table',
     '#header' => $headers,
-    '#rows' => $rows,
+    '#rows' => array_values($rows),
     '#attributes' => array('class' => array('admin-apachesolr')),
   );
 
@@ -300,7 +314,7 @@ function apachesolr_settings($form, &$form_state) {
     '#title' => t('More like this content recommendation blocks'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => $collapse_host,
+    '#collapsed' => TRUE,
   );
 
   $form['mlt_settings']['actions'] = array(
