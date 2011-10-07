@@ -4,7 +4,8 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
-#989398 by pwolanin, Nick_vh: Get some tests working.
+#1270826 by pwolanin, brianV: fix for search page regex fails for complex queries.
+#989398 by pwolanin, Nick_vh: Fix tests after moving conf files.
 #1167136 by cpliakas: fix for fields attached to nodes added as facets regardless off the collection type.
 #1225554 by pwolanin: fix for pagination missing in the search page administration.
 #817286  by pfrenssen: API docs cleanup.

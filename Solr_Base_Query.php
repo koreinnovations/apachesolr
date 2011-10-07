@@ -316,6 +316,11 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
       $exclude = !empty($matches[1]);
       $this->addFilter('', $matches[2], $exclude, $local);
     }
+    elseif (preg_match('/(-|)([^:]+):(\(.+\))/', $string, $matches)) {
+      // Something with a complicated right-hand-side.
+      $exclude = !empty($matches[1]);
+      $this->addFilter($matches[2], $matches[3], $exclude, $local);
+    }
     elseif (preg_match('/(-|)([^:]+):(\S+)/', $string, $matches)) {
       //$index_fields = (array) $this->solr->getFields();
       $exclude = !empty($matches[1]);
