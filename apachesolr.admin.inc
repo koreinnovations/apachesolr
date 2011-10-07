@@ -343,13 +343,6 @@ function apachesolr_settings($form, &$form_state) {
     '#description' => t('The maximum number of items indexed in each pass of a <a href="@cron">cron maintenance task</a>. If necessary, reduce the number of items to prevent timeouts and memory errors while indexing.', array('@cron' => url('admin/reports/status')))
   );
 
-  $form['advanced']['apachesolr_rows'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Results per page'),
-    '#default_value' => variable_get('apachesolr_rows', 10),
-    '#description' => t('The number of results that will be shown per page.'),
-  );
-
   $options = array('apachesolr:show_error' => t('Show error message'));
   $system_info = system_get_info('module');
   foreach (search_get_info() as $module => $search_info) {
@@ -359,6 +352,7 @@ function apachesolr_settings($form, &$form_state) {
     }
     $options[$module] = t('Show @name search results', array('@name' => $system_info[$module]['name']));
   }
+
   $options['apachesolr:show_no_results'] = t('Show no results');
   $form['advanced']['apachesolr_failure'] = array(
     '#type' => 'select',

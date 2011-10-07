@@ -222,6 +222,7 @@ function apachesolr_init() {
  */
 function apachesolr_facetapi_searcher_info() {
   $info = array();
+  // TODO: is it needed to return all of them here?
   foreach (apachesolr_load_all_environments() as $id => $environment) {
     $info['apachesolr@' . $id] = array(
       'label' => t('Apache Solr environment: @environment', array('@environment' => $environment['name'])),
@@ -593,9 +594,9 @@ function apachesolr_get_nodes_to_index($namespace, $limit) {
 
   $excluded_types = apachesolr_get_excluded_types($namespace);
   list($last_change, $last_nid) = apachesolr_get_last_change($namespace);
-  //TODO: remove old code
-  //list($excluded_types, $args, $join_sql, $exclude_sql) = apachesolr_exclude_types($namespace);
-  //$result = db_query_range("SELECT asn.nid, asn.changed FROM {apachesolr_search_node} asn ". $join_sql ."WHERE (asn.changed > :last_changed OR (asn.changed = :last_changed AND asn.nid > :last_nid)) AND asn.status = 1 ". $exclude_sql ."ORDER BY asn.changed ASC, asn.nid ASC", 0, $limit, $args);
+  // TODO: remove old code
+  // list($excluded_types, $args, $join_sql, $exclude_sql) = apachesolr_exclude_types($namespace);
+  // $result = db_query_range("SELECT asn.nid, asn.changed FROM {apachesolr_search_node} asn ". $join_sql ."WHERE (asn.changed > :last_changed OR (asn.changed = :last_changed AND asn.nid > :last_nid)) AND asn.status = 1 ". $exclude_sql ."ORDER BY asn.changed ASC, asn.nid ASC", 0, $limit, $args);
   $query = db_select('apachesolr_search_node', 'asn')
     ->fields('asn', array('nid', 'changed'))
     ->condition('asn.status', 1)
@@ -1225,8 +1226,96 @@ function apachesolr_load_all_environments() {
     cache_set('apachesolr:environments', $environments, 'cache_apachesolr');
   }
   return $environments;
+}
 
- }
+ /**
+ * Function that loads all the search types
+ *
+ * @return $search_types
+ */
+function apachesolr_load_all_search_types() {
+  $search_types = &drupal_static(__FUNCTION__);
+
+  if (isset($search_types)) {
+    return $search_types;
+  }
+  // Use cache_get to avoid DB when using memcache, etc.
+  $cache = cache_get('apachesolr:search_types', 'cache_apachesolr');
+  if (isset($cache->data)) {
+    $search_types = $cache->data;
+  }
+  else {
+    $search_types = array(
+        'tid' => array(
+          'name' => apachesolr_field_name_map('tid'),
+          'default menu' => 'taxonomy/term/%',
+          'title callback' => 'apachesolr_get_taxonomy_term_title',
+        ),
+        'is_uid' => array(
+          'name' => apachesolr_field_name_map('is_uid'),
+          'default menu' => 'user/%/search',
+          'title callback' => 'apachesolr_get_user_title',
+        ),
+        'bundle' => array(
+          'name' => apachesolr_field_name_map('bundle'),
+          'default menu' => 'search/type/%',
+          'title callback' => 'apachesolr_get_value_title',
+        ),
+        'ss_language' => array(
+          'name' => apachesolr_field_name_map('ss_language'),
+          'default menu' => 'search/language/%',
+          'title callback' => 'apachesolr_get_value_title',
+        ),
+    );
+    module_invoke_all('apachesolr_search_types', $search_types);
+    cache_set('apachesolr:search_types', $search_types, 'cache_apachesolr');
+  }
+  return $search_types;
+}
+
+/*
+ * Used as a callback function to generate a title for the taxonomy term
+ * depending on the input in the configuration screen
+ */
+function apachesolr_get_taxonomy_term_title($search_page_id = NULL, $value = NULL) {
+   $page_title = 'Search results for %value';
+   if (isset($value) && isset($search_page_id)) {
+     $search_page = apachesolr_search_page_load($search_page_id);
+     $page_title = str_replace('%value', '@value', $search_page->page_title);
+     $term = taxonomy_term_load($value);
+     $title = $term->name;
+   }
+   return t($page_title, array('@value' => $title));
+}
+
+/*
+ * Used as a callback function to generate a title for a user name depending
+ * on the input in the configuration screen
+ */
+function apachesolr_get_user_title($search_page_id = NULL, $value = NULL) {
+  $page_title = 'Search results for %value';
+  if (isset($value) && isset($search_page_id)) {
+    $search_page = apachesolr_search_page_load($search_page_id);
+    $page_title = str_replace('%value', '@value', $search_page->page_title);
+    $user = user_load($value);
+    $title = $user->name;
+  }
+  return t($page_title, array('@value' => $title));
+}
+
+/*
+ * Used as a callback function to generate a title for a node/page depending
+ * on the input in the configuration screen
+ */
+function apachesolr_get_value_title($search_page_id = NULL, $value = NULL) {
+  $page_title = 'Search results for %value';
+  if (isset($value)  && isset($search_page_id)) {
+    $search_page = apachesolr_search_page_load($search_page_id);
+    $page_title = str_replace('%value', '@value', $search_page->page_title);
+    $title = $value;
+  }
+  return t($page_title, array('@value' => $title));
+}
 
 /**
  * Function that loads an environment
@@ -1323,7 +1412,7 @@ function apachesolr_environment_create_unique_id($environments, $original_enviro
     foreach ($environments as $environment) {
       // Check if our identifier already exists.
       if ($original_environment['env_id'].'_'.$cloned_env_int == $environment['env_id']) {
-        //this identifier already exists so increment the integer and try again
+        // This identifier already exists so increment the integer and try again
         $found = TRUE;
         break;
       }
@@ -1670,6 +1759,10 @@ function apachesolr_field_name_map($field_name) {
       'tags_inline' => t('Body text in inline tags like EM or STRONG'),
       'tags_a' => t('Body text inside links (A tags)'),
       'tid' => t('Taxonomy term IDs'),
+      'is_uid' => t('User IDs'),
+      'bundle' => t('Content type names eg. article'),
+      'entity_type' => t('Entity type names eg. node'),
+      'ss_language' => t('Language type eg. en or und (undefinded)'),
     );
     if (module_exists('taxonomy')) {
       foreach (taxonomy_get_vocabularies() as $vocab) {
