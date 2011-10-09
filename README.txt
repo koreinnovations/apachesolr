@@ -139,6 +139,13 @@ generated at all times when nodes are indexed.  Alternately, set up a re-direct
 in .htaccess to prevent site visitors from accessing the site via more than one
 site address.
 
+Problem:
+The 'Solr Index Queries' test fails with file permission errors.
+
+Solution:
+When running this test you should have your tomcat/jetty running as the same user
+as the user under which PHP runs (often the same as the webserver). This is
+important because of the on-the-fly folder creation within PHP.
 
 
 Themers
