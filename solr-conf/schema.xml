@@ -10,7 +10,7 @@
  http://wiki.apache.org/solr/SchemaXml
 -->
 
-<schema name="drupal-3.0-beta7" version="1.2">
+<schema name="drupal-3.0-beta9" version="1.2">
     <!-- attribute "name" is the name of this schema and is only used for display purposes.
          Applications should change this to reflect the nature of the search collection.
          version="1.2" is Solr's version number for the schema syntax and semantics.  It should
@@ -325,12 +325,12 @@
        fields or fields that need an index-time boost need norms.
    -->
 
-<!-- The document id is derived from a site-spcific key (hash) and the entity type and ID like:
+<!-- The document id is usually derived from a site-spcific key (hash) and the entity type and ID like:
      $document->id = $hash . '/node/' . $node->nid; -->
 
    <field name="id" type="string" indexed="true" stored="true" required="true" />
    <!-- entity_id is the numeric object ID, e.g. Node ID, File ID -->
-   <field name="entity_id"  type="long" indexed="true" stored="true" required="true" />
+   <field name="entity_id"  type="long" indexed="true" stored="true" />
    <!-- entity_type is 'node', 'file', 'user', or some other Drupal object type -->
    <field name="entity_type" type="string" indexed="true" stored="true" required="true" />
    <!-- bundle is a node type, or as appropriate for other entity types -->

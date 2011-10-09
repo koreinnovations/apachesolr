@@ -10,7 +10,7 @@
  http://wiki.apache.org/solr/SchemaXml
 -->
 
-<schema name="drupal-3.0-beta7-solr3" version="1.3">
+<schema name="drupal-3.0-beta9-solr3" version="1.3">
     <!-- attribute "name" is the name of this schema and is only used for display purposes.
          Applications should change this to reflect the nature of the search collection.
          version="1.2" is Solr's version number for the schema syntax and semantics.  It should
@@ -305,9 +305,9 @@
     <!-- since fields of this type are by default not stored or indexed, any data added to
          them will be ignored outright
      -->
-    <fieldtype name="ignored" stored="false" indexed="false" class="solr.StrField"/>
+    <fieldtype name="ignored" stored="false" indexed="false" class="solr.StrField" />
 
-    <!-- Begin added types to use features in Solr 3.3+ -->
+    <!-- Begin added types to use features in Solr 3.4+ -->
     <fieldType name="point" class="solr.PointType" dimension="2" subFieldType="tdouble"/>
 
     <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
@@ -318,7 +318,7 @@
     See http://wiki.apache.org/solr/SpatialSearch
    -->
     <fieldtype name="geohash" class="solr.GeoHashField"/>
-    <!-- End added Solr 3.3+ types -->
+    <!-- End added Solr 3.4+ types -->
  </types>
 
 
@@ -338,12 +338,12 @@
        fields or fields that need an index-time boost need norms.
    -->
 
-<!-- The document id is derived from a site-spcific key (hash) and the entity type and ID like:
+<!-- The document id is usually derived from a site-spcific key (hash) and the entity type and ID like:
      $document->id = $hash . '/node/' . $node->nid; -->
 
    <field name="id" type="string" indexed="true" stored="true" required="true" />
    <!-- entity_id is the numeric object ID, e.g. Node ID, File ID -->
-   <field name="entity_id"  type="long" indexed="true" stored="true" required="true" />
+   <field name="entity_id"  type="long" indexed="true" stored="true" />
    <!-- entity_type is 'node', 'file', 'user', or some other Drupal object type -->
    <field name="entity_type" type="string" indexed="true" stored="true" required="true" />
    <!-- bundle is a node type, or as appropriate for other entity types -->
@@ -454,14 +454,14 @@
    <dynamicField name="hts_*" type="tint"   indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="htm_*" type="tint"   indexed="true"  stored="true" multiValued="true"/>
 
-   <!-- Begin added fields to use features in Solr 3.3+ -->
+   <!-- Begin added fields to use features in Solr 3.4+ -->
    <dynamicField name="points_*" type="point" indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="pointm_*" type="point" indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="locs_*" type="location" indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="locm_*" type="location" indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="geos_*" type="geohash" indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="geom_*" type="geohash" indexed="true"  stored="true" multiValued="true"/>
-   <!-- End added fields for Solr 3.3+ -->
+   <!-- End added fields for Solr 3.4+ -->
    <!-- Sortable version of the dynamic string field -->
    <dynamicField name="sort_*" type="sortString" indexed="true" stored="false"/>
    <copyField source="ss_*" dest="sort_*"/>
