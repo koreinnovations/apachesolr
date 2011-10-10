@@ -4,13 +4,14 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#1283924 by rjmackay, lazysoundsystem, jweowu: fix for notice undefined index errors.
 #1305052 by cpliakas: fix for Negative facets not displayed when the mincount is 0.
 #1279164 by pwolanin, fix for 'bundle' is not a required field, but apachesolr treats it as such.
 #1300380 by Nick_vh, pwolanin: Search environments not clear about being active or online.
 #1294846 by Nick_vh: Added Refactoring of the search pages.
 #1188824 by pwolanin: fix for very large watchdog entries when index is in read-only mode.
 #1270826 by pwolanin, brianV: fix for search page regex fails for complex queries.
-#989398 by pwolanin, Nick_vh: Fix tests after moving conf files.
+#989398  by pwolanin, Nick_vh: Fix tests after moving conf files.
 #1167136 by cpliakas: fix for fields attached to nodes added as facets regardless off the collection type.
 #1225554 by pwolanin: fix for pagination missing in the search page administration.
 #817286  by pfrenssen: API docs cleanup.

@@ -276,7 +276,7 @@ function apachesolr_facetapi_facet_info($searcher_info) {
   $facets = array();
   if ('apachesolr' == $searcher_info['adapter'] && isset($searcher_info['types']['node'])) {
     foreach (apachesolr_entity_fields('node') as $field_nm => $field_info) {
-      if ($field_info['facets']) {
+      if (!empty($field_info['facets'])) {
         $field = apachesolr_index_key($field_info);
         $facets[$field] = array(
           'label' => check_plain($field_info['display_name']),
@@ -1684,7 +1684,8 @@ function apachesolr_current_query(DrupalSolrQueryInterface $query = NULL) {
  *        ),
  */
 function apachesolr_index_key($field) {
-  switch ($field['index_type']) {
+  $index_type = !empty($field['index_type']) ? $field['index_type'] : NULL;
+  switch ($index_type) {
     case 'text':
       $type_prefix = 't';
       break;
@@ -1709,7 +1710,7 @@ function apachesolr_index_key($field) {
     case 'double':
       $type_prefix = 'p'; // double; sortable d was used for date.
       break;
-      case 'sint':
+    case 'sint':
       $type_prefix = 'is'; // long integer sortable (deprecated)
       break;
     case 'boolean':
@@ -1736,11 +1737,11 @@ function apachesolr_index_key($field) {
     case 'sdouble':
       $type_prefix = 'ps'; // double sortable; (use for sorting missing last).
       break;
-     case 'string':
+    case 'string':
     default:
       $type_prefix = 's'; // String
   }
-  $sm = $field['multiple'] ? 'm_' : 's_';
+  $sm = !empty($field['multiple']) ? 'm_' : 's_';
   // Block deltas are limited to 32 chars.
   return substr($type_prefix . $sm . $field['name'], 0, 32);
 }
@@ -1846,7 +1847,7 @@ function apachesolr_entity_fields($entity_type = 'node') {
         // to build whatever the index key is that is used for faceting.
         // @todo: for fields like taxonomy we are indexing multiple Solr fields
         // per entity field, but are keying on a single Solr field name here.
-        $function = $row['name_callback'];
+        $function = !empty($row['name_callback']) ? $row['name_callback'] : NULL;
         if ($function && is_callable($function)) {
           $row['name'] = $function($field);
         }
