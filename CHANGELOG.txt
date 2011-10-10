@@ -4,6 +4,7 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#1305052 by cpliakas: fix for Negative facets not displayed when the mincount is 0.
 #1279164 by pwolanin, fix for 'bundle' is not a required field, but apachesolr treats it as such.
 #1300380 by Nick_vh, pwolanin: Search environments not clear about being active or online.
 #1294846 by Nick_vh: Added Refactoring of the search pages.
