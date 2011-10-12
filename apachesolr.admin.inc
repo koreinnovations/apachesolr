@@ -254,7 +254,7 @@ function apachesolr_settings($form, &$form_state) {
       $delete_link = '';
     }
     else {
-      $name = check_plain($data['name']);
+      $env_name = check_plain($data['name']);
       $env_class_row = '';
     }
 
@@ -274,7 +274,7 @@ function apachesolr_settings($form, &$form_state) {
         ),
         array(
           'class' => $env_class_row,
-          'data' => $name,
+          'data' => $env_name,
         ),
         check_plain($data['url']),
         array(
