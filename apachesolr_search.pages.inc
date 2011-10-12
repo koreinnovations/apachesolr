@@ -86,11 +86,14 @@ function apachesolr_search_user_defined_search_page($page_id, $keys = '', $value
 
   //initiate our build array
   $build = array();
-
-  // Adds the search form to the page.
-  $build['search_form'] = drupal_get_form('apachesolr_search_user_defined_search_form', $search_page, $keys);
-  // Adds the search results to the page
-  $build['search_results'] = $build_results;
+  if (isset($search_page->settings['apachesolr_search_search_box']) && $search_page->settings['apachesolr_search_search_box']) {
+    // Adds the search form to the page.
+    $build['search_form'] = drupal_get_form('apachesolr_search_user_defined_search_form', $search_page, $keys);
+  }
+  if (isset($build_results)) {
+    // Adds the search results to the page
+    $build['search_results'] = $build_results;
+  }
   return $build;
 }
 
