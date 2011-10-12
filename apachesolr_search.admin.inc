@@ -61,10 +61,17 @@ function apachesolr_search_page_list_page() {
   $query->leftJoin('apachesolr_environment', 'ser', 's.env_id = ser.env_id');
 
   $rows = array();
+  $rows['core_search'] = array();
+
   foreach ($query->execute() as $record) {
     $row = array();
 
-    $row[] = check_plain($record->label);
+    $label = check_plain($record->label);
+    if ($record->page_id == 'core_search') {
+      $label .= ' ' . t('<em>(integrates with core <a href="!search_admin">Search module</a>)</em>', array('!search_admin' => url('admin/config/search/settings')));
+    }
+
+    $row[] = $label;
 
     $row[] = array(
       'data' => array(
@@ -86,13 +93,13 @@ function apachesolr_search_page_list_page() {
       $row[] = '';
     }
 
-    $rows[] = $row;
+    $rows[$record->page_id] = $row;
   }
 
   $build['list'] = array(
     '#theme' => 'table',
     '#header' => $header,
-    '#rows' => $rows,
+    '#rows' => array_values($rows),
     '#empty' => t('No available search pages.'),
   );
   $build['pager'] = array(
@@ -325,6 +332,11 @@ function apachesolr_search_page_settings_form_validate($form, &$form_state) {
   $form_state['values']['search_path'] = trim($form_state['values']['search_path'], '/');
   if (empty($form_state['values']['search_path'])) {
     form_set_error('search_path', t('Path required.'));
+  }
+  if ($form_state['values']['page_id'] == 'core_search') {
+    if (!preg_match('@^search/[^/]+$@', $form_state['values']['search_path'])) {
+      form_set_error('search_path', t('The core Search page path must start with search/ and only have one /'));
+    }
   }
 }
 

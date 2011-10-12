@@ -91,6 +91,7 @@ function apachesolr_search_menu_alter(&$items) {
     $result = db_select('apachesolr_search_page', 's')
       ->fields('s', array('page_id'))
       ->condition('env_id', '', '<>')
+      ->condition('page_id', 'core_search', '<>')
       ->execute();
   }
   catch (Exception $e) {
@@ -215,7 +216,7 @@ function apachesolr_search_search_info() {
   // Load our core search page
   // This core search page is assumingly always there. This cannot be deleted
   $search_page = apachesolr_search_page_load('core_search');
-  //search.module does not allow a hook not to return something...
+
   return array(
     'title' => $search_page->page_title,
     'path' => str_replace('search/', '', $search_page->search_path),
