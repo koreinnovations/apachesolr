@@ -4,6 +4,10 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+
+Apache Solr integration 7.x-1.0-beta9, 2011-xx-xx
+------------------------------
+#1264786 by grndlvl: fix for double ellipses on search snippets.
 #1305282 by pwolanin, Nick_vh: Fixed Search pages problems.
 #1283924 by rjmackay, lazysoundsystem, jweowu: fix for notice undefined index errors.
 #1305052 by cpliakas: fix for Negative facets not displayed when the mincount is 0.

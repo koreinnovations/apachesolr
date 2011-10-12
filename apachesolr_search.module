@@ -890,8 +890,10 @@ function theme_apachesolr_search_snippets($vars) {
       $result .= $snippets['teaser'];
       unset($snippets['teaser']);
     }
-    $result .= (strlen($result) > 0) ? ' ... ' : '';
-    $result .= implode(' ... ', $snippets);
+    if (count($snippets)) {
+      $result .= (strlen($result) > 0) ? ' ... ' : '';
+      $result .= implode(' ... ', $snippets);
+    }
   }
   return $result . ' ...';
 }
