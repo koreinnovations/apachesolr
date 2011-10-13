@@ -48,8 +48,8 @@ function apachesolr_search_user_defined_search_page($page_id, $keys = '', $value
       'rows' => $search_page->settings['apachesolr_search_per_page'],
     );
 
-    if (!isset($search_page->settings['apachesolr_search_spellcheck']) || !$search_page->settings['apachesolr_search_spellcheck']) {
-       $params['spellcheck'] = 'false';
+    if (empty($search_page->settings['apachesolr_search_spellcheck'])) {
+      $params['spellcheck'] = 'false';
     }
     else {
       $params['spellcheck'] = 'true';
@@ -84,7 +84,7 @@ function apachesolr_search_user_defined_search_page($page_id, $keys = '', $value
     apachesolr_failure(t('Solr search'), $keys);
   }
 
-  //initiate our build array
+  // Initiate our build array
   $build = array();
   if (isset($search_page->settings['apachesolr_search_search_box']) && $search_page->settings['apachesolr_search_search_box']) {
     // Adds the search form to the page.

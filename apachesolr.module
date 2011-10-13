@@ -1273,7 +1273,7 @@ function apachesolr_load_all_search_types() {
   return $search_types;
 }
 
-/*
+/**
  * Used as a callback function to generate a title for the taxonomy term
  * depending on the input in the configuration screen
  */
@@ -1292,7 +1292,7 @@ function apachesolr_get_taxonomy_term_title($search_page_id = NULL, $value = NUL
    return t($page_title, array('@value' => $title));
 }
 
-/*
+/**
  * Used as a callback function to generate a title for a user name depending
  * on the input in the configuration screen
  */
@@ -1310,7 +1310,7 @@ function apachesolr_get_user_title($search_page_id = NULL, $value = NULL) {
   return t($page_title, array('@value' => $title));
 }
 
-/*
+/**
  * Used as a callback function to generate a title for a node/page depending
  * on the input in the configuration screen
  */

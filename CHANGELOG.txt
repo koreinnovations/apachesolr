@@ -2,11 +2,13 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
 
-Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
+Apache Solr integration 7.x-1.0-xxxx, 2011-10-13
 ------------------------------
+<<<<<<< HEAD
 
 Apache Solr integration 7.x-1.0-beta9, 2011-xx-xx
 ------------------------------
+#1307526 by pwolanin, Nick_vh: Fixes for update path, core search functionality.
 #1264786 by grndlvl: fix for double ellipses on search snippets.
 #1305282 by pwolanin, Nick_vh: Fixed Search pages problems.
 #1283924 by rjmackay, lazysoundsystem, jweowu: fix for notice undefined index errors.
