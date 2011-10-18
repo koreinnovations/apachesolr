@@ -16,7 +16,7 @@
  * @param $query
  *  An object implementing DrupalSolrQueryInterface. No need for &.
  */
-function HOOK_apachesolr_query_prepare($query) {
+function hook_apachesolr_query_prepare($query) {
   // Add a sort on the node ID.
   $query->setAvailableSort('entity_id', array(
     'title' => t('Node ID'),
@@ -37,7 +37,7 @@ function HOOK_apachesolr_query_prepare($query) {
  * @param $query
  *   An object implementing DrupalSolrQueryInterface. No need for &.
  */
-function HOOK_apachesolr_query_alter($query) {
+function hook_apachesolr_query_alter($query) {
   // I only want to see articles by the admin!
   $query->addFilter("is_uid", 1);
 
@@ -82,7 +82,7 @@ function HOOK_apachesolr_query_alter($query) {
  *   An associative array of mappings as defined by modules that implement
  *   hook_apachesolr_field_mappings().
  */
-function HOOK_apachesolr_field_mappings_alter(&$mappings) {
+function hook_apachesolr_field_mappings_alter(&$mappings) {
 }
 
 /**
@@ -97,7 +97,7 @@ function HOOK_apachesolr_field_mappings_alter(&$mappings) {
  * @return array
  *   An array containing node types to be excluded from indexing.
  */
-function HOOK_apachesolr_types_exclude($namespace) {
+function hook_apachesolr_types_exclude($namespace) {
   // Do not index any nodes of type 'Basic Page'.
   return array('page');
 }
@@ -117,7 +117,7 @@ function HOOK_apachesolr_types_exclude($namespace) {
  * @return bool
  *   Return TRUE to skip the indexing of the node.
  */
-function HOOK_apachesolr_node_exclude($node, $namespace) {
+function hook_apachesolr_node_exclude($node, $namespace) {
   // Exclude nodes from uid 1.
   if ($node->uid == 1) {
     apachesolr_delete_node_from_index($node);
@@ -138,7 +138,7 @@ function HOOK_apachesolr_node_exclude($node, $namespace) {
  * @param string $namespace
  *   Usually the calling module (eg. 'apachesolr_search').
  */
-function HOOK_apachesolr_update_index($document, $node, $namespace) {
+function hook_apachesolr_update_index($document, $node, $namespace) {
   // Add the full node object of 'story' nodes to the index.
   if ($node->type == 'story') {
     $document->addField('tm_node', urlencode(serialize(node_load($node->nid))));
@@ -153,7 +153,7 @@ function HOOK_apachesolr_update_index($document, $node, $namespace) {
  * @param object $document
  *   The ApacheSolrDocument instance.
  */
-function HOOK_apachesolr_search_result_alter($document) {
+function hook_apachesolr_search_result_alter($document) {
 }
 
 /**
@@ -163,7 +163,7 @@ function HOOK_apachesolr_search_result_alter($document) {
  * @param array $sort_links
  *   An associative array containing the available sorting methods.
  */
-function HOOK_apachesolr_sort_links_alter(&$sort_links) {
+function hook_apachesolr_sort_links_alter(&$sort_links) {
 }
 
 /**
@@ -175,5 +175,5 @@ function HOOK_apachesolr_sort_links_alter(&$sort_links) {
  * @param $environment
  *   The environment object that is being deleted. No need for &.
  */
-function HOOK_apachesolr_environment_delete($environment) {
+function hook_apachesolr_environment_delete($environment) {
 }
