@@ -8,6 +8,7 @@ Apache Solr integration 7.x-1.0-xxxx, 2011-10-13
 
 Apache Solr integration 7.x-1.0-beta9, 2011-xx-xx
 ------------------------------
+#1309572 by Nick_vh: Fixed Creating new search page gives error when trying to find the search page variable.
 #1204480 by Nick_vh | chriscalip: Fixed Please update apachesolr.api.php naming convention from HOOK_ to hook_.
 #1212610 by Nick_vh: Fixed Notice: Undefined index: module in apachesolr_search_form_search_form_alter().
 #1309564 by Nick_vh: Fixed Simplifying syntax between isset and empty for search_box() in custom page.

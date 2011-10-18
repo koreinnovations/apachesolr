@@ -179,7 +179,10 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
     '#collapsible' => FALSE,
   );
 
-  $core_search = $search_page->page_id == 'core_search';
+  $core_search = FALSE;
+  if(!empty($search_page->page_id) && ($search_page->page_id == 'core_search')) {
+    $core_search = TRUE;
+  }
   if ($core_search) {
     $description = t('This page always uses the current default search environment');
   }
@@ -192,7 +195,7 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
     '#type' => 'select',
     '#options' => $options,
     '#default_value' => !empty($search_page->env_id) ? $search_page->env_id : '',
-    '#disabled' => $search_page->page_id == 'core_search',
+    '#disabled' => $core_search,
     '#description' => $description,
   );
 

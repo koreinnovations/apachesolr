@@ -261,7 +261,7 @@ function apachesolr_settings($form, &$form_state) {
     $class = '';
     // When we do are receiving a post (so the page does not show) we do not want
     // to check the statusses
-    if(empty($form_state['input'])) {
+    if (empty($form_state['input'])) {
       $class = apachesolr_server_status($data['url']) ? 'ok' : 'error';
     }
 

@@ -1283,7 +1283,7 @@ function apachesolr_get_taxonomy_term_title($search_page_id = NULL, $value = NUL
      $search_page = apachesolr_search_page_load($search_page_id);
      $page_title = str_replace('%value', '@value', $search_page->page_title);
      $term = taxonomy_term_load($value);
-     if(!$term) {
+     if (!$term) {
        return;
      }
      $title = $term->name;
@@ -1302,7 +1302,7 @@ function apachesolr_get_user_title($search_page_id = NULL, $value = NULL) {
     $search_page = apachesolr_search_page_load($search_page_id);
     $page_title = str_replace('%value', '@value', $search_page->page_title);
     $user = user_load($value);
-    if(!$user) {
+    if (!$user) {
        return;
      }
     $title = $user->name;
