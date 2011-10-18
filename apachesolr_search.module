@@ -145,14 +145,15 @@ function apachesolr_search_menu_alter(&$items) {
     );
 
     // If title has a certain callback for the selected type we use it
-    if ((isset($search_types[$search_page->settings['apachesolr_search_search_type']]['title callback'])) && (NULL !== $position)) {
-      $title_callback = $search_types[$search_page->settings['apachesolr_search_search_type']]['title callback'];
-      $items[$search_page->search_path]['title callback'] = $title_callback;
-      $items[$search_page->search_path]['title arguments'] = array($search_page->page_id, $position);
-      $items[$search_page->search_path . '/%menu_tail']['title callback'] = $title_callback;
-      $items[$search_page->search_path . '/%menu_tail']['title arguments'] = array($search_page->page_id, $position);
+    if (!empty($search_page->settings['apachesolr_search_search_type']) && NULL !== $position) {
+      if (!empty($search_types[$search_page->settings['apachesolr_search_search_type']]['title callback'])) {
+        $title_callback = $search_types[$search_page->settings['apachesolr_search_search_type']]['title callback'];
+        $items[$search_page->search_path]['title callback'] = $title_callback;
+        $items[$search_page->search_path]['title arguments'] = array($search_page->page_id, $position);
+        $items[$search_page->search_path . '/%menu_tail']['title callback'] = $title_callback;
+        $items[$search_page->search_path . '/%menu_tail']['title arguments'] = array($search_page->page_id, $position);
+      }
     }
-
     if ($core_search) {
       $items[$search_page->search_path . '/%menu_tail']['tab_root'] = 'search/' . $default_info['path'] . '/%';
       $items[$search_page->search_path . '/%menu_tail']['tab_parent'] = 'search/' . $default_info['path'];
@@ -308,11 +309,7 @@ function apachesolr_search_conditions() {
     }
   }
   $search_page = apachesolr_search_page_load('core_search');
-  $empty_search_behavior = $search_page->settings['apachesolr_search_browse'];
-  if ($empty_search_behavior != 'none') {
-    // Set a condition so the search is triggered.
-    $conditions['apachesolr_search_browse'] = $empty_search_behavior;
-  }
+  $conditions = array_merge($conditions, $search_page->settings);
   return $conditions;
 }
 

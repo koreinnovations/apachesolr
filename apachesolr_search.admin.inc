@@ -159,7 +159,9 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
   $form['description_enable'] = array(
     '#type' => 'checkbox',
     '#title' => t('Description'),
+    '#default_value' => !empty($search_page->description)  ? TRUE : FALSE
   );
+
   $form['description'] = array(
     '#type' => 'textfield',
     '#title' => t('Provide description'),
@@ -241,7 +243,9 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
   $form['info']['custom_filter_enable'] = array(
     '#type' => 'checkbox',
     '#title' => t('Custom Filter'),
+    '#default_value' => !empty($search_page->settings['fq'])  ? TRUE : FALSE
   );
+
   $form['info']['filters'] = array(
     '#title' => t('Custom filters'),
     '#type' => 'textfield',

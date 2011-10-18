@@ -11,6 +11,10 @@
 function apachesolr_search_user_defined_search_page($page_id, $keys = '', $value) {
 
   $search_page = apachesolr_search_page_load($page_id);
+  if (empty($search_page)) {
+    drupal_set_message(t('This search page cannot be found'), 'error');
+    drupal_not_found();
+  }
   $search_type = $search_page->settings['apachesolr_search_search_type'];
   // Replace dynamic path with current path
   $search_page->search_path = str_replace('%', $value, $search_page->search_path);
