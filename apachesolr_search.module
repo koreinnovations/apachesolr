@@ -87,7 +87,8 @@ function apachesolr_search_menu() {
 function apachesolr_search_menu_alter(&$items) {
   try {
     // Gets search pages directly from the index.
-    // @todo Honor "enabled" settings?
+    // In addition, do NOT load core_search since it is handled by
+    // hook_search_info
     $result = db_select('apachesolr_search_page', 's')
       ->fields('s', array('page_id'))
       ->condition('env_id', '', '<>')
@@ -120,21 +121,22 @@ function apachesolr_search_menu_alter(&$items) {
     $core_search = ($parts[0] == 'search');
     $taxonomy_search = ($search_page->search_path == 'taxonomy/term/%');
     $position = array_search('%', $parts);
+    $page_title = isset($search_page->page_title) ? $search_page->page_title : 'Search Results';
 
     // Replace possible tokens [term:tid], [node:nid], [user:uid] with their
     // menu-specific variant
     $items[$search_page->search_path] = array(
-      'title' => 'Search Results',
+      'title' => $page_title,
       'page callback' => 'apachesolr_search_user_defined_search_page',
       'page arguments' => array($search_page->page_id, '', $position),
       'access arguments' => array('search content'),
-      'type' => MENU_SUGGESTED_ITEM,
+      'type' => ($core_search) ? MENU_LOCAL_TASK : MENU_SUGGESTED_ITEM,
       'file' => 'apachesolr_search.pages.inc',
       'file path' => drupal_get_path('module', 'apachesolr_search'),
     );
 
     $items[$search_page->search_path . '/%menu_tail'] = array(
-      'title' => 'Search Results',
+      'title' => $page_title,
       'load arguments' => array('%map', '%index'),
       'page callback' => 'apachesolr_search_user_defined_search_page',
       'page arguments' => array($search_page->page_id, $keys_pos, $position),
@@ -145,15 +147,17 @@ function apachesolr_search_menu_alter(&$items) {
     );
 
     // If title has a certain callback for the selected type we use it
-    if (!empty($search_page->settings['apachesolr_search_search_type']) && NULL !== $position) {
-      if (!empty($search_types[$search_page->settings['apachesolr_search_search_type']]['title callback'])) {
-        $title_callback = $search_types[$search_page->settings['apachesolr_search_search_type']]['title callback'];
-        $items[$search_page->search_path]['title callback'] = $title_callback;
-        $items[$search_page->search_path]['title arguments'] = array($search_page->page_id, $position);
-        $items[$search_page->search_path . '/%menu_tail']['title callback'] = $title_callback;
-        $items[$search_page->search_path . '/%menu_tail']['title arguments'] = array($search_page->page_id, $position);
-      }
+    $search_type_id = !empty($search_page->settings['apachesolr_search_search_type']) ? $search_page->settings['apachesolr_search_search_type'] : FALSE;
+    $search_type = !empty($search_types[$search_type_id]) ? $search_types[$search_type_id] : FALSE;
+
+    if ($search_type && !empty($position)) {
+      $title_callback = $search_type['title callback'];
+      $items[$search_page->search_path]['title callback'] = $title_callback;
+      $items[$search_page->search_path]['title arguments'] = array($search_page->page_id, $position);
+      $items[$search_page->search_path . '/%menu_tail']['title callback'] = $title_callback;
+      $items[$search_page->search_path . '/%menu_tail']['title arguments'] = array($search_page->page_id, $position);
     }
+    // If we have additional searches in the search/* path
     if ($core_search) {
       $items[$search_page->search_path . '/%menu_tail']['tab_root'] = 'search/' . $default_info['path'] . '/%';
       $items[$search_page->search_path . '/%menu_tail']['tab_parent'] = 'search/' . $default_info['path'];
