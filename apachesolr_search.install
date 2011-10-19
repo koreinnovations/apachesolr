@@ -4,8 +4,38 @@
  * @file
  *   Install and related hooks for apachesolr_search.
  */
+
+/**
+ * Implements hook_install().
+ */
 function apachesolr_search_install() {
-  // Run the 7004 update so our default core search page is installed
+  // Add a taxonomy search page to the database
+  $settings = array(
+    'apachesolr_search_search_type' => 'tid',
+    'apachesolr_search_per_page' => 10,
+    'apachesolr_search_browse' => 'results',
+    'apachesolr_search_spellcheck' => FALSE,
+    'apachesolr_search_search_box' => FALSE,
+   );
+  $settings = serialize($settings);
+
+  $fields = array(
+    'page_id' => 'taxonomy_search',
+    'label' => 'Taxonomy Search',
+    'description' => 'Search all items with given term',
+    'search_path' => 'taxonomy/term/%',
+    'env_id' => '',
+    'page_title' => '%value',
+    'settings' => $settings,
+  );
+  db_insert('apachesolr_search_page')->fields($fields)->execute();
+}
+
+/**
+ * Implements hook_enable().
+ */
+function apachesolr_search_enable() {
+  // Make sure the default core search page is installed.
   $search_page = apachesolr_search_page_load('core_search');
   if (empty($search_page)) {
     // Add Default search page (core search)
@@ -27,39 +57,13 @@ function apachesolr_search_install() {
       'description' => 'Core Search',
       'search_path' => 'search/site',
       'env_id' => 'solr',
-      'page_title' => 'Search Results',
+      'page_title' => 'Site',
       'settings' => $settings,
     );
     db_insert('apachesolr_search_page')->fields($fields)->execute();
-
-    // Add a taxonomy search page to the database
-    $settings = array(
-      'apachesolr_search_search_type' => 'tid',
-      'apachesolr_search_per_page' => 10,
-      'apachesolr_search_browse' => 'results',
-      'apachesolr_search_spellcheck' => FALSE,
-      'apachesolr_search_search_box' => FALSE,
-     );
-    $settings = serialize($settings);
-
-    $fields = array(
-      'page_id' => 'taxonomy_search',
-      'label' => 'Taxonomy Search',
-      'description' => 'Search all items with given term',
-      'search_path' => 'taxonomy/term/%',
-      'env_id' => '',
-      'page_title' => '%value',
-      'settings' => $settings,
-    );
-    db_insert('apachesolr_search_page')->fields($fields)->execute();
-
   }
-}
 
-/**
- * Implements hook_enable().
- */
-function apachesolr_search_enable() {
+
   $active = variable_get('search_active_modules', array('node', 'user'));
   $active[] = 'apachesolr_search';
   variable_set('search_active_modules', array_unique($active));
