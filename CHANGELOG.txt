@@ -4,6 +4,7 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#1314260 by Nick_vh: Fixed hook_apachesolr_query_prepare() not also correctly documented.
 #1313698 by Nick_vh, denikin: Fixed Support for search of multiword content in facets/fields .
 #1309572 by Nick_vh: Fixed Creating new search page gives error when trying to find the search page variable.
 #1204480 by Nick_vh | chriscalip: Fixed Please update apachesolr.api.php naming convention from HOOK_ to hook_.

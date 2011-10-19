@@ -1548,7 +1548,7 @@ function apachesolr_server_status($url, $class = NULL) {
  *
  * @param $current_query
  *   A query object from apachesolr_drupal_query().  It will be modified by
- *   hook_apachesolr_prepare_query() and then cached in apachesolr_current_query().
+ *   hook_apachesolr_query_prepare() and then cached in apachesolr_current_query().
  * @param $page
  *   For paging into results, using $current_query->params['rows'] results per page.
  *
