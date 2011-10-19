@@ -7,6 +7,7 @@ Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 
 Apache Solr integration 7.x-1.0-beta10, 2011-xx-xx
 ------------------------------
+#1134610 by pcambra, JoeMcGuire, Ravi.J: schema support for ctools export of settings.
 #1314664 by Nick_vh, brianV: fix for Search pages completely ignore the title set in the configuration.
 #1314260 by Nick_vh: Fixed hook_apachesolr_query_prepare() not also correctly documented.
 #1313698 by Nick_vh, denikin: Fixed Support for search of multiword content in facets/fields .

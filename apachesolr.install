@@ -111,6 +111,16 @@ function apachesolr_schema() {
 
   $schema['apachesolr_environment'] = array(
     'description' => 'The Solr search environment table.',
+    'export' => array(
+      'key' => 'env_id',
+      'identifier' => 'name',
+      'api' => array(
+	    'owner' => 'apachesolr',
+	    'api' => 'default_apachesolr_environments',
+	    'minimum_version' => 1,
+	    'current_version' => 1,
+       ),
+     ),
     'fields' => array(
      'env_id' => array(
         'description' => 'Unique identifier for the environment',
@@ -143,6 +153,17 @@ function apachesolr_schema() {
   );
   $schema['apachesolr_environment_variable'] = array(
     'description' => 'Variable values for each Solr search environment.',
+    'export' => array(
+      'key' => 'name',
+      'identifier' => 'name',
+      'default hook' => 'default_apachesolr_environment_variable',
+      'api' => array(
+        'owner' => 'apachesolr',
+        'api' => 'default_apachesolr_environment_variables',
+        'minimum_version' => 1,
+        'current_version' => 1,
+       ),
+     ),
     'fields' => array(
      'env_id' => array(
         'description' => 'Unique identifier for the environment',
