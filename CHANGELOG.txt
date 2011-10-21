@@ -4,6 +4,8 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#1316578 by Nick_vh | rooby: Added some documentation somewhere that says you need the facetapi module for facets.
+
 
 Apache Solr integration 7.x-1.0-beta10, 2011-10-19
 ------------------------------
