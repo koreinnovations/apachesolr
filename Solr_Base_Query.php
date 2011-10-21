@@ -317,10 +317,11 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
       $exclude = !empty($matches[1]);
       $this->addFilter('', $matches[2], $exclude, $local);
     }
-    elseif (preg_match('/(-|)([^:]+):([\("].+[\)"])/', $string, $matches)) {
+    elseif (preg_match('/(-|)([^:]+):([\("\[].+[\)"\]])/', $string, $matches)) {
       // Something with a complicated right-hand-side.
       // Ex.: bundle:(article OR page)
       // Ex.: title:"double words"
+      // Ex.: field_date:[1970-12-31T23:59:59Z TO NOW]
       $exclude = !empty($matches[1]);
       $this->addFilter($matches[2], $matches[3], $exclude, $local);
     }

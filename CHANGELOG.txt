@@ -4,6 +4,7 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#1313698 by Nick_vh, denikin: Fixed Support for search of date content in facets/fields
 #1316578 by Nick_vh | rooby: Added some documentation somewhere that says you need the facetapi module for facets.
 
 
