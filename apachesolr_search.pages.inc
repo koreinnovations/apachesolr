@@ -193,7 +193,9 @@ function apachesolr_search_user_defined_search_form_submit(&$form, &$form_state)
     $redirect .= '/' . $form_state['values']['keys'];
   }
 
-  $get = json_decode($form_state['values']['get'], TRUE);
+  if (isset($form_state['values']['get'])) {
+    $get = json_decode($form_state['values']['get'], TRUE);
+  }
 
   if (!empty($form_state['values']['retain-filters'])) {
     // Add our saved value
