@@ -231,7 +231,7 @@ function apachesolr_search_search_info() {
   // This core search page is assumed to always be there. It cannot be deleted.
   $search_page = apachesolr_search_page_load('core_search');
 
-  // This can happen during install, or if the DB was manaually changed.
+  // This can happen during install, or if the DB was manually changed.
   if (empty($search_page)) {
     $search_page->page_title = 'Site';
     $search_page->search_path = 'search/site';
