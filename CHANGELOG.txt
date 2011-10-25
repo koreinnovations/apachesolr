@@ -4,6 +4,7 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#1320076 by Nick_vh | egarias: Fixed Results per page should be non-negative integer less than 200.
 #1320634 by Nick_vh | jummonk: Fixed Search pages saved in static array before they are created in DB => PDO exception on creation of menu_router() records.
 #1319542 by jgalletta: Fixed Undefined index: get in apachesolr_search_user_defined_search_form_submit().
 #1313698 by Nick_vh, denikin: Fixed Support for search of date content in facets/fields

@@ -380,22 +380,6 @@ function apachesolr_settings($form, &$form_state) {
 }
 
 /**
- * Validation function for the apachesolr_settings() form.
- */
-function apachesolr_settings_validate($form, &$form_state) {
-  $intval = intval($form_state['values']['apachesolr_rows']);
-  // TODO: does the max need to be variable?
-  $max = 200;
-  if (!is_numeric($form_state['values']['apachesolr_rows']) || $intval < 0 || $intval > $max) {
-    form_set_error('apachesolr_rows', t('Results per page should be non-negative integer less than @max.', array('@max' => $max)));
-  }
-  else {
-    // Set the integer value as the one we are saving to the variable.
-    $form_state['values']['apachesolr_rows'] = $intval;
-  }
-}
-
-/**
  * Gets information about the fields already in solr index.
  */
 function apachesolr_index_page($env_id = NULL) {
