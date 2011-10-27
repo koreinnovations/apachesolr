@@ -124,8 +124,6 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
   }
 
   // Initializes form with common settings.
-
-
   $form['search_page'] = array(
       '#type' => 'value',
       '#value' => $search_page,
@@ -177,6 +175,8 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
     '#title' => t('Search Page Information'),
     '#type' => 'fieldset',
     '#collapsible' => FALSE,
+    '#prefix' => '<div id="dynamic-search-page">',
+    '#suffix' => '</div>',
   );
 
   $core_search = FALSE;
@@ -204,7 +204,7 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
     '#type' => 'textfield',
     '#required' => TRUE,
     '#maxlength' => 255,
-    '#description' => '',
+    '#description' => 'You can use %value to place the search term in the title',
     '#default_value' => !empty($search_page->page_title) ? $search_page->page_title : '',
   );
 
@@ -338,21 +338,20 @@ function apachesolr_search_ajax_search_page_default($form, $form_state, $search_
 
   // Helping with sensible defaults for the search path
   $default_search_path = '';
-
   if (!empty($form_state['values']['search_type']) && $form_state['values']['search_type'] != 'custom') {
     $default_search_path = $search_types[$form_state['values']['search_type']]['default menu'];
-    $form['setup']['search_path']['#value'] = $default_search_path;
+    $form['info']['search_path']['#value'] = $default_search_path;
   }
 
   // Helping with sensible defaults for the search title
   $default_search_title = '';
 
-  if (!empty($form_state['values']['page_title']) && $form_state['values']['search_type'] != 'custom') {
+  if (empty($form_state['values']['page_title']) && $form_state['values']['search_type'] != 'custom') {
     $default_search_title_callback = $search_types[$form_state['values']['search_type']]['title callback'];
     $default_search_title = $default_search_title_callback();
-    $form['setup']['page_title']['#value'] = $default_search_title;
+    $form['info']['page_title']['#value'] = $default_search_title;
   }
-  return $form['setup'];
+  return $form['info'];
 }
 
 function apachesolr_search_page_settings_form_validate($form, &$form_state) {
