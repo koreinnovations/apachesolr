@@ -19,7 +19,7 @@ function apachesolr_init() {
     set_include_path(dirname(__FILE__) . PATH_SEPARATOR . get_include_path());
     require_once 'Zend/Json/Decoder.php';
     require_once 'Zend/Json/Encoder.php';
-  
+
     /**
      * Substitute for missing PHP built-in functions.
      */
@@ -269,7 +269,10 @@ function apachesolr_mark_node($nid) {
  * Mark nodes as needing re-indexing if a node type name changes.
  */
 function apachesolr_node_type($op, $info) {
-  if ($op != 'delete' && !empty($info->old_type) && $info->old_type != $info->type) {
+  if ($op == 'delete') {
+    apachesolr_rebuild_index_table($info->type);
+  }
+  elseif (!empty($info->old_type) && $info->old_type != $info->type) {
     // We cannot be sure we are going before or after node module.
     switch ($GLOBALS['db_type']) {
       case 'mysql':
