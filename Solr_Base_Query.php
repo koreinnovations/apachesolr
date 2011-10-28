@@ -438,6 +438,13 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
     return $this;
   }
 
+  public function setAvailableSorts($sorts) {
+    // We expect a complete array of valid sorts.
+    $this->available_sorts = $sorts;
+    $this->parseSortString();
+    return $this;
+  }
+
   public function removeAvailableSort($name) {
     unset($this->available_sorts[$name]);
     // Re-parse the sortstring.
