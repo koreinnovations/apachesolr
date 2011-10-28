@@ -459,6 +459,13 @@ function apachesolr_mark_node($nid) {
 }
 
 /**
+ * Implements hook_node_type_delete().
+ */
+function apachesolr_node_type_delete($info) {
+  apachesolr_rebuild_index_table($info->type);
+}
+
+/**
  * Implements of hook_node_type_update().
  */
 function apachesolr_node_type_update($info) {
