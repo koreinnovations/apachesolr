@@ -821,6 +821,9 @@ function apachesolr_search_preprocess_search_results(&$variables) {
       '@end' => $params['start'] + $params['rows'] - 1,
       '@total' => $total,
     ));
+    // Redefine the pager if it was missing
+    pager_default_initialize($total, $params['rows']);
+    $variables['pager'] = theme('pager', array('tags' => NULL));
   }
 }
 
