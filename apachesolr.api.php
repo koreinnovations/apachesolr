@@ -157,6 +157,19 @@ function hook_apachesolr_search_result_alter($document) {
 }
 
 /**
+ * This is invoked by apachesolr_search.module for the whole resultset returned
+ * in a search.
+ *
+ * @param array $results
+ *   The returned search results.
+ */
+function hook_apachesolr_process_results(&$results) {
+  foreach ($results as $id => $result) {
+    $results[$id]['title'] = t('[Result] !title', array('!title' => $result['title']));
+  }
+}
+
+/**
  * Called by the sort link block code. Allows other modules to modify, add or
  * remove sorts.
  *
