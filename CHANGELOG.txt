@@ -4,6 +4,7 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#1328854 by Josh Waihi: Added Tag cron database queries to allow modules to alter conditions of updating index table.
 #1323758 by Nick_vh | Frippuz: Fixed hook_apachesolr_process_results() make no impact on results.
 #1265124 by InternetDevels.Com: Fixed Not output pager in search results.
 #1324842 by Nick_vh: Added setAvailableSorts to the api.

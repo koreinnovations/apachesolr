@@ -825,6 +825,7 @@ function apachesolr_cron() {
     $n_alias = $query->innerJoin('node', 'n', 'n.nid = asn.nid');
     $query->fields($n_alias, array('nid', 'status'));
     $query->where("asn.status <> $n_alias.status");
+    $query->addTag('apachesolr_cron_update');
     $result = $query->execute();
     foreach ($result as $node) {
       apachesolr_node_update($node, FALSE);
@@ -835,6 +836,7 @@ function apachesolr_cron() {
     $query->fields('asn', array('nid'));
     $n_alias = $query->leftJoin('node', 'n', 'n.nid = asn.nid');
     $query->isNull("$n_alias.nid");
+    $query->addTag('apachesolr_cron_delete');
     $result = $query->execute();
     foreach ($result as $node) {
       apachesolr_node_delete($node, FALSE);
