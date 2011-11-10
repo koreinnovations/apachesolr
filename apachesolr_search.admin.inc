@@ -275,10 +275,10 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
   // Results per page per search page
   $default_value = isset($search_page->settings['apachesolr_search_per_page']) ? $search_page->settings['apachesolr_search_per_page'] : '10';
   $form['advanced']['apachesolr_search_per_page'] = array(
-    '#type' => 'select',
+    '#type' => 'textfield',
+    '#size' => 3,
     '#title' => t('Results per page'),
-    '#description' => t('Select how many items will be displayed on one page of the search result.'),
-    '#options' => drupal_map_assoc(array(5, 10, 20, 30, 40, 50, 60, 80, 100)),
+    '#description' => t('How many items will be displayed on one page of the search result.'),
     '#default_value' => $default_value,
   );
 
@@ -362,6 +362,12 @@ function apachesolr_search_page_settings_form_validate($form, &$form_state) {
   $form_state['values']['search_path'] = trim($form_state['values']['search_path'], '/');
   if (empty($form_state['values']['search_path'])) {
     form_set_error('search_path', t('Path required.'));
+  }
+  if (empty($form_state['values']['apachesolr_search_per_page'])) {
+    form_set_error('apachesolr_search_per_page', t('The amount of search results cannot be empty.'));
+  }
+  if (!is_numeric($form_state['values']['apachesolr_search_per_page'])) {
+    form_set_error('apachesolr_search_per_page', t('The amount of search results must be an integer.'));
   }
   if ($form_state['values']['page_id'] == 'core_search') {
     if (!preg_match('@^search/[^/%]+$@', $form_state['values']['search_path'])) {
