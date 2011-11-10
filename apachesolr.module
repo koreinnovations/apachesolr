@@ -1872,8 +1872,7 @@ function apachesolr_entity_fields($entity_type = 'node') {
         }
         // The field info array.
         $row['field'] = $field;
-        // Since we use the index key as the block delta in apachesolr_search, we need a name
-        // to build whatever the index key is that is used for faceting.
+
         // @todo: for fields like taxonomy we are indexing multiple Solr fields
         // per entity field, but are keying on a single Solr field name here.
         $function = !empty($row['name_callback']) ? $row['name_callback'] : NULL;
@@ -1881,7 +1880,7 @@ function apachesolr_entity_fields($entity_type = 'node') {
           $row['name'] = $function($field);
         }
         else {
-          $row['name'] = $field['id'] . '_' . $field['field_name'];
+          $row['name'] = $field['field_name'];
         }
         $row['module_name'] = $modules[$field['module']]['name'];
         // Set display name

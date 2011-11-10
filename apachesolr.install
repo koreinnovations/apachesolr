@@ -472,3 +472,32 @@ function apachesolr_update_7008() {
   variable_del('apachesolr_facet_sort_active');
   variable_del('apachesolr_operator');
 }
+
+function apachesolr_update_7009() {
+  // Only run when facetapi is available and/or installed
+  if (module_exist('facetapi')) {
+    module_load_include('inc', 'facetapi', 'facetapi.block');
+    // Get all searchers
+    $searchers = facetapi_get_searcher_info();
+    $realms = facetapi_get_realm_info();
+    foreach ($searchers as $searcher_id => $searcher) {
+      foreach ($realms as $realm_id => $realm) {
+        foreach (field_info_fields() as $field_name => $field) {
+          // Generate the old delta
+          $facet_name_old = $field['id'] . '_' . $field['field_name'];
+          $delta_old = facetapi_build_delta($searcher['name'], $realm['name'], $facet_name_old);
+          $delta_old = substr(drupal_hash_base64($delta_old), 0, 32);
+          // Generate the new delta
+          $facet_name = $field['field_name'];
+          $delta = facetapi_build_delta($searcher['name'], $realm['name'], $facet_name);
+          $delta = substr(drupal_hash_base64($delta), 0, 32);
+          db_update('block')
+            ->fields(array('delta' => $delta))
+            ->condition('module', 'facetapi')
+            ->condition('delta', $delta_old)
+            ->execute();
+        }
+      }
+    }
+  }
+}
