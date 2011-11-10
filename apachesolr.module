@@ -764,7 +764,7 @@ function apachesolr_flatten_documents_array($documents, &$tmp) {
 }
 
 function apachesolr_delete_node_from_index($node) {
-  static $failed = FALSE;
+  $failed = &drupal_static(__FUNCTION__, FALSE);
   if ($failed) {
     return FALSE;
   }
@@ -1134,7 +1134,7 @@ function apachesolr_form_facetapi_facet_dependencies_form_alter(&$form, $form_st
  *   FALSE otherwise.
  */
 function apachesolr_has_searched($searched = NULL) {
-  static $_searched = FALSE;
+  $_searched = &drupal_static(__FUNCTION__, FALSE);
   if (is_bool($searched)) {
     $_searched = $searched;
   }
@@ -1153,7 +1153,7 @@ function apachesolr_has_searched($searched = NULL) {
  *   FALSE otherwise.
  */
 function apachesolr_suppress_blocks($flag = NULL) {
-  static $_flag = FALSE;
+  $_flag = &drupal_static(__FUNCTION__, FALSE);
   if (is_bool($flag)) {
     $_flag = $flag;
   }
@@ -1164,7 +1164,7 @@ function apachesolr_suppress_blocks($flag = NULL) {
  * Get or set the default environment ID for the current page.
  */
 function apachesolr_default_environment($env_id = NULL) {
-  static $default_env_id = NULL;
+  $default_env_id = &drupal_static(__FUNCTION__, NULL);
 
   if (isset($env_id)) {
     $default_env_id = $env_id;
@@ -1638,7 +1638,7 @@ function apachesolr_do_query(DrupalSolrQueryInterface $current_query, $page = 0)
  *   Name of the searcher - e.g. from $query->getSearcher().
  */
 function apachesolr_static_response_cache($searcher, $response = NULL) {
-  static $_response = array();
+  $_response = &drupal_static(__FUNCTION__, array());
 
   if (is_object($response)) {
     $_response[$searcher] = clone $response;
@@ -1682,7 +1682,7 @@ function apachesolr_drupal_query($name, $params = array(), $solrsort = '', $base
  * Static getter/setter for the current query. Only set once per page.
  */
 function apachesolr_current_query(DrupalSolrQueryInterface $query = NULL) {
-  static $saved_query = NULL;
+  $saved_query = &drupal_static(__FUNCTION__, NULL);
 
   if (is_object($query)) {
     $saved_query = clone $query;
@@ -1766,7 +1766,7 @@ function apachesolr_index_key($field) {
  * Try to map a schema field name to a human-readable description.
  */
 function apachesolr_field_name_map($field_name) {
-  static $map;
+  $map = &drupal_static(__FUNCTION__);
 
   if (!isset($map)) {
     $map = array(

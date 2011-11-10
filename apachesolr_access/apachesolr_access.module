@@ -4,7 +4,7 @@
  * Implements apachesolr_update_index
  */
 function apachesolr_access_apachesolr_update_index(&$document, $node, $namespace) {
-  static $account;
+  $account = &drupal_static(__FUNCTION__);
 
   if (!isset($account)) {
     // Load the anonymous user.
