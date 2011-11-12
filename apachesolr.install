@@ -473,9 +473,12 @@ function apachesolr_update_7008() {
   variable_del('apachesolr_operator');
 }
 
+/**
+ * Update Facet API block deltas to account for removal of numeric ID from field names.
+ */
 function apachesolr_update_7009() {
   // Only run when facetapi is available and/or installed
-  if (module_exist('facetapi')) {
+  if (module_exists('facetapi')) {
     module_load_include('inc', 'facetapi', 'facetapi.block');
     // Get all searchers
     $searchers = facetapi_get_searcher_info();
