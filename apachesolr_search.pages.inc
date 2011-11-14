@@ -8,103 +8,38 @@
 /**
  * Returns search results on user defined search pages.
  */
-function apachesolr_search_user_defined_search_page($page_id, $keys = '', $value) {
-
+function apachesolr_search_custom_page($page_id, $keys = '', $path_replacer = null) {
   $search_page = apachesolr_search_page_load($page_id);
   if (empty($search_page)) {
     drupal_set_message(t('This search page cannot be found'), 'error');
     drupal_not_found();
   }
-  $search_type = $search_page->settings['apachesolr_search_search_type'];
+  // Add our replacement value in the conditions array
+  if (!empty($path_replacer)) {
+    $search_page->settings['apachesolr_search_path_replacer'] = $path_replacer;
+  }
   // Replace dynamic path with current path
-  $search_page->search_path = str_replace('%', $value, $search_page->search_path);
-  // Replace the path with the value
-  $search_page->search_path = str_replace('%', $value, $search_page->search_path);
-  // What to do when we have an initial empty search
-  $empty_search_behavior = $search_page->settings['apachesolr_search_browse'];
-
-  // Manual filters
-  $filters = isset($search_page->settings['fq']) ? $search_page->settings['fq'] : array();
-  // If the manual filter has a % in it, replace it with $value
-  $filters = str_replace('%', $value, $filters);
-  // Set our search type filter
-  if (!empty($search_type) && !empty($value) && $search_type != 'custom') {
-    $filters[] = $search_type . ':' . $value;
-  }
-  // We may also have filters added by facet API module. The 'f'
-  // is determined by constant FacetapiAdapter::FILTER_KEY. Hard
-  // coded here to avoid extra class loading.
-  $conditions = array();
-  if (!empty($_GET['f']) && is_array($_GET['f'])) {
-    if (module_exists('facetapi')) {
-      $conditions['f'] = $_GET['f'];
-    }
-  }
-
-  $solrsort = isset($_GET['solrsort']) ? $_GET['solrsort'] : '';
-
-  $params = array();
-  try {
-    $solr = apachesolr_get_solr($search_page->env_id);
-    // Default parameters
-    $params = array(
-      'fq' => $filters,
-      'rows' => $search_page->settings['apachesolr_search_per_page'],
-    );
-
-    if (empty($search_page->settings['apachesolr_search_spellcheck'])) {
-      $params['spellcheck'] = 'false';
-    }
-    else {
-      $params['spellcheck'] = 'true';
-    }
-    // Empty text Behavior
-    if (!$keys && empty($conditions) && ($empty_search_behavior == 'browse' || $empty_search_behavior == 'blocks')) {
-      // Pass empty search behavior as string on to apachesolr_search_search_page()
-      $results = apachesolr_search_run('apachesolr', $params, '', $search_page->search_path, 0, $solr);
-
-      if ($empty_search_behavior == 'browse') {
-        // Hide sidebar blocks for content-area browsing instead.
-        apachesolr_suppress_blocks(TRUE);
-      }
-      $build_results = apachesolr_search_page_browse($empty_search_behavior);
-    }
-    // Full text behavior
-    elseif ($keys || !empty($conditions) || $empty_search_behavior == 'results') {
-      $params['q'] = $keys;
-
-      $results = apachesolr_search_run('apachesolr', $params, $solrsort, $search_page->search_path, pager_find_page(), $solr);
-
-      // Adds search results to the render array.
-      $build_results = array(
-        '#theme' => 'search_results',
-        '#results' => $results,
-        '#module' => 'apachesolr_search',
-      );
-    }
-  }
-  catch (Exception $e) {
-    watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
-    apachesolr_failure(t('Solr search'), $keys);
-  }
-
+  $search_page->search_path = str_replace('%', $path_replacer, $search_page->search_path);
+  // Retrieve the conditions that apply to this page
+  $conditions = apachesolr_search_conditions_default($search_page);
+  // Retrieve the results of the search
+  $results = apachesolr_search_search_results($keys, $conditions, $search_page);
   // Initiate our build array
   $build = array();
+  // Add a custom search form if required
   if (!empty($search_page->settings['apachesolr_search_search_box'])) {
     // Adds the search form to the page.
-    $build['search_form'] = drupal_get_form('apachesolr_search_user_defined_search_form', $search_page, $keys);
+    $build['search_form'] = drupal_get_form('apachesolr_search_custom_page_search_form', $search_page, $keys);
   }
-  if (!empty($build_results)) {
-    // Adds the search results to the page
-    $build['search_results'] = $build_results;
-  }
-  return $build;
+  // Build our page and allow modification.
+  $build_results = apachesolr_search_search_page_custom($results, $search_page, $build);
+  return $build_results;
 }
 
 /**
  * Search for placed on user defined search pages.
  */
-function apachesolr_search_user_defined_search_form($form, &$form_state, $search_page, $keys = '') {
+function apachesolr_search_custom_page_search_form($form, &$form_state, $search_page, $keys = '') {
   // Loads the core Search CSS file, use the core search module's classes.
   drupal_add_css(drupal_get_path('module', 'search') . '/search.css');
 
@@ -184,9 +119,9 @@ function apachesolr_search_user_defined_search_form($form, &$form_state, $search
 }
 
 /**
- * Processes apachesolr_search_user_defined_search_form submissions.
+ * Processes apachesolr_search_custom_page_search_form submissions.
  */
-function apachesolr_search_user_defined_search_form_submit(&$form, &$form_state) {
+function apachesolr_search_custom_page_search_form_submit(&$form, &$form_state) {
   $search_page = $form['#search_page'];
   $redirect = $search_page->search_path;
   if (strlen($form_state['values']['keys'])) {

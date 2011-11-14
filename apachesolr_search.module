@@ -127,7 +127,7 @@ function apachesolr_search_menu_alter(&$items) {
     // menu-specific variant
     $items[$search_page->search_path] = array(
       'title' => $page_title,
-      'page callback' => 'apachesolr_search_user_defined_search_page',
+      'page callback' => 'apachesolr_search_custom_page',
       'page arguments' => array($search_page->page_id, '', $position),
       'access arguments' => array('search content'),
       'type' => ($core_search) ? MENU_LOCAL_TASK : MENU_SUGGESTED_ITEM,
@@ -138,7 +138,7 @@ function apachesolr_search_menu_alter(&$items) {
     $items[$search_page->search_path . '/%menu_tail'] = array(
       'title' => $page_title,
       'load arguments' => array('%map', '%index'),
-      'page callback' => 'apachesolr_search_user_defined_search_page',
+      'page callback' => 'apachesolr_search_custom_page',
       'page arguments' => array($search_page->page_id, $keys_pos, $position),
       'access arguments' => array('search content'),
       'type' => ($taxonomy_search) ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
@@ -260,73 +260,51 @@ function apachesolr_search_search_status() {
 
 /**
  * Implementation of hook_search_execute().
+ * @param $keys
+ *   The keys that are available after the path that is defined in
+ *   hook_search_info
+ * @param $conditions
+ *   Conditions that are coming from apachesolr_search_conditions
  */
 function apachesolr_search_search_execute($keys = NULL, $conditions = NULL) {
-  $filters = isset($conditions['fq']) ? $conditions['fq'] : array();
-  $solrsort = isset($_GET['solrsort']) ? $_GET['solrsort'] : '';
-  $empty_search_behavior = isset($conditions['apachesolr_search_browse']) ? $conditions['apachesolr_search_browse'] : '';
-  unset($conditions['apachesolr_search_browse']);
-
-  try {
-    if (!$keys && !$conditions && ($empty_search_behavior == 'browse' || $empty_search_behavior == 'blocks')) {
-      // Pass empty search behavior as string on to apachesolr_search_search_page()
-      apachesolr_search_run_empty('apachesolr', 'search/' . arg(1));
-      $results['apachesolr_search_browse'] = $empty_search_behavior;
-      if ($empty_search_behavior == 'browse') {
-        // Hide sidebar blocks for content-area browsing instead.
-        apachesolr_suppress_blocks(TRUE);
-      }
-    }
-    else {
-      $search_page = apachesolr_search_page_load('core_search');
-      $params = array(
-        'q' => $keys,
-        'fq' => $filters,
-        'rows' => $search_page->settings['apachesolr_search_per_page'],
-      );
-
-      if (empty($search_page->settings['apachesolr_search_spellcheck'])) {
-        $params['spellcheck'] = 'false';
-      }
-      else {
-        $params['spellcheck'] = 'true';
-      }
-      $results = apachesolr_search_run('apachesolr', $params, $solrsort, 'search/' . arg(1), pager_find_page());
-    }
-    return $results;
-  }
-  catch (Exception $e) {
-    watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
-    apachesolr_failure(t('Solr search'), $keys);
-  }
+  $search_page = apachesolr_search_page_load('core_search');
+  $results = apachesolr_search_search_results($keys, $conditions, $search_page);
+  return $results;
 }
 
 /**
  * Implementation of a search_view() conditions callback.
  */
 function apachesolr_search_conditions() {
-  $conditions = array();
-
-  if (!empty($_GET['fq']) && is_array($_GET['fq'])) {
-    $conditions['fq'] = $_GET['fq'];
-  }
-  // We may also have filters added by facet API module. The 'f'
-  // is determined by constant FacetapiAdapter::FILTER_KEY. Hard
-  // coded here to avoid extra class loading.
-  if (!empty($_GET['f']) && is_array($_GET['f'])) {
-    if (module_exists('facetapi')) {
-      $conditions['f'] = $_GET['f'];
-    }
-  }
-  $search_page = apachesolr_search_page_load('core_search');
-  $conditions = array_merge($conditions, $search_page->settings);
+  //get default conditions from the core_search
+  $conditions = apachesolr_search_conditions_default();
   return $conditions;
 }
 
 /**
  * Implements hook_search_page().
+ * @param $results
+ *   The results that came from apache solr
  */
 function apachesolr_search_search_page($results) {
+  $search_page = apachesolr_search_page_load('core_search');
+  $build = apachesolr_search_search_page_custom($results, $search_page);
+  return $build;
+}
+
+/**
+ * Mimics apachesolr_search_search_page() but is used for custom search pages
+ * We prefer to keep them seperate so we are not dependent from core search
+ * when someone tries to disable the core search
+ * @param $results
+ *   The results that came from apache solr
+ * @param $build
+ *   the build array from where this function was called. Good to append output
+ *   to the build array
+ * @param $search_page
+ *   the search page that is requesting an output
+ */
+function apachesolr_search_search_page_custom($results, $search_page = null, $build = null) {
   if (!empty($results['apachesolr_search_browse'])) {
     // Show facet browsing blocks.
     $output = apachesolr_search_page_browse($results['apachesolr_search_browse']);
@@ -342,8 +320,121 @@ function apachesolr_search_search_page($results) {
     // Give the user some custom help text.
     $output = array('#markup' => theme('apachesolr_search_noresults'));
   }
-  return $output;
+  if (!empty($build)) {
+    $build['search_results'] = $output;
+  }
+  else {
+    $build = array();
+    $build['search_results'] = $output;
+  }
+
+  // Allows modules to alter the render array before returning.
+  drupal_alter('apachesolr_search_page', $build, $search_page);
+
+  return $build;
 }
+
+/*
+ * Executes search depending on the conditions given.
+ * See apachesolr_search.pages.inc for another use of this function
+ */
+function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $search_page) {
+  // Check our parameters
+  if (empty($conditions) || empty($search_page)) {
+    apachesolr_failure(t('Solr search'), $keys);
+  }
+
+  $filters = isset($conditions['fq']) ? $conditions['fq'] : array();
+  // Sort options
+  $solrsort = isset($conditions['apachesolr_search_sort']) ? $conditions['apachesolr_search_sort'] : '';
+  // What to do when we have an initial empty search
+  $empty_search_behavior = isset($conditions['apachesolr_search_browse']) ? $conditions['apachesolr_search_browse'] : '';
+
+  $params = array();
+  $results = array();
+  try {
+    $solr = apachesolr_get_solr($search_page->env_id);
+    // Default parameters
+    $params['fq'] = $filters;
+    $param['rows'] = $search_page->settings['apachesolr_search_per_page'];
+
+    if (empty($search_page->settings['apachesolr_search_spellcheck'])) {
+      // Spellcheck needs to have a string as false/true
+      $params['spellcheck'] = 'false';
+    }
+    else {
+      $params['spellcheck'] = 'true';
+    }
+
+    // Empty text Behavior
+    if (!$keys && !$conditions && ($empty_search_behavior == 'browse' || $empty_search_behavior == 'blocks')) {
+      // Pass empty search behavior as string on to apachesolr_search_search_page()
+      apachesolr_search_run_empty('apachesolr', $search_page->search_path);
+      $results['apachesolr_search_browse'] = $empty_search_behavior;
+
+      if ($empty_search_behavior == 'browse') {
+        // Hide sidebar blocks for content-area browsing instead.
+        apachesolr_suppress_blocks(TRUE);
+      }
+    }
+    // Full text behavior
+    elseif ($keys || !empty($conditions) || $empty_search_behavior == 'results') {
+      $params['q'] = $keys;
+      $results = apachesolr_search_run('apachesolr', $params, $solrsort, $search_page->search_path, pager_find_page(), $solr);
+    }
+  }
+  catch (Exception $e) {
+    watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
+    apachesolr_failure(t('Solr search'), $keys);
+  }
+  return $results;
+}
+
+function apachesolr_search_conditions_default($search_page = NULL) {
+  $conditions = array();
+  if (empty($search_page)) {
+    $search_page = apachesolr_search_page_load('core_search');
+  }
+
+  $search_type = isset($search_page->settings['apachesolr_search_search_type']) ? $search_page->settings['apachesolr_search_search_type'] : '';
+  $path_replacer = isset($search_page->settings['apachesolr_search_path_replacer']) ? $search_page->settings['apachesolr_search_path_replacer'] : '';
+  $search_page_fq = $search_page->settings['fq'];
+
+  $conditions['fq'] = array();
+  // Get the filterQueries from the url
+  if (!empty($_GET['fq']) && is_array($_GET['fq'])) {
+    // Reset the array so that we have one level lower to go through
+    $conditions['fq'] = $_GET['fq'];
+  }
+  // Custom filters added in search pages
+  if (!empty($path_replacer)) {
+    // If the manual filter has a % in it, replace it with $value
+    $conditions['fq'][] = str_replace('%', $path_replacer, $search_page_fq);
+  }
+  else {
+    // Put the complete filter in the filter query
+    $conditions['fq'][] = $search_page_fq;
+  }
+
+  // Search type filters (such as taxonomy)
+  if (!empty($path_replacer) && !empty($search_type) && $search_type != 'custom') {
+    $conditions['fq'][] = $search_type . ':' . $path_replacer;
+  }
+
+  // We may also have filters added by facet API module. The 'f'
+  // is determined by constant FacetapiAdapter::FILTER_KEY. Hard
+  // coded here to avoid extra class loading.
+  if (!empty($_GET['f']) && is_array($_GET['f'])) {
+    if (module_exists('facetapi')) {
+      $conditions['f'] = $_GET['f'];
+    }
+  }
+  // Add the sort from the page to our conditions
+  $sort = isset($_GET['solrsort']) ? $_GET['solrsort'] : '';
+  $conditions['apachesolr_search_sort'] = $sort;
+  return $conditions;
+}
+
 
 /**
  * Implements hook_apachesolr_document_handlers().

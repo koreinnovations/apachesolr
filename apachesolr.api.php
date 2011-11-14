@@ -190,3 +190,14 @@ function hook_apachesolr_sort_links_alter(&$sort_links) {
  */
 function hook_apachesolr_environment_delete($environment) {
 }
+
+/**
+ * Modify the build array for any search output build by Apache Solr
+ * This includes core and custom pages and makes it very easy to modify both
+ * of them at once
+ */
+function hook_apachesolr_search_page_alter(&$build, $search_page) {
+  // Adds a text to the top of the page
+  $info = array('#markup' => t('Add information to every search page'));
+  array_unshift($build, $info);
+}
