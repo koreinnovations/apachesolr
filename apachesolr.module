@@ -131,7 +131,7 @@ function apachesolr_menu() {
   );
   $items['admin/config/search/apachesolr/mlt/delete_block/%'] = array(
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('apachesolr_mlt_delete_block_form', 5),
+    'page arguments'     => array('apachesolr_mlt_delete_block_form', 6),
     'access arguments'   => array('administer search'),
     'file'               => 'apachesolr.admin.inc',
     'type'               => MENU_CALLBACK,
@@ -2196,9 +2196,13 @@ function apachesolr_mlt_suggestions($settings, $id, $solr = NULL) {
  * Implements hook_form_[form_id]_alter().
  */
 function apachesolr_form_block_admin_display_form_alter(&$form) {
-  foreach ($form as $key => $block) {
+  foreach ($form['blocks'] as $key => $block) {
     if ((strpos($key, "apachesolr_mlt-") === 0) && $block['module']['#value'] == 'apachesolr') {
-      $form[$key]['delete'] = array('#value' => l(t('delete'), 'admin/config/search/apachesolr/mlt/delete_block/' . $block['delta']['#value']));
+      $form['blocks'][$key]['delete'] = array(
+        '#type' => 'link',
+        '#title' => 'delete',
+        '#href' => 'admin/config/search/apachesolr/mlt/delete_block/' . $block['delta']['#value'],
+      );
     }
   }
 }

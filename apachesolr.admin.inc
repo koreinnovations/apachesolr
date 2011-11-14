@@ -936,18 +936,18 @@ function apachesolr_mlt_save_block($block_settings = array(), $delta = NULL) {
   variable_set('apachesolr_mlt_blocks', $blocks);
 }
 
-function apachesolr_mlt_delete_block_form($form_state, $delta) {
+function apachesolr_mlt_delete_block_form($form, &$form_state, $delta) {
   if ($block = apachesolr_mlt_load_block($delta)) {
     $form['delta'] = array(
       '#type' => 'value',
       '#value' => $delta
     );
-
-    return confirm_form($form,
-      t('Are you sure you want to delete the Apache Solr content recommendation block %name?', array('%name' => $block['name'])),
-      'admin/structure/block',
-      t('The block will be deleted. This action cannot be undone.'),
-      t('Delete'), t('Cancel'));
+    $question = t('Are you sure you want to delete the Apache Solr content recommendation block %name?', array('%name' => $block['name']));
+    $path = 'admin/structure/block';
+    $description = t('The block will be deleted. This action cannot be undone.');
+    $yes = t('Delete');
+    $no = t('Cancel');
+    return confirm_form($form, $question, $path, $description, $yes, $no);
   }
 }
 
