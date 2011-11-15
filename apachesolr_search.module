@@ -782,7 +782,7 @@ function apachesolr_search_process_response($response, DrupalSolrQueryInterface 
       $extra = array();
 
       // Allow modules to alter each document and its extra information.
-      drupal_alter('apachesolr_search_result', $doc, $extra);
+      drupal_alter('apachesolr_search_result', $doc, $extra, $query);
 
       // Set all expected fields from fl to NULL if they are missing so
       // as to prevent Notice: Undefined property.
@@ -824,7 +824,7 @@ function apachesolr_search_process_response($response, DrupalSolrQueryInterface 
     // Hook to allow modifications of the retrieved results
     foreach (module_implements('apachesolr_process_results') as $module) {
       $function = $module . '_apachesolr_process_results';
-      $function($results);
+      $function($results, $query);
     }
   }
   return $results;

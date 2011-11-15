@@ -152,8 +152,10 @@ function hook_apachesolr_update_index($document, $node, $namespace) {
  *
  * @param object $document
  *   The ApacheSolrDocument instance.
+ * @param array $extra
+ * @param $query
  */
-function hook_apachesolr_search_result_alter($document) {
+function hook_apachesolr_search_result_alter($document, $extra, DrupalSolrQueryInterface $query) {
 }
 
 /**
@@ -163,7 +165,7 @@ function hook_apachesolr_search_result_alter($document) {
  * @param array $results
  *   The returned search results.
  */
-function hook_apachesolr_process_results(&$results) {
+function hook_apachesolr_process_results(&$results, DrupalSolrQueryInterface $query) {
   foreach ($results as $id => $result) {
     $results[$id]['title'] = t('[Result] !title', array('!title' => $result['title']));
   }
