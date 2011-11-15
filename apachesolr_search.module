@@ -233,6 +233,7 @@ function apachesolr_search_search_info() {
 
   // This can happen during install, or if the DB was manually changed.
   if (empty($search_page)) {
+    $search_page = new stdClass();
     $search_page->page_title = 'Site';
     $search_page->search_path = 'search/site';
   }
