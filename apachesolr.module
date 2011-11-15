@@ -231,6 +231,7 @@ function apachesolr_facetapi_searcher_info() {
       'path' => '',
       'supports facet mincount' => TRUE,
       'supports facet missing' => TRUE,
+      'include default facets' => FALSE,
     );
   }
   return $info;
@@ -280,60 +281,137 @@ function apachesolr_facetapi_query_types() {
  */
 function apachesolr_facetapi_facet_info($searcher_info) {
   $facets = array();
-  if ('apachesolr' == $searcher_info['adapter'] && isset($searcher_info['types']['node'])) {
-    foreach (apachesolr_entity_fields('node') as $field_nm => $field_info) {
-      if (!empty($field_info['facets'])) {
-        $field = apachesolr_index_key($field_info);
-        $facets[$field] = array(
-          'label' => check_plain($field_info['display_name']),
-          'dependency plugins' => $field_info['dependency plugins'],
-          'field api name' => $field_info['field']['field_name'],
-          'description' => t('Filter by field of type @type.', array('@type' => $field_info['field']['type'])),
-          'map callback' => $field_info['map callback'],
-          'map options' => $field_info,
-          'hierarchy callback' => $field_info['hierarchy callback'],
-        );
-        if (!empty($field_info['facet mincount allowed'])) {
-          $facets[$field]['facet mincount allowed'] = $field_info['facet mincount allowed'];
-        }
-        if (!empty($field_info['facet missing allowed'])) {
-          $facets[$field]['facet missing allowed'] = $field_info['facet missing allowed'];
-        }
-        if (!empty($field_info['query types'])) {
-          $facets[$field]['query types'] = $field_info['query types'];
-        }
-        // TODO : This is actually deprecated but we should still support
-        // older versions of facetapi. We should remove once facetapi has RC1
-        // For reference : http://drupal.org/node/1161444
-        if (!empty($field_info['query type'])) {
-          $facets[$field]['query type'] = $field_info['query type'];
-        }
-        if (!empty($field_info['min callback'])) {
-          $facets[$field]['min callback'] = $field_info['min callback'];
-        }
-        if (!empty($field_info['max callback'])) {
-          $facets[$field]['max callback'] = $field_info['max callback'];
-        }
-        if (!empty($field_info['map callback'])) {
-          $facets[$field]['map callback'] = $field_info['map callback'];
+  if ('apachesolr' == $searcher_info['adapter']) {
+    $environment = apachesolr_environment_load($searcher_info['instance']);
+
+    if (!empty($environment['conf']['facet callbacks'])) {
+      foreach($environment['conf']['facet callbacks'] as $callback) {
+        if (is_callable($callback)) {
+          $facets = array_merge($facets, call_user_func($callback, $searcher_info));
         }
       }
     }
+    elseif (isset($searcher_info['types']['node'])) {
+      $facets = apachesolr_default_node_facet_info($searcher_info);
+    }
   }
+
+  return $facets;
+}
+
+function apachesolr_default_node_facet_info($searcher_info) {
+
+  $facets = apachesolr_common_node_facets();
+  foreach (apachesolr_entity_fields('node') as $field_nm => $field_info) {
+    if (!empty($field_info['facets'])) {
+      $field = apachesolr_index_key($field_info);
+      $facets[$field] = array(
+        'label' => check_plain($field_info['display_name']),
+        'dependency plugins' => $field_info['dependency plugins'],
+        'field api name' => $field_info['field']['field_name'],
+        'description' => t('Filter by field of type @type.', array('@type' => $field_info['field']['type'])),
+        'map callback' => $field_info['map callback'],
+        'map options' => $field_info,
+        'hierarchy callback' => $field_info['hierarchy callback'],
+      );
+      if (!empty($field_info['facet mincount allowed'])) {
+        $facets[$field]['facet mincount allowed'] = $field_info['facet mincount allowed'];
+      }
+      if (!empty($field_info['facet missing allowed'])) {
+        $facets[$field]['facet missing allowed'] = $field_info['facet missing allowed'];
+      }
+      if (!empty($field_info['query types'])) {
+        $facets[$field]['query types'] = $field_info['query types'];
+      }
+      // TODO : This is actually deprecated but we should still support
+      // older versions of facetapi. We should remove once facetapi has RC1
+      // For reference : http://drupal.org/node/1161444
+      if (!empty($field_info['query type'])) {
+        $facets[$field]['query type'] = $field_info['query type'];
+      }
+      if (!empty($field_info['min callback'])) {
+        $facets[$field]['min callback'] = $field_info['min callback'];
+      }
+      if (!empty($field_info['max callback'])) {
+        $facets[$field]['max callback'] = $field_info['max callback'];
+      }
+      if (!empty($field_info['map callback'])) {
+        $facets[$field]['map callback'] = $field_info['map callback'];
+      }
+    }
+  }
+
   return $facets;
 }
 
 /**
- * Implements hook_facetapi_facet_info_alter().
+ * Helper function returning common facet definitions.
  */
-function apachesolr_facetapi_facet_info_alter(&$facet_info, $searcher_info) {
-  // Provide information about the real Solr field names for these default facets.
-  if ('apachesolr' == $searcher_info['adapter']) {
-    $facet_info['author']['field'] = 'is_uid';
-    $facet_info['language']['field'] = 'ss_language';
-    $facet_info['created']['field'] = 'ds_created';
-    $facet_info['changed']['field'] = 'ds_changed';
-  }
+function apachesolr_common_node_facets() {
+
+  $facets['bundle'] = array(
+    'label' => t('Content type'),
+    'description' => t('Filter by content type.'),
+    'field api bundles' => array('node'),
+    'map callback' => 'facetapi_map_bundle',
+    'values callback' => 'facetapi_callback_type_values',
+    'facet mincount allowed' => TRUE,
+    'dependency plugins' => array('role'),
+  );
+
+  $facets['author'] = array(
+    'label' => t('Author'),
+    'description' => t('Filter by author.'),
+    'field' => 'is_uid',
+    'map callback' => 'facetapi_map_author',
+    'values callback' => 'facetapi_callback_user_values',
+    'facet mincount allowed' => TRUE,
+    'dependency plugins' => array('bundle', 'role'),
+  );
+
+  $facets['language'] = array(
+    'label' => t('Language'),
+    'description' => t('Filter by language.'),
+    'field' => 'ss_language',
+    'map callback' => 'facetapi_map_language',
+    'values callback' => 'facetapi_callback_language_values',
+    'facet mincount allowed' => TRUE,
+    'dependency plugins' => array('bundle', 'role'),
+  );
+
+  $facets['created'] = array(
+    'label' => t('Post date'),
+    'description' => t('Filter by the date the node was posted.'),
+    'field' => 'ds_created',
+    'query types' => array('date'),
+    'allowed operators' => array(FACETAPI_OPERATOR_AND => TRUE),
+    'map callback' => 'facetapi_map_date',
+    'min callback' => 'facetapi_get_min_date',
+    'max callback' => 'facetapi_get_max_date',
+    'dependency plugins' => array('bundle', 'role'),
+    'default sorts' => array(
+      array('active', SORT_DESC),
+      array('indexed', SORT_ASC),
+    ),
+  );
+
+  $facets['changed'] = array(
+    'label' => t('Updated date'),
+    'description' => t('Filter by the date the node was last modified.'),
+    'field' => 'ds_changed',
+    'query types' => array('date'),
+    'allowed operators' => array(FACETAPI_OPERATOR_AND => TRUE),
+    'map callback' => 'facetapi_map_date',
+    'min callback' => 'facetapi_get_min_date',
+    'max callback' => 'facetapi_get_max_date',
+    'dependency plugins' => array('bundle', 'role'),
+    'default sorts' => array(
+      array('active', SORT_DESC),
+      array('indexed', SORT_ASC),
+    ),
+  );
+
+  return $facets;
 }
 
 /**
