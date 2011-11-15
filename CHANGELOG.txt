@@ -4,6 +4,7 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#1053126 by jpmckinney, Nick_vh | pwolanin: Remove duplicate sort hooks in 7.x? follow-up.
 #1053126 by jpmckinney, Nick_vh | pwolanin: Remove duplicate sort hooks in 7.x?.
 #1341854 by pwolanin: Pass the query object into hooks altering search results.
 #1340552 by pwolanin: Make facet generation more flexible/overrideable.

@@ -2312,9 +2312,6 @@ function apachesolr_hook_info() {
     'apachesolr_search_result_alter' => array(
       'group' => 'apachesolr',
     ),
-    'apachesolr_sort_links_alter' => array(
-      'group' => 'apachesolr',
-    ),
     'apachesolr_environment_delete' => array(
       'group' => 'apachesolr',
     )
