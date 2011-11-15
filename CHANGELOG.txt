@@ -4,10 +4,11 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
-#1271964 by Nick_vh | wmostrey: Added There's no way to delete content recommendation blocks.
+#1341840 by pwolanin: Fix for undefined index 'core_search' while running tests.
+#1271964 by Nick_vh | wmostrey: Fix for no way to delete content recommendation blocks.
 #1314406 by Nick_vh, scor: Fixed De-duplication of the apachesolr_search_execute() and apachesolr_search_user_defined_search_page().
 #1161538 by Nick_vh, pwolanin | domidc: Fixed The numeric field id should not be used for Solr index field names.
-#1333904 by Nick_vh | vrc3: Added Please restore flexible 'results per page" option.
+#1333904 by Nick_vh | vrc3: Restore flexible 'results per page' option.
 #1161444 by Nick_vh | cpliakas: Modify Facet API field definitions to reflect API change for the 'query type" key.
 #1334216 by Nick_vh: Fixed Convert all static parameters to drupal_static().
 #1328854 by Josh Waihi: Added Tag cron database queries to allow modules to alter conditions of updating index table.

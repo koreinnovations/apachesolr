@@ -181,8 +181,8 @@ function apachesolr_search_page_load($page_id) {
       if ($page->page_id == 'core_search') {
         $page->env_id = apachesolr_default_environment();
       }
-      $pages[$page_id] = $page;
     }
+    $pages[$page_id] = $page;
   }
   return $pages[$page_id];
 }
