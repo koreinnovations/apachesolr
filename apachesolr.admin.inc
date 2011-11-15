@@ -688,30 +688,64 @@ function apachesolr_mlt_add_block_form_submit($form, &$form_state) {
  * Page callback to show available conf files.
  */
 function apachesolr_config_files_overview() {
-  $output = array();
   $xml = NULL;
   try {
     $solr = apachesolr_get_solr();
-    $response = $solr->makeServletRequest('admin/file');
+    $response = $solr->makeServletRequest('admin/file', array('wt' => 'xml'));
     $xml = simplexml_load_string($response->data);
   }
   catch (Exception $e) {
     watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
     drupal_set_message(nl2br(check_plain($e->getMessage())), "warning");
   }
+
   if ($xml) {
-    $files = $xml->xpath('//lst[@name="files"]/lst');
-    $items = array();
-    foreach ($files as $file) {
-      $atr = $file->attributes();
-      $name = (string) $atr[0];
-      $str = l($name, 'admin/reports/apachesolr/conf/' . $name);
-      $str .= '<br />' . format_date(strtotime((string) $file->date));
-      $str .= '<br />' . t('Size (bytes): @bytes', array('@bytes' => (string) $file->long));
-      $items[$name] = $str;
+    // Retrieve our items from the xml using xpath
+    $items = $xml->xpath('//lst[@name="files"]/lst');
+
+    // Add all the data of the file in a files array
+    $files = array();
+    foreach ($items as $item_id => $item) {
+      // Do not list directories. Always a bool
+      if (isset($item->bool)) {
+        break;
+      }
+      // Get data from the files.
+      $name =  $item->attributes();
+      $name = ((string)$item->attributes()) ? (string)$item->attributes() : t('No name found');
+      $files[$item_id]['name'] = l($name, 'admin/reports/apachesolr/conf/' . $name);
+
+      // Retrieve the date attribute
+      if (isset($item->date)) {
+        $modified = ((string)$item->date->attributes() == 'modified') ? (string) $item->date : t('No date found');
+        $files[$item_id]['modified'] = format_date(strtotime($modified));
+      }
+
+      // Retrieve the size attribute
+      if (isset($item->long)) {
+        $size = ((string)$item->long->attributes() == 'size') ? (string) $item->long : t('No size found');
+        $files[$item_id]['size'] = t('Size (bytes): @bytes', array('@bytes' => $size));
+      }
     }
-    ksort($items);
-    $output = theme('item_list', array('items' => array_values($items)));
+    // Sort our files alphabetically
+    ksort($files);
+
+    // Initializes table header.
+    $header = array(
+      'name' => t('File name'),
+      'date' => t('Modified'),
+      'size' => t('Size'),
+    );
+
+    // Display the table of field names, index types, and term counts.
+    $variables = array(
+      'header' => $header,
+      'rows' => $files,
+    );
+    $output = theme('table', $variables);
+  }
+  else {
+    $output = '<p>' . t('No data about any file found.') . "</p>\n";
   }
   return $output;
 }
