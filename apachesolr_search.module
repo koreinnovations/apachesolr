@@ -398,7 +398,7 @@ function apachesolr_search_conditions_default($search_page = NULL) {
 
   $search_type = isset($search_page->settings['apachesolr_search_search_type']) ? $search_page->settings['apachesolr_search_search_type'] : '';
   $path_replacer = isset($search_page->settings['apachesolr_search_path_replacer']) ? $search_page->settings['apachesolr_search_path_replacer'] : '';
-  $search_page_fq = $search_page->settings['fq'];
+  $search_page_fq = !empty($search_page->settings['fq']) ? $search_page->settings['fq'] : '';
 
   $conditions['fq'] = array();
   // Get the filterQueries from the url
@@ -407,13 +407,15 @@ function apachesolr_search_conditions_default($search_page = NULL) {
     $conditions['fq'] = $_GET['fq'];
   }
   // Custom filters added in search pages
-  if (!empty($path_replacer)) {
-    // If the manual filter has a % in it, replace it with $value
-    $conditions['fq'][] = str_replace('%', $path_replacer, $search_page_fq);
-  }
-  else {
-    // Put the complete filter in the filter query
-    $conditions['fq'][] = $search_page_fq;
+  if (!empty($search_page_fq)) {
+    if (!empty($path_replacer)) {
+      // If the manual filter has a % in it, replace it with $value
+      $conditions['fq'][] = str_replace('%', $path_replacer, $search_page_fq);
+    }
+    else {
+      // Put the complete filter in the filter query
+      $conditions['fq'][] = $search_page_fq;
+    }
   }
 
   // Search type filters (such as taxonomy)
