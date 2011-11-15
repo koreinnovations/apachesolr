@@ -1119,8 +1119,6 @@ function apachesolr_block_view($delta = '') {
         'direction' => $direction,
       );
     }
-    // Allow other modules to add or remove sorts.
-    drupal_alter('apachesolr_sort_links', $sort_links);
     foreach ($sort_links as $name => $link) {
       $themed_links[$name] = theme('apachesolr_sort_link', $link);
     }

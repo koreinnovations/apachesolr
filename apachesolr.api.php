@@ -172,16 +172,6 @@ function hook_apachesolr_process_results(&$results, DrupalSolrQueryInterface $qu
 }
 
 /**
- * Called by the sort link block code. Allows other modules to modify, add or
- * remove sorts.
- *
- * @param array $sort_links
- *   An associative array containing the available sorting methods.
- */
-function hook_apachesolr_sort_links_alter(&$sort_links) {
-}
-
-/**
  * Respond to search environment deletion.
  *
  * This hook is invoked from apachesolr_environment_delete() after the
