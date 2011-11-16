@@ -92,29 +92,7 @@ function apachesolr_search_custom_page_search_form($form, &$form_state, $search_
         '#default_value' => (int) isset($_GET['retain-filters']),
       );
     }
-
-    // Get spellchecker suggestions into an array.
-    if (isset($response->spellcheck->suggestions) && $response->spellcheck->suggestions) {
-      $suggestions = get_object_vars($response->spellcheck->suggestions);
-      if ($suggestions) {
-        // Get the original query and replace words.
-
-        foreach ($suggestions as $word => $value) {
-          $replacements[$word] = $value->suggestion[0];
         }
-        $new_keywords = strtr($query->getParam('q'), $replacements);
-
-        // Show only if suggestion is different than current query.
-        if ($query->getParam('q') != $new_keywords) {
-          $form['suggestion'] = array(
-            '#theme' => 'apachesolr_search_suggestions',
-            '#links' => array(l($new_keywords, $query->getPath($new_keywords))),
-          );
-        }
-      }
-    }
-  }
-
   return $form;
 }
 

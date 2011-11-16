@@ -305,13 +305,22 @@ function apachesolr_search_search_page($results) {
  * @param $search_page
  *   the search page that is requesting an output
  */
-function apachesolr_search_search_page_custom($results, $search_page = null, $build = null) {
+function apachesolr_search_search_page_custom($results, $search_page = null, $build = array()) {
+  // Retrieve suggestion
+  $suggestions = apachesolr_search_get_search_suggestions();
+  if ($search_page && !empty($suggestions)) {
+    $build['suggestions'] = array(
+      '#theme' => 'apachesolr_search_suggestions',
+      '#links' => array(l($suggestions[0], $search_page->search_path. '/' . $suggestions[0])),
+    );
+  }
+  // Retrieve expected results from searching
   if (!empty($results['apachesolr_search_browse'])) {
     // Show facet browsing blocks.
-    $output = apachesolr_search_page_browse($results['apachesolr_search_browse']);
+    $build['search_results'] = apachesolr_search_page_browse($results['apachesolr_search_browse']);
   }
   elseif ($results) {
-    $output = array(
+    $build['search_results'] = array(
       '#theme' => 'search_results',
       '#results' => $results,
       '#module' => 'apachesolr_search',
@@ -319,14 +328,7 @@ function apachesolr_search_search_page_custom($results, $search_page = null, $bu
   }
   else {
     // Give the user some custom help text.
-    $output = array('#markup' => theme('apachesolr_search_noresults'));
-  }
-  if (!empty($build)) {
-    $build['search_results'] = $output;
-  }
-  else {
-    $build = array();
-    $build['search_results'] = $output;
+    $build['search_results'] = array('#markup' => theme('apachesolr_search_noresults'));
   }
 
   // Allows modules to alter the render array before returning.
@@ -835,6 +837,38 @@ function apachesolr_search_process_response($response, DrupalSolrQueryInterface 
 }
 
 /**
+ * Retrieve all of the suggestions that were given after a certain search
+ * @return array()
+ */
+function apachesolr_search_get_search_suggestions() {
+  $suggestions_output = array();
+  if (apachesolr_has_searched()) {
+    $query = apachesolr_current_query();
+    $keyword = $query->getParam('q');
+    $searcher = $query->getSearcher();
+    $response = apachesolr_static_response_cache($searcher);
+    // Get spellchecker suggestions into an array.
+    if (!empty($response->spellcheck->suggestions)) {
+      $suggestions = get_object_vars($response->spellcheck->suggestions);
+      if ($suggestions) {
+        $replacements = array();
+        // Get the original query and retrieve all words with suggestions.
+        foreach ($suggestions as $word => $value) {
+          $replacements[$word] = $value->suggestion[0];
+        }
+        // Replace the keyword with the suggested keyword.
+        $suggested_keyword = strtr($keyword, $replacements);
+        // Show only if suggestion is different than current query.
+        if ($keyword != $suggested_keyword) {
+         $suggestions_output[] = $suggested_keyword;
+        }
+      }
+    }
+  }
+  return $suggestions_output;
+}
+
+/**
  * Implements hook_entity_info_alter().
  */
 function apachesolr_search_entity_info_alter(&$entity_info) {
@@ -940,7 +974,7 @@ function apachesolr_search_apachesolr_environment_delete($server) {
 /**
  * Implements hook_form_[form_id]_alter().
  *
- * This adds spelling suggestions, retain filters to the search form.
+ * This adds the retain filters to the search form.
  */
 function apachesolr_search_form_search_form_alter(&$form, $form_state) {
   if ($form['module']['#value'] == 'apachesolr_search') {
@@ -973,29 +1007,6 @@ function apachesolr_search_form_search_form_alter(&$form, $form_state) {
       );
     }
     $search_page = apachesolr_search_page_load('core_search');
-
-    if (!empty($search_page->settings['apachesolr_search_spellcheck']) && $apachesolr_has_searched && ($response = apachesolr_static_response_cache($searcher))) {
-      // Get spellchecker suggestions into an array.
-      if (isset($response->spellcheck->suggestions) && $response->spellcheck->suggestions) {
-        $suggestions = get_object_vars($response->spellcheck->suggestions);
-        if ($suggestions) {
-          // Get the original query and replace words.
-
-          foreach ($suggestions as $word => $value) {
-            $replacements[$word] = $value->suggestion[0];
-          }
-          $new_keywords = strtr($query->getParam('q'), $replacements);
-
-          // Show only if suggestion is different than current query.
-          if ($query->getParam('q') != $new_keywords) {
-            $form['apachesolr_search']['suggestion'] = array(
-              '#theme' => 'apachesolr_search_suggestions',
-              '#links' => array(l($new_keywords, $query->getPath($new_keywords))),
-            );
-          }
-        }
-      }
-    }
   }
 }
 
