@@ -4,6 +4,7 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+#1343646 by Nick_vh: Fixed Empty Search behavior is not working.
 #1301646 by Nick_vh: Fixed Coder Review + Drupal coding standard.
 #1097976 by Nick_vh, jpmckinney: Fixed Use ShowFileRequestHandler, gettableFiles is deprecated.
 #1342134 by Nick_vh: Fixed 'Creating default object from empty value" Notice in node access and indexing test.

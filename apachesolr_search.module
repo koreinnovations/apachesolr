@@ -339,24 +339,25 @@ function apachesolr_search_search_page_custom($results, $search_page = null, $bu
  * Executes search depending on the conditions given.
  * See apachesolr_search.pages.inc for another use of this function
  */
-function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $search_page) {
+function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $search_page = NULL) {
+  if (empty($search_page)) {
+    $search_page = apachesolr_search_page_load('core_search');
+  }
   // Check our parameters
   if (empty($conditions) || empty($search_page)) {
     apachesolr_failure(t('Solr search'), $keys);
   }
-
-  $filters = isset($conditions['fq']) ? $conditions['fq'] : array();
   // Sort options
-  $solrsort = isset($conditions['apachesolr_search_sort']) ? $conditions['apachesolr_search_sort'] : '';
+  $solrsort = isset($search_page->settings['apachesolr_search_sort']) ? $search_page->settings['apachesolr_search_sort'] : '';
   // What to do when we have an initial empty search
-  $empty_search_behavior = isset($conditions['apachesolr_search_browse']) ? $conditions['apachesolr_search_browse'] : '';
+  $empty_search_behavior = isset($search_page->settings['apachesolr_search_browse']) ? $search_page->settings['apachesolr_search_browse'] : '';
 
   $params = array();
   $results = array();
   try {
     $solr = apachesolr_get_solr($search_page->env_id);
     // Default parameters
-    $params['fq'] = $filters;
+    $params['fq'] = isset($conditions['fq']) ? $conditions['fq'] : array();
     $param['rows'] = $search_page->settings['apachesolr_search_per_page'];
 
     if (empty($search_page->settings['apachesolr_search_spellcheck'])) {
@@ -368,7 +369,7 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
     }
 
     // Empty text Behavior
-    if (!$keys && !$conditions && ($empty_search_behavior == 'browse' || $empty_search_behavior == 'blocks')) {
+    if (!$keys && ($empty_search_behavior == 'browse' || $empty_search_behavior == 'blocks')) {
       // Pass empty search behavior as string on to apachesolr_search_search_page()
       apachesolr_search_run_empty('apachesolr', $search_page->search_path);
       $results['apachesolr_search_browse'] = $empty_search_behavior;
@@ -379,7 +380,7 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
       }
     }
     // Full text behavior
-    elseif ($keys || !empty($conditions) || $empty_search_behavior == 'results') {
+    elseif ($keys || ($empty_search_behavior == 'results')) {
       $params['q'] = $keys;
       $results = apachesolr_search_run('apachesolr', $params, $solrsort, $search_page->search_path, pager_find_page(), $solr);
     }
