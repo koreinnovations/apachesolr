@@ -1,4 +1,12 @@
 <?php
+/**
+ * This class allows you to make operations on a query that will be sent to
+ * Apache Solr. methods such as adding and removing sorts, remove and replace
+ * parameters, adding and removing filters, getters and setters for various
+ * parameters and more
+ * @file
+ *   Class that defines the base query for the Apache Solr Drupal module.
+ */
 
 class SolrFilterSubQuery {
 

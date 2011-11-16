@@ -386,7 +386,7 @@ function apachesolr_search_page_settings_form_submit($form, &$form_state) {
   $settings = array();
   $settings['fq'] = array();
   if ($form_state['values']['filters']) {
-    foreach(explode(',', $form_state['values']['filters']) as $string) {
+    foreach (explode(',', $form_state['values']['filters']) as $string) {
       $string = trim($string);
       // Minimal validation.  ':' must exist and can't be the 1st char..
       if (strpos($string, ':')) {
@@ -450,7 +450,7 @@ function apachesolr_search_delete_search_page_confirm($form, &$form_state, $sear
   $return_path = 'admin/config/search/apachesolr/search-pages';
   $button_text = t('Delete page');
   if (!isset($search_page->settings['apachesolr_search_not_removable'])) {
-    return confirm_form($form, $message, $return_path, $caption, $button_text);
+    return confirm_form($form, filter_xss($message), $return_path, filter_xss($caption), check_plain($button_text));
   }
   else {
     // Maybe this should be solved somehow else
@@ -649,7 +649,7 @@ function apachesolr_search_settings_form($form, &$form_state, $fields, $env_id) 
           '#access' => $field->type == 'text',
           '#type' => 'select',
           '#options' => $weights,
-          '#title' => apachesolr_field_name_map($field_name),
+          '#title' => check_plain(apachesolr_field_name_map($field_name)),
           '#default_value' => isset($qf[$field_name]) ? $qf[$field_name] : '0',
         );
       }
@@ -660,7 +660,7 @@ function apachesolr_search_settings_form($form, &$form_state, $fields, $env_id) 
       $form['apachesolr_search_query_fields'][$field_name] = array(
         '#type' => 'select',
         '#options' => $weights,
-        '#title' => apachesolr_field_name_map($field_name),
+        '#title' => check_plain(apachesolr_field_name_map($field_name)),
         '#default_value' => isset($qf[$field_name]) ? $qf[$field_name] : $defaults[$field_name],
       );
     }

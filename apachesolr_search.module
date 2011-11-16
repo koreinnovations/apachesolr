@@ -36,7 +36,7 @@ function apachesolr_search_help($section) {
 function apachesolr_search_menu() {
   $items['admin/config/search/apachesolr/search-pages'] = array(
     'title'            => 'Search pages',
-    'description'      => t('Configure search pages.'),
+    'description'      => 'Configure search pages',
     'page callback'    => 'apachesolr_search_page_list_page',
     'access arguments' => array('administer search'),
     'type'             => MENU_LOCAL_TASK,

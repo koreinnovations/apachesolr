@@ -98,7 +98,7 @@ function apachesolr_environment_edit_form($form, &$form_state, $environment = NU
     '#title' => t('Make this Solr search environment the default'),
     '#default_value' => $is_default,
     '#disabled' => $is_default,
-    '#description' => $is_default ? t('Select this option for a different environment to make this one non-default.') : '',
+    '#description' => t('Set this environment as default one.'),
   );
   $form['name'] = array(
     '#type' => 'textfield',
@@ -554,11 +554,11 @@ function apachesolr_index_action_form() {
     // unique id for each radio button.
     $form['action'][$key] = array(
       '#type' => 'radio',
-      '#title' => $action['title'],
+      '#title' => check_plain($action['title']),
       '#default_value' => 'remaining',
       '#return_value' => $key,
       '#parents' => array('action'),
-      '#description' => $action['description'],
+      '#description' => check_plain($action['description']),
       '#id' => drupal_clean_css_identifier('edit-' . implode('-', array('action', $key))),
     );
   }
@@ -1078,5 +1078,5 @@ function apachesolr_batch_index_finished($success, $results, $operations) {
     $message .= ' ' . t('An error occurred while processing @num with arguments :', array('@num' => $error_operation[0])) . print_r($error_operation[0], TRUE);
     $type = 'error';
   }
-  drupal_set_message($message, $type);
+  drupal_set_message(check_plain($message), $type);
 }

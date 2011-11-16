@@ -1032,12 +1032,13 @@ function apachesolr_node_update($node, $set_message = TRUE) {
  * Call drupal_set_message() with the text.
  *
  * The text is translated with t() and substituted using Solr stats.
+ * TODO : This is not according to drupal code standards
  */
 function apachesolr_set_stats_message($text, $type = 'status', $repeat = FALSE) {
   try {
     $solr = apachesolr_get_solr();
     $stats_summary = $solr->getStatsSummary();
-    drupal_set_message(t($text, $stats_summary), $type, FALSE);
+    drupal_set_message(check_plain(t($text, $stats_summary)), $type, FALSE);
   }
   catch (Exception $e) {
     watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
@@ -1477,7 +1478,7 @@ function apachesolr_environment_clone($env_id) {
   $environments = apachesolr_load_all_environments();
   $new_env_id = apachesolr_environment_create_unique_id($environments, $environment);
   $environment['env_id'] = $new_env_id;
-  $environment['name'] = $environment['name'].' [cloned]';
+  $environment['name'] = $environment['name'] . ' [cloned]';
 
   // Remove any unexpected fields.
   // @todo - getthis from the schema?.
@@ -1515,7 +1516,7 @@ function apachesolr_environment_create_unique_id($environments, $original_enviro
     $cloned_env_int++;
     foreach ($environments as $environment) {
       // Check if our identifier already exists.
-      if ($original_environment['env_id'].'_'.$cloned_env_int == $environment['env_id']) {
+      if ($original_environment['env_id'] . '_' . $cloned_env_int == $environment['env_id']) {
         // This identifier already exists so increment the integer and try again
         $found = TRUE;
         break;
@@ -1523,7 +1524,7 @@ function apachesolr_environment_create_unique_id($environments, $original_enviro
     }
   } while ($found);
 
-  $new_env_id = $original_environment['env_id'].'_'.$cloned_env_int;
+  $new_env_id = $original_environment['env_id'] . '_' . $cloned_env_int;
   return $new_env_id;
 }
 
