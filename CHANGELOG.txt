@@ -4,7 +4,10 @@ Apache Solr Search Integration x.x-x.x, xxxx-xx-xx
 
 Apache Solr Search Integration 6.x-1.x, xxxx-xx-xx
 ------------------------------
-#1097976 by Nick_vh, jpmckinney: Fixed Use ShowFileRequestHandler, gettableFiles is deprecated.
+
+Apache Solr Search Integration 6.x-1.6, 2011-11-16
+------------------------------
+#1097976 by Nick_vhy: Fixed wt=xml from Solr 3.x compatibility when viewing admin files.
 #1309252 by kevin.dutra, lazysoundsystem | gateway69: Fixed Undefined Index: ts_vid_names() in Apache_Solr.
 #901376  by LiuShaz: insure UTF-8 encoding is used for POST searches.
 #1224748 by pwolanin, David Lesieur: fix nodeapi params.
