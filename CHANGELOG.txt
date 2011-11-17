@@ -4,6 +4,10 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
 ------------------------------
+
+Apache Solr integration 7.x-1.0-beta11, 2011-11-16
+------------------------------
+#1328886 by drasgardian, Nick_vh, pwolanin: fix for access module fails for realm names with spaces.
 #1340232 by milesw, Nick_vh: Added Did You Mean suggestions should be broken out from core search form.
 #1343646 by Nick_vh: Fixed Empty Search behavior is not working.
 #1301646 by Nick_vh: Fixed Coder Review + Drupal coding standard.
