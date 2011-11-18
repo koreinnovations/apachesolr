@@ -64,8 +64,7 @@ function apachesolr_install() {
   require_once(drupal_get_path('module', 'apachesolr') . '/apachesolr.admin.inc');
   apachesolr_mlt_save_block(array('name' => st('More like this')));
   db_insert('apachesolr_environment')->fields(array('env_id' => 'solr', 'name' => 'localhost server', 'url' => 'http://localhost:8983/solr'))->execute();
-  $message = st('Apache Solr is enabled. Visit the <a href="!settings_link">settings page</a>.', array('!settings_link' => url('admin/config/search/apachesolr')));
-  drupal_set_message(check_plain($message));
+  drupal_set_message(st('Apache Solr is enabled. Visit the <a href="@settings_link">settings page</a>.', array('@settings_link' => url('admin/config/search/apachesolr'))));
 }
 /**
  * Implements hook_enable().

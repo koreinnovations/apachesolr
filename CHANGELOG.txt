@@ -1,8 +1,9 @@
 
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1344570 by Nick_vh: Fixed When installing solr the 'visit the admin page" link is not working.
 
-Apache Solr integration 7.x-1.0-xxxx, 2011-xx-xx
+Apache Solr integration 7.x-1.0-beta11, 2011-11-17
 ------------------------------
 
 Apache Solr integration 7.x-1.0-beta11, 2011-11-16
