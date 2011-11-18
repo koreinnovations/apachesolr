@@ -1068,7 +1068,10 @@ function apachesolr_block_view($delta = '') {
     // Determine whether the user can view the current node. Probably not necessary.
     $block = apachesolr_mlt_load_block($delta);
     if ($block && node_access('view', $node)) {
-      $docs = apachesolr_mlt_suggestions($block, apachesolr_document_id($node->nid));
+      // Get our specific environment for the MLT block
+      $solr_id = (!empty($block['mlt_env_id'])) ? $block['mlt_env_id'] : '';
+      $solr = apachesolr_get_solr($solr_id);
+      $docs = apachesolr_mlt_suggestions($block, apachesolr_document_id($node->nid), $solr);
       if (!empty($docs)) {
         $suggestions['subject'] = check_plain($block['name']);
         $suggestions['content'] = theme('apachesolr_mlt_recommendation_block', array('docs' => $docs, 'delta' => $delta));
@@ -2209,6 +2212,8 @@ function apachesolr_settings_form_reset($form, &$form_state) {
  * @param $id
  *   The Solr ID of the document for which you want related content.
  *   For a node that is apachesolr_document_id($node->nid)
+ * @param $solr
+ *   The solr environment you want to query against
  *
  * @return An array of response documents, or NULL
  */

@@ -800,6 +800,19 @@ function apachesolr_mlt_block_form($delta = NULL) {
     '#default_value' => $block['name'],
     '#weight' => '-2',
   );
+
+  $environments = apachesolr_load_all_environments();
+  $options = array('' => t('<Disabled>'));
+  foreach ($environments as $id => $environment) {
+    $options[$id] = $environment['name'];
+  }
+  $form['mlt_env_id'] = array(
+    '#title' => t('Search environment'),
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => 'solr',
+  );
+
   $form['num_results'] = array(
     '#type' => 'select',
     '#title' => t('Maximum number of related items to display'),
@@ -910,6 +923,7 @@ function apachesolr_mlt_block_defaults($block = array()) {
       'label' => 'label',
       'taxonomy_names' => 'taxonomy_names',
     ),
+    'mlt_env_id' => 'solr',
     'mlt_mintf' => '1',
     'mlt_mindf' => '1',
     'mlt_minwl' => '3',
