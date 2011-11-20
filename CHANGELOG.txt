@@ -1,6 +1,7 @@
 
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1347092 by Nick_vh | cfuller12: Fixed Solrsort appears to be broken in beta11.
 #1344576 by Nick_vh: Fixed More like this should be environment dependent.
 #1344570 by Nick_vh: Fixed When installing solr the 'visit the admin page" link is not working.
 
