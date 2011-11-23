@@ -643,6 +643,9 @@
     </lst>
   </requestHandler>
 
+  <!-- System info -->
+  <requestHandler name="/admin/system" class="org.apache.solr.handler.admin.SystemInfoHandler" />
+
   <!-- Files that are needed to start the service -->
   <requestHandler name="/admin/file" class="org.apache.solr.handler.admin.ShowFileRequestHandler" >
     <lst name="invariants">
