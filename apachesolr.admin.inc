@@ -6,16 +6,10 @@
  */
 
 /**
- * Form builder for adding/editing a Solr environment used as a menu callback.
+ * Form to delete a search environment
+ * @param $environment
+ *   The environment to delete
  */
-function apachesolr_environment_delete_page($environment) {
-  $is_default = $environment['env_id'] == apachesolr_default_environment();
-  if ($is_default) {
-    return MENU_ACCESS_DENIED;
-  }
-  return drupal_get_form('apachesolr_environment_delete_form', $environment);
-}
-
 function apachesolr_environment_delete_form($form, &$form_state, $environment) {
   $form['env_id'] = array(
     '#type' => 'value',
@@ -39,14 +33,26 @@ function apachesolr_environment_delete_form_submit($form, &$form_state) {
 }
 
 function apachesolr_environment_delete_submit($form, &$form_state) {
-  $form_state['redirect'] = 'admin/config/search/apachesolr/apachesolr-env/' . $form_state['values']['env_id'] . '/delete';
+  $form_state['redirect'] = 'admin/config/search/apachesolr/settings/' . $form_state['values']['env_id'] . '/delete';
 }
 
-/**
- * Form builder for adding/editing a Solr environment used as a menu callback.
- */
-function apachesolr_environment_clone_page($environment) {
-  return drupal_get_form('apachesolr_environment_clone_form', $environment);
+function apachesolr_environment_settings_page($environment = NULL) {
+  if (empty($environment)) {
+    $env_id = apachesolr_default_environment();
+    $environment = apachesolr_environment_load($env_id);
+  }
+  $env_id = $environment['env_id'];
+
+ // Initializes output with information about which environment's setting we are
+  // editing, as it is otherwise not transparent to the end user.
+  $output = array(
+    'apachesolr_environment' => array(
+      '#theme' => 'apachesolr_settings_title',
+      '#env_id' => $env_id,
+    ),
+  );
+  $output['form'] = drupal_get_form('apachesolr_environment_edit_form', $environment);
+  return $output;
 }
 
 function apachesolr_environment_clone_form($form, &$form_state, $environment) {
@@ -72,14 +78,13 @@ function apachesolr_environment_clone_form_submit($form, &$form_state) {
 }
 
 function apachesolr_environment_clone_submit($form, &$form_state) {
-  $form_state['redirect'] = 'admin/config/search/apachesolr/apachesolr-env/' . $form_state['values']['env_id'] . '/clone';
+  $form_state['redirect'] = 'admin/config/search/apachesolr/settings/' . $form_state['values']['env_id'] . '/clone';
 }
 
 /**
  * Form builder for adding/editing a Solr environment used as a menu callback.
  */
 function apachesolr_environment_edit_form($form, &$form_state, $environment = NULL) {
-
   if (empty($environment)) {
     $environment = array();
   }
@@ -89,7 +94,7 @@ function apachesolr_environment_edit_form($form, &$form_state, $environment = NU
     '#type' => 'textfield',
     '#title' => t('Solr server URL'),
     '#default_value' => $environment['url'],
-    '#description' => t('URL that identifies the Solr server and request path to be used. E.g. http://localhost:8983/solr'),
+    '#description' => t('Example: http://localhost:8983/solr'),
     '#required' => TRUE,
   );
   $is_default = $environment['env_id'] == apachesolr_default_environment();
@@ -98,13 +103,11 @@ function apachesolr_environment_edit_form($form, &$form_state, $environment = NU
     '#title' => t('Make this Solr search environment the default'),
     '#default_value' => $is_default,
     '#disabled' => $is_default,
-    '#description' => t('Set this environment as default one.'),
   );
   $form['name'] = array(
     '#type' => 'textfield',
     '#title' => t('Description'),
     '#default_value' => $environment['name'],
-    '#description' => t('Short description of your Solr search environment.'),
     '#required' => TRUE,
   );
   $form['env_id'] = array(
@@ -212,58 +215,117 @@ function apachesolr_environment_save_submit($form, &$form_state) {
 }
 
 /**
+ * Check to see if the facetapi module is installed, and if not put up
+ * a message.
+ *
+ * Only call this function if the user is already in a position for this to
+ * be useful.
+ */
+function apachesolr_check_facetapi() {
+  if (!module_exists('facetapi')) {
+    $filename = db_query_range("SELECT filename FROM {system} WHERE type = 'module' AND name = 'facetapi'", 0, 1)
+      ->fetchField();
+    if ($filename && file_exists($filename)) {
+      drupal_set_message(t('If you <a href="@modules">enable the facetapi module</a>, Apache Solr Search will provide you with configurable facets.', array('@modules' => url('admin/modules'))));
+    }
+    else {
+      drupal_set_message(t('If you install the facetapi module from !href, Apache Solr Search will provide you with configurable facets.', array('!href' => l('http://drupal.org/project/facetapi', 'http://drupal.org/project/facetapi'))));
+    }
+  }
+}
+
+/**
  * Form builder for general settings used as a menu callback.
  */
 function apachesolr_settings($form, &$form_state) {
   $form = array();
+  $rows = array();
 
   // Environment settings
-  $form['apachesolr_host_settings'] = array(
-    '#title' => t('Solr search environments'),
-    '#type' => 'fieldset',
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-  );
-
   $id = apachesolr_default_environment();
   $environments = apachesolr_load_all_environments();
   $default_environment = apachesolr_default_environment();
+  apachesolr_check_facetapi();
 
-  $rows = array();
   // Reserve a row for the default one
   $rows[$default_environment] = array();
-  $headers = array(
-    array('data' => t('Name'), 'colspan' => 2),
-    t('URL'),
-    array('data' => t('Operations'), 'colspan' => 3),
-  );
 
   foreach ($environments as $environment_id => $data) {
-    $clone_link = array(
-      'class' => 'operation',
-      'data' => l(t('clone'), 'admin/config/search/apachesolr-env/' . $data['env_id'] . '/clone'),
-    );
-    $delete_link = array(
-      'class' => 'operation',
-      'data' => l(t('delete'), 'admin/config/search/apachesolr-env/' . $data['env_id'] . '/delete'),
-    );
+    // Define all the Operations
+    $confs = array();
+    $ops = array();
 
+    $confs['index'] = array(
+      'class' => 'operation',
+      'data' => l(t('Index'),
+        'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/index',
+         array('query' => array('destination' => $_GET['q']))
+      ),
+    );
+    // Whenever facetapi is enabled we also enable our operation link
+    if (module_exists('facetapi')) {
+      $confs['facets'] = array(
+        'class' => 'operation',
+        'data' => l(t('Facets'),
+          'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/facets',
+          array('query' => array('destination' => $_GET['q']))
+        ),
+     );
+    }
+    // These are our result and bias settings
+    if (module_exists('apachesolr_search')) {
+      $confs['result_bias'] = array(
+        'class' => 'operation',
+        'data' => l(t('Bias'),
+          'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/bias',
+          array('query' => array('destination' => $_GET['q']))
+        ),
+      );
+    }
+
+    $ops['edit'] = array(
+      'class' => 'operation',
+      'data' => l(t('Edit'),
+        'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/edit',
+         array('query' => array('destination' => $_GET['q']))
+      ),
+    );
+    $ops['clone'] = array(
+      'class' => 'operation',
+      'data' => l(t('Clone'),
+        'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/clone',
+        array('query' => array('destination' => $_GET['q']))
+      ),
+    );
+    // Is this row our default environment?
     if ($environment_id == $default_environment) {
       $env_name = t('@environment <em>(Default)</em>', array('@environment' => $data['name']));
       $env_class_row = 'default-environment';
-      $delete_link = '';
+      $ops['delete'] = '';
     }
     else {
       $env_name = check_plain($data['name']);
       $env_class_row = '';
+      // For every non-default we add a delete link
+      $ops['delete'] = array(
+        'class' => 'operation',
+        'data' => l(t('Delete'), 'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/delete'),
+      );
     }
 
+    // When we are receiving a http POST (so the page does not show) we do not
+    // want to check the statusses of any environment
     $class = '';
-    // When we do are receiving a post (so the page does not show) we do not want
-    // to check the statusses
     if (empty($form_state['input'])) {
       $class = apachesolr_server_status($data['url']) ? 'ok' : 'error';
     }
+
+    $headers = array(
+      array('data' => t('Name'), 'colspan' => 2),
+      t('URL'),
+      array('data' => t('Configuration'), 'colspan' => count($confs)),
+      array('data' => t('Operations'), 'colspan' => count($ops)),
+    );
 
     $rows[$environment_id] = array('data' =>
       array(
@@ -277,23 +339,13 @@ function apachesolr_settings($form, &$form_state) {
           'data' => $env_name,
         ),
         check_plain($data['url']),
-        array(
-          'class' => 'operation',
-          'data' => l(t('edit'),
-          'admin/config/search/apachesolr-env/' . $data['env_id'],
-          array('query' => array('destination' => $_GET['q']))),
-        ),
-        $clone_link,
-        $delete_link,
       ),
       'class' => array(drupal_html_class($class)),
     );
+    // Add the links to the page
+    $rows[$environment_id]['data'] = array_merge($rows[$environment_id]['data'], $confs);
+    $rows[$environment_id]['data'] = array_merge($rows[$environment_id]['data'], $ops);
   }
-
-  $actions[] = array(
-    '#theme' => 'menu_local_action',
-    '#link' => array('title' => t('Add new search environment'), 'href' => 'admin/config/search/apachesolr-env/add', 'options' => array()),
-  );
 
   $form['apachesolr_host_settings']['actions'] = array(
     '#markup' => '<ul class="action-links">' . drupal_render($actions) . '</ul>',
@@ -336,6 +388,7 @@ function apachesolr_settings($form, &$form_state) {
   $form['advanced']['apachesolr_set_nodeapi_messages'] = array(
     '#type' => 'radios',
     '#title' => t('Extra help messages for administrators'),
+    '#description' => t('Adds notices to a page whenever Drupal changed content that needs reindexing'),
     '#default_value' => variable_get('apachesolr_set_nodeapi_messages', 1),
     '#options' => array(0 => t('Disabled'), 1 => t('Enabled')),
   );
@@ -354,7 +407,7 @@ function apachesolr_settings($form, &$form_state) {
     '#title' => t('Number of items to index per cron run'),
     '#default_value' => $default_cron_limit,
     '#options' => $numbers,
-    '#description' => t('The maximum number of items indexed in each pass of a <a href="@cron">cron maintenance task</a>. If necessary, reduce the number of items to prevent timeouts and memory errors while indexing.', array('@cron' => url('admin/reports/status')))
+    '#description' => t('Reduce the number of items to prevent timeouts and memory errors while indexing.', array('@cron' => url('admin/reports/status')))
   );
 
   $options = array('apachesolr:show_error' => t('Show error message'));
@@ -373,7 +426,6 @@ function apachesolr_settings($form, &$form_state) {
     '#title' => t('On failure'),
     '#options' => $options,
     '#default_value' => variable_get('apachesolr_failure', 'apachesolr:show_error'),
-    '#description' => t('What to display if Apache Solr search is not available.'),
   );
 
   return system_settings_form($form);
@@ -382,9 +434,24 @@ function apachesolr_settings($form, &$form_state) {
 /**
  * Gets information about the fields already in solr index.
  */
-function apachesolr_index_page($env_id = NULL) {
+function apachesolr_index_page($environment = NULL) {
+
+  if (empty($environment)) {
+    $env_id = apachesolr_default_environment();
+    $environment = apachesolr_environment_load($env_id);
+  }
+  else {
+    $env_id = $environment['env_id'];
+  }
+
+  // Check for availability
+  if (!apachesolr_server_status($environment['url'])) {
+    drupal_set_message(t('The server seems to be unavailable. Please verify the server settings at the <a href="!settings_page">settings page</a>', array('!settings_page' => url('admin/config/search/apachesolr/settings/' . $environment['env_id'], array('query' =>  drupal_get_destination())))), 'warning');
+    return '';
+  }
+
   try {
-    $solr = apachesolr_get_solr($env_id);
+    $solr = apachesolr_get_solr($environment["env_id"]);
     // TODO: possibly clear this every page view if we are running multi-site.
     if (apachesolr_index_get_last_updated()) {
       $solr->clearCache();
@@ -396,10 +463,6 @@ function apachesolr_index_page($env_id = NULL) {
     drupal_set_message(nl2br(check_plain($e->getMessage())), "warning");
     $data = new stdClass;
     $data->fields = array();
-  }
-
-  if (empty($env_id)) {
-    $env_id = apachesolr_default_environment();
   }
 
   // Initializes output with information about which server's setting we are
@@ -438,18 +501,21 @@ function apachesolr_index_page($env_id = NULL) {
   }
   $status_header .= '<p>' . l(t('View more details on the search index contents'), 'admin/reports/apachesolr') . "</p>\n";
   $output['apachesolr_index_action_status_header'] = array('#markup' => $status_header);
-  if (apachesolr_environment_variable_get($env_id, 'apachesolr_read_only', APACHESOLR_READ_WRITE) == APACHESOLR_READ_WRITE) {
+  $write_status = apachesolr_environment_variable_get($env_id, 'apachesolr_read_only', APACHESOLR_READ_WRITE);
+  $default_env_id = apachesolr_default_environment();
+  if (($write_status == APACHESOLR_READ_WRITE) && ($env_id == $default_env_id)) {
     // Display the Delete Index form.
     $output['apachesolr_index_action_form'] = drupal_get_form('apachesolr_index_action_form');
   }
   else {
-    drupal_set_message(t('The index is in read-only mode. Options for deleting and re-indexing are therefore not available. The index mode can be changed on the <a href="!settings_page">settings page</a>', array('!settings_page' => url('admin/config/search/apachesolr-env/' . $env_id, array('query' =>  drupal_get_destination())))), 'warning');
+    drupal_set_message(t('Options for deleting and re-indexing are not available. This could be because the index is read-only or you are not viewing the default environment. This can be changed on the <a href="!settings_page">settings page</a>', array('!settings_page' => url('admin/config/search/apachesolr/settings/' . $env_id, array('query' =>  drupal_get_destination())))), 'warning');
   }
 
   return $output;
 }
 
 function apachesolr_index_report($env_id = NULL) {
+
   if (empty($env_id)) {
     $env_id = apachesolr_default_environment();
   }

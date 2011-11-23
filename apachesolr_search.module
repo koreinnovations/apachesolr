@@ -35,7 +35,7 @@ function apachesolr_search_help($section) {
  */
 function apachesolr_search_menu() {
   $items['admin/config/search/apachesolr/search-pages'] = array(
-    'title'            => 'Search pages',
+    'title'            => 'Pages',
     'description'      => 'Configure search pages',
     'page callback'    => 'apachesolr_search_page_list_page',
     'access arguments' => array('administer search'),
@@ -59,25 +59,20 @@ function apachesolr_search_menu() {
   );
   $items['admin/config/search/apachesolr/search-pages/%apachesolr_search_page/delete'] = array(
     'title'            => 'Delete search page configuration',
-    'load arguments'   => array('apachesolr_search_page'),
     'page callback'    => 'drupal_get_form',
     'page arguments'   => array('apachesolr_search_delete_search_page_confirm', 5),
     'access arguments' => array('administer search'),
     'file'             => 'apachesolr_search.admin.inc',
   );
-  $items['admin/config/search/apachesolr/query-fields'] = array(
-    'title'            => 'Search fields',
-    'page callback'    => 'apachesolr_search_settings_page',
+
+  // Environment specific settings
+  $settings_path = 'admin/config/search/apachesolr/settings/';
+  $items[$settings_path . '%apachesolr_environment/bias'] = array(
+    'title'            => 'Bias',
+    'page callback'    => 'apachesolr_bias_settings_page',
+    'page arguments'   => array(5),
     'access arguments' => array('administer search'),
-    'weight'           => 1,
-    'type'             => MENU_LOCAL_TASK,
-    'file'             => 'apachesolr_search.admin.inc',
-  );
-  $items['admin/config/search/apachesolr/content-bias'] = array(
-    'title'            => 'Content bias',
-    'page callback'    => 'apachesolr_boost_settings_page',
-    'access arguments' => array('administer search'),
-    'weight'           => 1,
+    'weight'           => 4,
     'type'             => MENU_LOCAL_TASK,
     'file'             => 'apachesolr_search.admin.inc',
   );

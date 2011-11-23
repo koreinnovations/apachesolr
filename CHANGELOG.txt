@@ -1,6 +1,7 @@
 
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1292364 by Nick_vh, scor: Added UI redesign.
 #1336324 by Nick_vh | tinker: Added Get Solr version number to determine feature sets like facet ranges and location search.
 #1347092 by Nick_vh | cfuller12: Fixed Solrsort appears to be broken in beta11.
 #1344576 by Nick_vh: Fixed More like this should be environment dependent.

@@ -11,11 +11,11 @@
 function _apachesolr_search_browse_form($default_value) {
   $description = t('This is what is shown when the user enters an empty search, or removes all filters from an active search.') . ' ';
   if (!module_exists('facetapi')) {
-    $description .= t('<strong>Filters will not be shown until you enable Facet API module.</strong>');
+    $description .= t('<strong>Facets will not be shown until you enable Facet API module.</strong>');
   }
   else {
-    $description .= t('Remember to enable filters on the <a href="!filterslink">enabled filters page</a> and assign blocks to regions on the <a href="!blocklink">block settings page</a>', array(
-      '!filterslink' => url('admin/config/search/apachesolr/facets'),
+    $description .= t('Remember to configure the facets on the <a href="!facetslink">search environment page</a> and assign blocks to regions on the <a href="!blocklink">block settings page</a>', array(
+      '!facetslink' => url('admin/config/search/apachesolr/settings/'),
       '!blocklink' => url('admin/structure/block'),
     ));
   }
@@ -24,9 +24,9 @@ function _apachesolr_search_browse_form($default_value) {
     '#title' => t('Behavior on empty search'),
     '#options' => array(
       'none' => t("Show search box"),
-      'browse'  => t("Show enabled filters' blocks under the search box"),
-      'blocks'  => t("Show enabled filters' blocks in their configured regions"),
-      'results' => t("Show enabled filters' blocks in their configured regions and first page of all available results"),
+      'browse'  => t("Show enabled facets' blocks under the search box"),
+      'blocks'  => t("Show enabled facets' blocks in their configured regions"),
+      'results' => t("Show enabled facets' blocks in their configured regions and first page of all available results"),
     ),
     '#default_value' => $default_value,
     '#description' => $description,
@@ -60,16 +60,13 @@ function apachesolr_search_page_list_page() {
 
   foreach ($query->execute() as $record) {
     $row = array();
-
     $label = check_plain($record->label);
     if ($record->page_id == 'core_search') {
       $label .= ' ' . t('<em>(integrates with core <a href="!search_admin">Search module</a>)</em>', array('!search_admin' => url('admin/config/search/settings')));
       // Special case - always uses the default environment.
       $record->env_id = apachesolr_default_environment();
     }
-
     $row[] = $label;
-
     $row[] = array(
       'data' => array(
         '#type' => 'link',
@@ -80,17 +77,19 @@ function apachesolr_search_page_list_page() {
 
     $environment = apachesolr_environment_load($record->env_id);
     $row[] = $environment ? check_plain($environment['name']) : check_plain(t('<Disabled>'));
-
     $settings = unserialize($record->settings);
     // Operations
-    $row[] = array('data' => l(t('Edit'), 'admin/config/search/apachesolr/search-pages/' . $record->page_id . '/edit'));
+    $row[] = array(
+      'data' => l(t('Edit'), 'admin/config/search/apachesolr/search-pages/' . $record->page_id . '/edit'),
+    );
     if (!isset($settings['apachesolr_search_not_removable'])) {
-      $row[] = array('data' => l(t('Delete'), 'admin/config/search/apachesolr/search-pages/' . $record->page_id . '/delete'));
+      $row[] = array(
+        'data' => l(t('Delete'), 'admin/config/search/apachesolr/search-pages/' . $record->page_id . '/delete'),
+      );
     }
     else {
       $row[] = '';
     }
-
     $rows[$record->page_id] = $row;
   }
 
@@ -486,38 +485,36 @@ function apachesolr_search_delete_search_page_confirm_submit($form, &$form_state
 /**
  * Menu callback - the settings form.
  */
-function apachesolr_search_settings_page($env_id = NULL) {
-  if (empty($env_id)) {
+function apachesolr_search_get_fields($environment = NULL) {
+  if (empty($environment)) {
     $env_id = apachesolr_default_environment();
+    $environment = apachesolr_environment_load($env_id);
   }
+  $env_id = $environment['env_id'];
 
   // Try to fetch the schema fields.
   try {
     $solr = apachesolr_get_solr($env_id);
     $fields = $solr->getFields();
-    $output = array(
-      'apachesolr_environment' => array(
-        '#theme' => 'apachesolr_settings_title',
-        '#env_id' => $env_id,
-      ),
-      'apachesolr_search_settings_form' => drupal_get_form('apachesolr_search_settings_form', $fields, $env_id)
-    );
+    return $fields;
   }
   catch (Exception $e) {
     watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
     drupal_set_message(nl2br(check_plain($e->getMessage())), 'warning');
-    $output = t('Cannot get information about the fields in the index at this time.');
+    $message = t('Cannot get information about the fields in the index.');
+    drupal_set_message($message, 'warning');
   }
-  return $output;
 }
 
 /**
- * Menu callback - boosts settings form.
+ * Menu callback - Bias settings form.
  */
-function apachesolr_boost_settings_page($env_id = NULL) {
-  if (empty($env_id)) {
+function apachesolr_bias_settings_page($environment = NULL) {
+  if (empty($environment)) {
     $env_id = apachesolr_default_environment();
+    $environment = apachesolr_environment_load($env_id);
   }
+  $env_id = $environment['env_id'];
 
   // Initializes output with information about which environment's setting we are
   // editing, as it is otherwise not transparent to the end user.
@@ -529,8 +526,10 @@ function apachesolr_boost_settings_page($env_id = NULL) {
   );
 
   // Adds content bias and type boost / exclusion forms.
+  $fields = apachesolr_search_get_fields($environment);
   $output['apachesolr_search_bias_form'] = drupal_get_form('apachesolr_search_bias_form', $env_id);
   $output['apachesolr_search_type_boost_form'] = drupal_get_form('apachesolr_search_type_boost_form', $env_id);
+  $output['apachesolr_search_field_bias_settings_form'] = drupal_get_form('apachesolr_search_field_bias_settings_form', $fields, $env_id);
   return $output;
 }
 
@@ -611,7 +610,7 @@ function apachesolr_search_bias_form($form, &$form_state, $env_id) {
 /**
  * Form builder function to set query field weights.
  */
-function apachesolr_search_settings_form($form, &$form_state, $fields, $env_id) {
+function apachesolr_search_field_bias_settings_form($form, &$form_state, $fields, $env_id) {
   // get the current weights
   $defaults = array(
     'content' => '1.0',
@@ -645,15 +644,17 @@ function apachesolr_search_settings_form($form, &$form_state, $fields, $env_id) 
       // Only indexed feids are searchable.
       if ($field->schema{0} == 'I') {
         // By default we only show text fields.  Use hook_form_alter to change.
+        // We use filter_xss to make sure links are allowed
         $form['apachesolr_search_query_fields'][$field_name] = array(
           '#access' => $field->type == 'text',
           '#type' => 'select',
           '#options' => $weights,
-          '#title' => check_plain(apachesolr_field_name_map($field_name)),
+          '#title' => filter_xss(apachesolr_field_name_map($field_name)),
           '#default_value' => isset($qf[$field_name]) ? $qf[$field_name] : '0',
         );
       }
     }
+
     // Make sure all the default fields are included, even if they have
     // no indexed content.
     foreach ($defaults as $field_name => $weight) {
