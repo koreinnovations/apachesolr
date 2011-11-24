@@ -356,7 +356,7 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
     $solr = apachesolr_get_solr($search_page->env_id);
     // Default parameters
     $params['fq'] = isset($conditions['fq']) ? $conditions['fq'] : array();
-    $param['rows'] = $search_page->settings['apachesolr_search_per_page'];
+    $params['rows'] = $search_page->settings['apachesolr_search_per_page'];
 
     if (empty($search_page->settings['apachesolr_search_spellcheck'])) {
       // Spellcheck needs to have a string as false/true
