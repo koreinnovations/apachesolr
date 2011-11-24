@@ -38,60 +38,54 @@ function _apachesolr_search_browse_form($default_value) {
  */
 function apachesolr_search_page_list_page() {
   $build = array();
+  $rows = array();
+  $rows['core_search'] = array();
 
   // Build the sortable table header.
   $header = array(
     'label' => array('data' => t('Name'), 'field' => 's.label'),
     'path' => array('data' => t('Path'), 'field' => 's.search_path'),
     'environment' => array('data' => t('Search environment')),
-    'operations' => array('data' => t('Operations'), 'colspan' => '2'),
+    'operations' => array('data' => t('Operations')),
   );
 
-  // Initializes the search page query.
-  $query = db_select('apachesolr_search_page', 's')
-    ->fields('s', array('label', 'page_id', 'page_title', 'env_id', 'description', 'search_path', 'settings'))
-    ->extend('PagerDefault')
-    ->extend('TableSort')
-    ->limit(20)
-    ->orderByHeader($header);
-
-  $rows = array();
-  $rows['core_search'] = array();
-
-  foreach ($query->execute() as $record) {
+  $search_pages = apachesolr_search_load_all_search_pages();
+  foreach ($search_pages as $search_page) {
     $row = array();
-    $label = check_plain($record->label);
-    if ($record->page_id == 'core_search') {
+
+    // Add the label
+    $label = check_plain($search_page['label']);
+    if ($search_page['page_id'] == 'core_search') {
       $label .= ' ' . t('<em>(integrates with core <a href="!search_admin">Search module</a>)</em>', array('!search_admin' => url('admin/config/search/settings')));
-      // Special case - always uses the default environment.
-      $record->env_id = apachesolr_default_environment();
     }
     $row[] = $label;
+    // Add the link
     $row[] = array(
       'data' => array(
         '#type' => 'link',
-        '#title' => $record->search_path,
-        '#href' => $record->search_path,
+        '#title' => $search_page['search_path'],
+        '#href' => $search_page['search_path'],
       ),
     );
 
-    $environment = apachesolr_environment_load($record->env_id);
+    // Add the search environment
+    $environment = apachesolr_environment_load($search_page['env_id']);
     $row[] = $environment ? check_plain($environment['name']) : check_plain(t('<Disabled>'));
-    $settings = unserialize($record->settings);
     // Operations
-    $row[] = array(
-      'data' => l(t('Edit'), 'admin/config/search/apachesolr/search-pages/' . $record->page_id . '/edit'),
-    );
+    $row[] = array('data' => l(t('Edit'), 'admin/config/search/apachesolr/search-pages/' . $search_page['page_id'] . '/edit'));
+    $row[] = array('data' => l(t('Clone'), 'admin/config/search/apachesolr/search-pages/' . $search_page['page_id'] . '/clone'));
+    $settings = unserialize($search_page['settings']);
     if (!isset($settings['apachesolr_search_not_removable'])) {
-      $row[] = array(
-        'data' => l(t('Delete'), 'admin/config/search/apachesolr/search-pages/' . $record->page_id . '/delete'),
-      );
+      $row[] = array('data' => l(t('Delete'), 'admin/config/search/apachesolr/search-pages/' . $search_page['page_id'] . '/delete'));
     }
     else {
       $row[] = '';
     }
-    $rows[$record->page_id] = $row;
+    $rows[$search_page['page_id']] = $row;
   }
+
+  // Automatically enlarge our header with the operations size
+  $header['operations']['colspan'] = count(reset($rows)) - 3;
 
   $build['list'] = array(
     '#theme' => 'table',
@@ -179,7 +173,7 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
   );
 
   $core_search = FALSE;
-  if(!empty($search_page->page_id) && ($search_page->page_id == 'core_search')) {
+  if (!empty($search_page->page_id) && ($search_page->page_id == 'core_search')) {
     $core_search = TRUE;
   }
   if ($core_search) {
@@ -481,6 +475,35 @@ function apachesolr_search_delete_search_page_confirm_submit($form, &$form_state
   $form_state['redirect'] = 'admin/config/search/apachesolr/search-pages';
 }
 
+/**
+ * Clones a single search page configuration
+ * @param $search_page
+ *   The search page that needs to be cloned
+ */
+function apachesolr_search_clone_search_page_confirm($form, &$form_state, $search_page) {
+  $form['page_id'] = array(
+    '#type' => 'value',
+    '#value' => $search_page->page_id,
+  );
+  return confirm_form(
+    $form,
+    t('Are you sure you want to clone search page %name?', array('%name' => $search_page->label)),
+    'admin/config/search/apachesolr',
+    '',
+    t('Clone'),
+    t('Cancel')
+  );
+}
+
+/**
+ * Submits the confirmations of the cloning of a search page
+ */
+function apachesolr_search_clone_search_page_confirm_submit($form, &$form_state) {
+  if (apachesolr_search_page_clone($form_state['values']['page_id'])) {
+    drupal_set_message(t('The search page was cloned'));
+  }
+  $form_state['redirect'] = 'admin/config/search/apachesolr/search-pages';
+}
 
 /**
  * Menu callback - the settings form.

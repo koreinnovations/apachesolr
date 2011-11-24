@@ -64,6 +64,13 @@ function apachesolr_search_menu() {
     'access arguments' => array('administer search'),
     'file'             => 'apachesolr_search.admin.inc',
   );
+  $items['admin/config/search/apachesolr/search-pages/%apachesolr_search_page/clone'] = array(
+    'title' => 'Clone search page configuration',
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('apachesolr_search_clone_search_page_confirm', 5),
+    'access arguments' => array('administer search'),
+    'file'             => 'apachesolr_search.admin.inc',
+  );
 
   // Environment specific settings
   $settings_path = 'admin/config/search/apachesolr/settings/';
@@ -197,6 +204,41 @@ function apachesolr_search_page_save($search_page) {
       ))
       ->execute();
   }
+}
+
+ /**
+ * Function that clones a search page
+ *
+ * @param $page_id
+ *   The page identifier it needs to clone.
+ *
+ */
+function apachesolr_search_page_clone($page_id) {
+  $search_page = apachesolr_search_page_load($page_id);
+  // Get all search_pages
+  $search_pages = apachesolr_search_load_all_search_pages();
+  // Create an unique ID
+  $new_search_page_id = apachesolr_create_unique_id($search_pages, $search_page->page_id);
+  // Set this id to the new search page
+  $search_page->page_id = $new_search_page_id;
+  $search_page->label = $search_page->label . ' [cloned]';
+  // All cloned search pages should be removable
+  if (isset($search_page->settings['apachesolr_search_not_removable'])) {
+    unset($search_page->settings['apachesolr_search_not_removable']);
+  }
+  // Save our new search page in the database
+  apachesolr_search_page_save($search_page);
+}
+
+/**
+ * Return all the saved search pages
+ * @return array $search_pages
+ *   Array of all search pages
+ */
+function apachesolr_search_load_all_search_pages() {
+  // Get all search_pages and their id
+  $search_pages = db_query('SELECT * FROM {apachesolr_search_page}')->fetchAllAssoc('page_id', PDO::FETCH_ASSOC);
+  return $search_pages;
 }
 
 /**

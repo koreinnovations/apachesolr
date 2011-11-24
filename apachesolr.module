@@ -291,7 +291,7 @@ function apachesolr_facetapi_facet_info($searcher_info) {
     $environment = apachesolr_environment_load($searcher_info['instance']);
 
     if (!empty($environment['conf']['facet callbacks'])) {
-      foreach($environment['conf']['facet callbacks'] as $callback) {
+      foreach ($environment['conf']['facet callbacks'] as $callback) {
         if (is_callable($callback)) {
           $facets = array_merge($facets, call_user_func($callback, $searcher_info));
         }
@@ -1446,7 +1446,12 @@ function apachesolr_environment_load($env_id) {
 }
 
 /**
- * Access permission callback for deleting the environment
+ * Access callback for the delete page of an environment.
+ *
+ * @param $permission
+ *   The permission that you allow access to
+ * @param $environment
+ *   The environment you want to delete. Core environment cannot be deleted
  */
 function apachesolr_environment_delete_page_access($permission, $environment) {
   $is_default = $environment['env_id'] == apachesolr_default_environment();
@@ -1496,7 +1501,7 @@ function apachesolr_environment_clone($env_id) {
 
   //get all environments
   $environments = apachesolr_load_all_environments();
-  $new_env_id = apachesolr_environment_create_unique_id($environments, $environment);
+  $new_env_id = apachesolr_create_unique_id($environments, $env_id);
   $environment['env_id'] = $new_env_id;
   $environment['name'] = $environment['name'] . ' [cloned]';
 
@@ -1529,23 +1534,14 @@ function apachesolr_environment_clone($env_id) {
  * @return
  *   The new environment ID
  */
-function apachesolr_environment_create_unique_id($environments, $original_environment) {
+function apachesolr_create_unique_id($existing, $id) {
+  $count = 0;
   $cloned_env_int = 0;
   do {
-    $found = FALSE;
-    $cloned_env_int++;
-    foreach ($environments as $environment) {
-      // Check if our identifier already exists.
-      if ($original_environment['env_id'] . '_' . $cloned_env_int == $environment['env_id']) {
-        // This identifier already exists so increment the integer and try again
-        $found = TRUE;
-        break;
-      }
-    }
-  } while ($found);
-
-  $new_env_id = $original_environment['env_id'] . '_' . $cloned_env_int;
-  return $new_env_id;
+    $new_id = $id . '_' . $count;
+    $count++;
+  } while (isset($existing[$new_id]));
+  return $new_id;
 }
 
 /**
