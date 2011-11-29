@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<config name="drupal-3.0-beta9">
+<config name="drupal-3.0-beta11">
 
   <!-- Set this to 'false' if you want solr to continue working after it has
        encountered an severe configuration error.  In a production environment,
@@ -642,9 +642,6 @@
       <str name="echoParams">all</str>
     </lst>
   </requestHandler>
-
-  <!-- System info -->
-  <requestHandler name="/admin/system" class="org.apache.solr.handler.admin.SystemInfoHandler" />
 
   <!-- Files that are needed to start the service -->
   <requestHandler name="/admin/file" class="org.apache.solr.handler.admin.ShowFileRequestHandler" >
