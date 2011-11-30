@@ -109,12 +109,12 @@ class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
     // Run a query through the MLT code to be sure access filters are added.
     module_load_include('inc', 'apachesolr', 'apachesolr.admin');
     $solr = new DummySolr();
-    $settings = apachesolr_mlt_block_defaults();
+    $settings = apachesolr_search_mlt_block_defaults();
     // Dummy value
     $id = apachesolr_document_id($author_restricted_node->nid);
     drupal_save_session(FALSE);
     $GLOBALS['user'] = $basic_user;
-    $response = apachesolr_mlt_suggestions($settings, $id, $solr);
+    $response = apachesolr_search_mlt_suggestions($settings, $id, $solr);
     $search = $solr->getLastSearch();
     // Should only be one fq
     $this->assertEqual(count($search['params']['fq']), 1, 'One fq param found');

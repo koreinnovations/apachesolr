@@ -1,6 +1,7 @@
 
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1356038 by Nick_vh: Added More like this / Blocks Admin UI rework.
 #1356018 by Nick_vh: Fixed Remove admin/system from solrconfig.xlm.
 #1344690 by Nick_vh: Added Search page should be cloneable.
 #1333904 by Nick_vh | vrc3: Added Please restore flexible 'results per page" option - follow up.

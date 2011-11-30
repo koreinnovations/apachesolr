@@ -34,9 +34,21 @@ function _apachesolr_search_browse_form($default_value) {
 }
 
 /**
- * Menu callback for the overview page showing custom search pages.
+ * Menu callback for the overview page showing custom search pages and blocks.
+ * @return array $build
  */
-function apachesolr_search_page_list_page() {
+function apachesolr_search_page_list_all() {
+  $build['pages'] = apachesolr_search_page_list_pages();
+  $build['blocks'] = apachesolr_search_page_list_blocks();
+  return $build;
+
+}
+
+/**
+ * Listing of all the search pages
+ * @return array $build
+ */
+function apachesolr_search_page_list_pages() {
   $build = array();
   $rows = array();
   $rows['core_search'] = array();
@@ -88,10 +100,62 @@ function apachesolr_search_page_list_page() {
   $header['operations']['colspan'] = count(reset($rows)) - 3;
 
   $build['list'] = array(
+    '#prefix' => '<h3>Pages</h3>',
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => array_values($rows),
     '#empty' => t('No available search pages.'),
+  );
+  $build['pager'] = array(
+    '#theme' => 'pager',
+    '#quantity' => 20,
+    '#weight' => 10,
+  );
+
+  return $build;
+}
+
+/**
+ * Listing of all the search blocks
+ * @return array $build
+ */
+function apachesolr_search_page_list_blocks() {
+  $build = array();
+  $rows = array();
+
+  // Build the sortable table header.
+  $header = array(
+    'label' => array('data' => t('Name'), 'field' => 's.label'),
+    'environment' => array('data' => t('Search environment')),
+    'operations' => array('data' => t('Operations')),
+  );
+
+  $search_blocks = variable_get('apachesolr_search_mlt_blocks', array());
+  foreach ($search_blocks as $search_block_id => $search_block) {
+    $row = array();
+
+    // Add the label
+    $label = check_plain($search_block['name']);
+    $row[] = $label;
+
+    // Add the search environment
+    $environment = apachesolr_environment_load($search_block['mlt_env_id']);
+    $row[] = $environment ? check_plain($environment['name']) : check_plain(t('<Disabled>'));
+    // Operations
+    $row[] = array('data' => l(t('Edit'), 'admin/config/search/apachesolr/search-pages/block/' . $search_block_id . '/edit'));
+    $row[] = array('data' => l(t('Delete'), 'admin/config/search/apachesolr/search-pages/block/' . $search_block_id . '/delete'));
+    $rows[$search_block_id] = $row;
+  }
+
+  // Automatically enlarge our header with the operations size
+  $header['operations']['colspan'] = count(reset($rows)) - 2;
+
+  $build['list'] = array(
+    '#prefix' => '<h3>Blocks "More Like This"</h3>',
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => array_values($rows),
+    '#empty' => t('No available search blocks.'),
   );
   $build['pager'] = array(
     '#theme' => 'pager',
@@ -779,4 +843,299 @@ function apachesolr_search_type_boost_form_submit($form, &$form_state) {
       db_update('apachesolr_search_node')->fields(array('changed' => REQUEST_TIME))->condition('nid', $nids, 'IN')->execute();
     }
   }
+}
+
+
+/**
+ * MoreLikeThis administration and utility functions.
+ */
+function apachesolr_search_mlt_add_block_form() {
+  $form = apachesolr_search_mlt_block_form();
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+    '#weight' => '5',
+  );
+  return $form;
+}
+
+/**
+ * MoreLikeThis administration and utility functions.
+ */
+function apachesolr_search_mlt_edit_block_form($form, $form_state, $block) {
+  $form = apachesolr_search_mlt_block_form($block['delta']);
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+    '#weight' => '5',
+  );
+  return $form;
+}
+
+function apachesolr_search_mlt_add_block_form_submit($form, &$form_state) {
+  apachesolr_search_mlt_save_block($form_state['values']);
+  $block_message = t('New More like this block created. <a href="!configure">Configure</a> this block in the Block administration', array('!configure' => url('admin/structure/block')));
+  drupal_set_message($block_message);
+  $form_state['redirect'] = 'admin/config/search/apachesolr/search-pages';
+}
+
+function apachesolr_search_mlt_edit_block_form_submit($form, &$form_state) {
+  apachesolr_search_mlt_save_block($form_state['values'], $form_state['values']['delta']);
+  drupal_set_message(t('More like this block saved.'));
+  $form_state['redirect'] = 'admin/config/search/apachesolr/search-pages';
+}
+
+/**
+ * Merge supplied settings with the standard defaults..
+ */
+function apachesolr_search_mlt_block_defaults($block = array()) {
+  return $block + array(
+    'name' => '',
+    'num_results' => '5',
+    'mlt_fl' => array(
+      'label' => 'label',
+      'taxonomy_names' => 'taxonomy_names',
+    ),
+    'mlt_env_id' => 'solr',
+    'mlt_mintf' => '1',
+    'mlt_mindf' => '1',
+    'mlt_minwl' => '3',
+    'mlt_maxwl' => '15',
+    'mlt_maxqt' => '20',
+    'mlt_type_filters' => array(),
+    'mlt_custom_filters' => '',
+  );
+}
+
+/**
+ * Constructs a list of field names used on the settings form.
+ *
+ * @return array An array containing a the fields in the solr instance.
+ */
+function apachesolr_search_mlt_get_fields() {
+  $solr = apachesolr_get_solr();
+  $fields = $solr->getFields();
+  $rows = array();
+  foreach ($fields as $field_name => $field) {
+    if ($field->schema{4} == 'V') {
+      $rows[$field_name] = apachesolr_field_name_map($field_name);
+    }
+  }
+  ksort($rows);
+  return $rows;
+}
+
+/**
+ * A helper function to save MLT block data.
+ *
+ * If passed a block delta, the function will update block settings. If it is
+ * not passed a block delta, the function will create a new block.
+ *
+ * @param array $block_settings An array containing the settings required to form
+ * a moreLikeThis request.
+ *
+ * @param int $delta The id of the block you wish to update.
+ */
+function apachesolr_search_mlt_save_block($block_settings = array(), $delta = NULL) {
+  $blocks = variable_get('apachesolr_search_mlt_blocks', array());
+  if (is_null($delta)) {
+    $count = 0;
+    ksort($blocks);
+    // Construct a new array key.
+    if (end($blocks)) {
+      list(, $count) = explode('-', key($blocks));
+    }
+    $delta = sprintf('mlt-%03d', 1 + $count);
+  }
+  $defaults = apachesolr_search_mlt_block_defaults();
+  // Remove stray form values.
+  $blocks[$delta] = array_intersect_key($block_settings, $defaults) + $defaults;
+  // Eliminate non-selected fields.
+  $blocks[$delta]['mlt_fl'] = array_filter($blocks[$delta]['mlt_fl']);
+  $blocks[$delta]['delta'] = $delta;
+  $blocks[$delta]['mlt_type_filters'] = array_filter($blocks[$delta]['mlt_type_filters']);
+  $blocks[$delta]['mlt_custom_filters'] = trim($blocks[$delta]['mlt_custom_filters']);
+  variable_set('apachesolr_search_mlt_blocks', $blocks);
+}
+
+function apachesolr_search_mlt_delete_block_form($form, &$form_state, $block) {
+  if ($block) {
+    // Backwards compatibility for the block deltas
+    if (isset($block['delta'])) {
+      $delta = $block['delta'];
+    }
+    else {
+      $delta = arg(6);
+    }
+    // Add our delta to the delete form
+    $form['delta'] = array(
+      '#type' => 'value',
+      '#value' => $delta,
+    );
+    $question = t('Are you sure you want to delete the "More Like this" block %name?', array('%name' => $block['name']));
+    $path = 'admin/structure/block';
+    $description = t('The block will be deleted. This action cannot be undone.');
+    $yes = t('Delete');
+    $no = t('Cancel');
+    return confirm_form($form, $question, $path, $description, $yes, $no);
+  }
+}
+
+function apachesolr_search_mlt_delete_block_form_submit($form, &$form_state) {
+  $blocks = apachesolr_search_load_all_mlt_blocks();
+
+  unset($blocks[$form_state['values']['delta']]);
+  variable_set('apachesolr_search_mlt_blocks', $blocks);
+  drupal_set_message(t('The block has been deleted.'));
+  $form_state['redirect'] = 'admin/config/search/apachesolr/search-pages';
+}
+
+/**
+ * Form to edit moreLikeThis block settings.
+ *
+ * @param int $delta If editing, the id of the block to edit.
+ *
+ * @return array The form used for editing.
+ * TODO:
+ *   Add term boost settings.
+ *   Enable the user to specify a query, rather then forcing suggestions based
+ *     on the node id.
+ *
+ */
+function apachesolr_search_mlt_block_form($block_id = NULL) {
+  if (!empty($block_id)) {
+    $block = apachesolr_search_mlt_block_load($block_id);
+    if (!$block) {
+      return array();
+    }
+  }
+  else {
+    $block = apachesolr_search_mlt_block_defaults();
+  }
+
+  $form['delta'] = array(
+    '#type' => 'value',
+    '#default_value' => isset($block['delta']) ? $block['delta'] : '',
+    '#weight' => '-2',
+  );
+
+  $form['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Block name'),
+    '#description' => t('The block name displayed to site users.'),
+    '#required' => TRUE,
+    '#default_value' => isset($block['name']) ? $block['name'] : '',
+    '#weight' => '-2',
+  );
+
+  $environments = apachesolr_load_all_environments();
+  $options = array('' => t('<Disabled>'));
+  foreach ($environments as $id => $environment) {
+    $options[$id] = $environment['name'];
+  }
+  $form['mlt_env_id'] = array(
+    '#title' => t('Search environment'),
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => isset($block['mlt_env_id']) ? $block['mlt_env_id'] : apachesolr_default_environment(),
+  );
+
+  $form['num_results'] = array(
+    '#type' => 'select',
+    '#title' => t('Maximum number of related items to display'),
+    '#default_value' => isset($block['num_results']) ? $block['num_results'] : '',
+    '#options' => drupal_map_assoc(array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)),
+    '#weight' => -1,
+
+    );
+  $form['mlt_fl'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Fields for finding related content'),
+    '#description' => t('Choose the fields to be used in calculating similarity. The default combination of %taxonomy_names and %title will provide relevant results for typical sites.', array("%taxonomy_names" => apachesolr_field_name_map("taxonomy_names"), "%title" => apachesolr_field_name_map("label"))),
+    '#options' => apachesolr_search_mlt_get_fields(),
+    '#required' => TRUE,
+    '#default_value' => isset($block['mlt_fl']) ? $block['mlt_fl'] : '',
+  );
+  $form['advanced'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Advanced configuration'),
+    '#weight' => '1',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $options = drupal_map_assoc(array(1, 2, 3, 4, 5, 6, 7));
+  $form['advanced']['mlt_mintf'] = array(
+    '#type' => 'select',
+    '#title' => t('Minimum term frequency'),
+    '#description' => t('A word must appear this many times in any given document before the document is considered relevant for comparison.'),
+    '#default_value' => isset($block['mlt_mintf']) ? $block['mlt_mintf'] : '',
+    '#options' => $options,
+  );
+  $form['advanced']['mlt_mindf'] = array(
+    '#type' => 'select',
+    '#title' => t('Minimum document frequency'),
+    '#description' => t('A word must occur in at least this many documents before it will be used for similarity comparison.'),
+    '#default_value' => isset($block['mlt_mindf']) ? $block['mlt_mindf'] : '',
+    '#options' => $options,
+  );
+  $form['advanced']['mlt_minwl'] = array(
+    '#type' => 'select',
+    '#title' => t('Minimum word length'),
+    '#description' => 'You can use this to eliminate short words such as "the" and "it" from similarity comparisons. Words must be at least this number of characters or they will be ignored.',
+    '#default_value' => isset($block['mlt_minwl']) ? $block['mlt_minwl'] : '',
+    '#options' => $options,
+  );
+  $form['advanced']['mlt_maxwl'] = array(
+    '#type' => 'select',
+    '#title' => t('Maximum word length'),
+    '#description' => t('You can use this to eliminate very long words from similarity comparisons. Words of more than this number of characters will be ignored.'),
+    '#default_value' => isset($block['mlt_maxwl']) ? $block['mlt_maxwl'] : '',
+    '#options' => drupal_map_assoc(array(8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)),
+  );
+  $form['advanced']['mlt_maxqt'] = array(
+    '#type' => 'select',
+    '#title' => t('Maximum number of query terms'),
+    '#description' => t('The maximum number of query terms that will be included in any query. Lower numbers will result in fewer recommendations but will get results faster. If a content recommendation is not returning any recommendations, you can either check more "Comparison fields" checkboxes or increase the maximum number of query terms here.'),
+    '#options' => drupal_map_assoc(array(3, 5, 7, 10, 12, 15, 20, 25, 30, 35, 40)),
+    '#default_value' => isset($block['mlt_maxqt']) ? $block['mlt_maxqt'] : '',
+  );
+
+  $form['restrictions'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Filters'),
+    '#weight' => '1',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $type_options = array();
+  foreach (node_type_get_types() as $key => $type) {
+    $type_options[$key] = $type->name;
+  }
+
+  $form['restrictions']['mlt_type_filters'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Content Types'),
+    '#default_value' => is_array($block['mlt_type_filters']) ? $block['mlt_type_filters'] : array(),
+    '#options' => $type_options,
+    '#description' => t('Select the content types that similarity suggestions should be restricted to. Multiple types are joined with an OR query, so selecting more types results in more recommendations. If none are selected, no filter will be applied.'),
+    '#weight' => '-2',
+  );
+
+  $form['restrictions']['mlt_custom_filters'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Additional Query'),
+    '#description' => t("A query, in Lucene syntax, which will further filter the similarity suggestions. For example, 'label:strategy' will filter related content further to only those with strategy in the title. Here are some more examples:") .
+                        '<ul>
+                            <li>ss_language:fr</li>
+                            <li>tid:(5 OR 7)</li>
+                            <li>ds_created:[2009-05-01T23:59:59Z TO 2009-07-28T12:30:00Z]</li>
+                            <li>-is_uid:0, -is_uid:1</li>
+                        </ul>',
+    '#required' => FALSE,
+    '#default_value' => isset($block['mlt_custom_filters']) ? $block['mlt_custom_filters'] : '',
+    '#weight' => '-1',
+  );
+
+  return $form;
 }

@@ -136,21 +136,6 @@ function apachesolr_menu() {
     'file'               => 'apachesolr.admin.inc',
     'type'               => MENU_CALLBACK,
   );
-  $items['admin/config/search/apachesolr/mlt/add_block'] = array(
-    'title'              => 'Add a new content recommendation block',
-    'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('apachesolr_mlt_add_block_form'),
-    'access arguments'   => array('administer search'),
-    'file'               => 'apachesolr.admin.inc',
-    'type'               => MENU_CALLBACK,
-  );
-  $items['admin/config/search/apachesolr/mlt/delete_block/%'] = array(
-    'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('apachesolr_mlt_delete_block_form', 6),
-    'access arguments'   => array('administer search'),
-    'file'               => 'apachesolr.admin.inc',
-    'type'               => MENU_CALLBACK,
-  );
 
   // We handle our own menu paths for facets
   if (module_exists('facetapi')) {
@@ -1052,40 +1037,10 @@ function apachesolr_set_stats_message($text, $type = 'status', $repeat = FALSE) 
 }
 
 /**
- * Implements hook_block_info().
- */
-function apachesolr_block_info() {
-  // Get all of the moreLikeThis blocks that the user has created
-  $blocks = apachesolr_mlt_list_blocks();
-  // Add the sort block.
-  $blocks['sort'] = array(
-    'info' => t('Apache Solr Core: Sorting'),
-    'cache' => DRUPAL_CACHE_PER_PAGE,
-  );
-  return $blocks;
-}
-
-/**
  * Implements hook_block_view().
  */
 function apachesolr_block_view($delta = '') {
-  if ($delta != 'sort' && ($node = menu_get_object()) && (!arg(2) || arg(2) == 'view')) {
-    $suggestions = array();
-    // Determine whether the user can view the current node. Probably not necessary.
-    $block = apachesolr_mlt_load_block($delta);
-    if ($block && node_access('view', $node)) {
-      // Get our specific environment for the MLT block
-      $solr_id = (!empty($block['mlt_env_id'])) ? $block['mlt_env_id'] : '';
-      $solr = apachesolr_get_solr($solr_id);
-      $docs = apachesolr_mlt_suggestions($block, apachesolr_document_id($node->nid), $solr);
-      if (!empty($docs)) {
-        $suggestions['subject'] = check_plain($block['name']);
-        $suggestions['content'] = theme('apachesolr_mlt_recommendation_block', array('docs' => $docs, 'delta' => $delta));
-      }
-    }
-    return $suggestions;
-  }
-  elseif (apachesolr_has_searched() && !apachesolr_suppress_blocks() && $delta == 'sort') {
+  if (apachesolr_has_searched() && !apachesolr_suppress_blocks() && $delta == 'sort') {
 
     $response = NULL;
     $query = apachesolr_current_query();
@@ -1136,26 +1091,6 @@ function apachesolr_block_view($delta = '') {
     'subject' => t('Sort by'),
       'content' => theme('apachesolr_sort_list', array('items' => $themed_links))
   );
-  }
-}
-
-/**
- * Implements hook_block_configure().
- */
-function apachesolr_block_configure($delta = '') {
-  if ($delta != 'sort') {
-    require_once(drupal_get_path('module', 'apachesolr') . '/apachesolr.admin.inc');
-    return apachesolr_mlt_block_form($delta);
-  }
-}
-
-/**
- * Implements hook_block_save().
- */
-function apachesolr_block_save($delta = '', $edit = array()) {
-  if ($delta != 'sort') {
-    require_once(drupal_get_path('module', 'apachesolr') . '/apachesolr.admin.inc');
-    apachesolr_mlt_save_block($edit, $delta);
   }
 }
 
@@ -2155,12 +2090,6 @@ function apachesolr_theme() {
       'variables' => array('text' => NULL, 'path' => NULL, 'options' => NULL, 'active' => FALSE, 'direction' => ''),
     ),
     /**
-     * Returns a list of results (docs) in content recommendation block
-     */
-    'apachesolr_mlt_recommendation_block' => array(
-      'variables' => array('docs' => NULL, 'delta' => NULL),
-    ),
-    /**
      * Themes the title links in admin settings pages.
      */
     'apachesolr_settings_title' => array(
@@ -2215,91 +2144,6 @@ function apachesolr_settings_form_reset($form, &$form_state) {
     apachesolr_environment_variable_del($form['#env_id'], $key);
   }
   drupal_set_message(t('The configuration options have been reset to their default values.'));
-}
-
-/**
- * Performs a moreLikeThis query using the settings and retrieves documents.
- *
- * @param $settings
- *   An array of settings.
- * @param $id
- *   The Solr ID of the document for which you want related content.
- *   For a node that is apachesolr_document_id($node->nid)
- * @param $solr
- *   The solr environment you want to query against
- *
- * @return An array of response documents, or NULL
- */
-function apachesolr_mlt_suggestions($settings, $id, $solr = NULL) {
-
-  try {
-    $fields = array(
-      'mlt_mintf' => 'mlt.mintf',
-      'mlt_mindf' => 'mlt.mindf',
-      'mlt_minwl' => 'mlt.minwl',
-      'mlt_maxwl' => 'mlt.maxwl',
-      'mlt_maxqt' => 'mlt.maxqt',
-      'mlt_boost' => 'mlt.boost',
-      'mlt_qf' => 'mlt.qf',
-    );
-    $params = array(
-      'q' => 'id:' . $id,
-      'qt' => 'mlt',
-      'fl' => array('entity_id', 'entity_type', 'label', 'path', 'url'),
-      'mlt.fl' => $settings['mlt_fl'],
-      'start' => 0,
-      'rows' => $settings['num_results'],
-    );
-    // We can optionally specify a Solr object.
-    $query = apachesolr_drupal_query('apachesolr_mlt', $params, '', '', $solr);
-
-    foreach ($fields as $form_key => $name) {
-      if (!empty($settings[$form_key])) {
-        $query->addParam($name, $settings[$form_key]);
-      }
-    }
-
-    $type_filters = array();
-    if (is_array($settings['mlt_type_filters']) && !empty($settings['mlt_type_filters'])) {
-      $query->addFilter('bundle', '(' . implode(' OR ', $settings['mlt_type_filters']) . ') ');
-    }
-
-    if ($custom_filters = $settings['mlt_custom_filters']) {
-      // @todo - fix the settings form to take a comma-delimited set of filters.
-      $query->addFilter('', $custom_filters);
-    }
-
-    // This hook allows modules to modify the query object.
-    drupal_alter('apachesolr_query', $query);
-    if ($query->abort_search) {
-      return;
-    }
-
-    $response = $query->search();
-
-    if ($response->response) {
-      $docs = (array) end($response->response);
-      return $docs;
-    }
-  }
-  catch (Exception $e) {
-    watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
-  }
-}
-
-/**
- * Implements hook_form_[form_id]_alter().
- */
-function apachesolr_form_block_admin_display_form_alter(&$form) {
-  foreach ($form['blocks'] as $key => $block) {
-    if ((strpos($key, "apachesolr_mlt-") === 0) && $block['module']['#value'] == 'apachesolr') {
-      $form['blocks'][$key]['delete'] = array(
-        '#type' => 'link',
-        '#title' => 'delete',
-        '#href' => 'admin/config/search/apachesolr/mlt/delete_block/' . $block['delta']['#value'],
-      );
-    }
-  }
 }
 
 /**
@@ -2515,32 +2359,6 @@ function content_apachesolr_field_mappings() {
   );
 
   return $mappings;
-}
-
-/**
- * Returns a list of blocks. Used by hook_block
- */
-function apachesolr_mlt_list_blocks() {
-  $blocks = variable_get('apachesolr_mlt_blocks', array());
-  foreach ($blocks as $delta => $settings) {
-    $blocks[$delta] += array('info' => t('Apache Solr recommendations: !name', array('!name' => $settings['name'])) , 'cache' => DRUPAL_CACHE_PER_PAGE);
-  }
-  return $blocks;
-}
-
-function apachesolr_mlt_load_block($delta) {
-  $blocks = variable_get('apachesolr_mlt_blocks', array());
-  return isset($blocks[$delta]) ? $blocks[$delta] : FALSE;
-}
-
-function theme_apachesolr_mlt_recommendation_block($vars) {
-  $docs = $vars['docs'];
-  $links = array();
-  foreach ($docs as $result) {
-    // Suitable for single-site mode. Label is already safe.
-    $links[] = l($result->label, $result->path, array('html' => TRUE));
-  }
-  return theme('item_list', array('items' => $links));
 }
 
 /**
