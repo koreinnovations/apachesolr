@@ -32,8 +32,13 @@ function apachesolr_environment_delete_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/config/search/apachesolr/settings';
 }
 
-function apachesolr_environment_delete_submit($form, &$form_state) {
+function apachesolr_environment_edit_delete_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/config/search/apachesolr/settings/' . $form_state['values']['env_id'] . '/delete';
+
+  // Regardlessly of the destination parameter we want to go to another page
+  unset($_GET['destination']);
+  drupal_static_reset('drupal_get_destination');
+  drupal_get_destination();
 }
 
 function apachesolr_environment_settings_page($environment = NULL) {
@@ -140,20 +145,20 @@ function apachesolr_environment_edit_form($form, &$form_state, $environment = NU
   );
   $form['actions']['save'] = array(
     '#type' => 'submit',
-    '#validate' => array('apachesolr_environment_save_validate'),
-    '#submit' => array('apachesolr_environment_save_submit'),
+    '#validate' => array('apachesolr_environment_edit_validate'),
+    '#submit' => array('apachesolr_environment_edit_submit'),
     '#value' => t('Save'),
   );
   $form['actions']['test'] = array(
     '#type' => 'submit',
-    '#validate' => array('apachesolr_environment_save_validate'),
-    '#submit' => array('apachesolr_environment_test_submit'),
+    '#validate' => array('apachesolr_environment_edit_validate'),
+    '#submit' => array('apachesolr_environment_edit_test_submit'),
     '#value' => t('Test connection'),
   );
   if (!empty($environment['env_id']) && !$is_default) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
-      '#submit' => array('apachesolr_environment_delete_submit'),
+      '#submit' => array('apachesolr_environment_edit_delete_submit'),
       '#value' => t('Delete'),
     );
   }
@@ -174,7 +179,7 @@ function apachesolr_environment_edit_form($form, &$form_state, $environment = NU
   return $form;
 }
 
-function apachesolr_environment_test_submit($form, &$form_state) {
+function apachesolr_environment_edit_test_submit($form, &$form_state) {
   $ping = apachesolr_server_status($form_state['values']['url'], $form_state['values']['service_class']);
   if ($ping) {
     drupal_set_message(t('Your site has contacted the Apache Solr server.'));
@@ -185,7 +190,7 @@ function apachesolr_environment_test_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 }
 
-function apachesolr_environment_save_validate($form, &$form_state) {
+function apachesolr_environment_edit_validate($form, &$form_state) {
   $parts = parse_url($form_state['values']['url']);
   foreach (array('scheme', 'host', 'path') as $key) {
     if (empty($parts[$key])) {
@@ -204,7 +209,7 @@ function apachesolr_environment_save_validate($form, &$form_state) {
   }
 }
 
-function apachesolr_environment_save_submit($form, &$form_state) {
+function apachesolr_environment_edit_submit($form, &$form_state) {
   apachesolr_environment_save($form_state['values']);
   if (!empty($form_state['values']['make_default'])) {
     variable_set('apachesolr_default_environment', $form_state['values']['env_id']);
