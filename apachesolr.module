@@ -83,7 +83,7 @@ function apachesolr_menu() {
     'file'               => 'apachesolr.admin.inc',
   );
   $items[$settings_path . 'add'] = array(
-    'title'              => 'Add New Search Environment',
+    'title'              => 'Add search environment',
     'description'        => 'Add Apache Solr environment.',
     'page callback'      => 'drupal_get_form',
     'page arguments'     => array('apachesolr_environment_edit_form'),

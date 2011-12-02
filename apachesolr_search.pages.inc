@@ -8,7 +8,7 @@
 /**
  * Returns search results on user defined search pages.
  */
-function apachesolr_search_custom_page($page_id, $keys = '', $path_replacer = null) {
+function apachesolr_search_custom_page($page_id, $keys = '', $path_replacer = NULL) {
   $search_page = apachesolr_search_page_load($page_id);
   if (empty($search_page)) {
     drupal_set_message(t('This search page cannot be found'), 'error');

@@ -114,14 +114,14 @@ function apachesolr_schema() {
       'key' => 'env_id',
       'identifier' => 'name',
       'api' => array(
-	    'owner' => 'apachesolr',
-	    'api' => 'default_apachesolr_environments',
-	    'minimum_version' => 1,
-	    'current_version' => 1,
-       ),
-     ),
+        'owner' => 'apachesolr',
+        'api' => 'default_apachesolr_environments',
+        'minimum_version' => 1,
+        'current_version' => 1,
+      ),
+    ),
     'fields' => array(
-     'env_id' => array(
+      'env_id' => array(
         'description' => 'Unique identifier for the environment',
         'type' => 'varchar',
         'length' => 64,
@@ -164,7 +164,7 @@ function apachesolr_schema() {
        ),
      ),
     'fields' => array(
-     'env_id' => array(
+      'env_id' => array(
         'description' => 'Unique identifier for the environment',
         'type' => 'varchar',
         'length' => 64,

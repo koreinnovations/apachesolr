@@ -1,6 +1,7 @@
 
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1351908 by Nick_vh: Added UI comments and improvements.
 #1349532 by Nick_vh: Added UI remake of the bias pages.
 #1357548 by Nick_vh: Make the unit tests for solr succeed if there is no solr environment available.
 #1356038 by Nick_vh: Added More like this / Blocks Admin UI rework.

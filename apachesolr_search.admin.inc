@@ -67,9 +67,6 @@ function apachesolr_search_page_list_pages() {
 
     // Add the label
     $label = check_plain($search_page['label']);
-    if ($search_page['page_id'] == 'core_search') {
-      $label .= ' ' . t('<em>(integrates with core <a href="!search_admin">Search module</a>)</em>', array('!search_admin' => url('admin/config/search/settings')));
-    }
     $row[] = $label;
     // Add the link
     $row[] = array(
@@ -588,8 +585,7 @@ function apachesolr_search_get_fields($environment = NULL) {
   catch (Exception $e) {
     watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
     drupal_set_message(nl2br(check_plain($e->getMessage())), 'warning');
-    $message = t('Cannot get information about the fields in the index.');
-    drupal_set_message($message, 'warning');
+    drupal_set_message(t('Cannot get information about the fields in the index.'), 'warning');
   }
 }
 
@@ -651,7 +647,7 @@ function apachesolr_search_bias_form_submit(&$form, &$form_state) {
     }
     // There is no need to set default variable values.
     if (!isset($form[$key]['#default_value']) || $form[$key]['#default_value'] != $value) {
-      switch($key) {
+      switch ($key) {
         case 'apachesolr_search_sticky_boost' :
         case 'apachesolr_search_promote_boost' :
         case 'apachesolr_search_date_boost' :
@@ -1036,7 +1032,7 @@ function apachesolr_search_mlt_delete_block_form($form, &$form_state, $block) {
     $description = t('The block will be deleted. This action cannot be undone.');
     $yes = t('Delete');
     $no = t('Cancel');
-    return confirm_form($form, $question, $path, $description, $yes, $no);
+    return confirm_form($form, filter_xss($question), $path, $description, $yes, $no);
   }
 }
 
