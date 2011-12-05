@@ -503,3 +503,11 @@ function apachesolr_update_7009() {
     }
   }
 }
+
+/**
+ * Update cache table schema for Drupal 7.
+ */
+function apachesolr_update_7010() {
+  db_drop_field('cache_apachesolr', 'headers');
+  return 'Updated cache table schema for Drupal 7.';
+}
