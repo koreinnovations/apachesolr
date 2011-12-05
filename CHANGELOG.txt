@@ -1,6 +1,7 @@
 
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1359294 by Nick_vh: Fixed Test is not enabling the correct modules.
 #1358158 by pwolanin | SangersDrupalDude: Fixed Schema issues on update to D7.
 #1351908 by Nick_vh: Added UI comments and improvements.
 #1349532 by Nick_vh: Added UI remake of the bias pages.
