@@ -2375,7 +2375,7 @@ function theme_apachesolr_settings_title($vars) {
   if ($environment = apachesolr_environment_load($vars['env_id'])) {
     $url = url(
       'admin/config/search/apachesolr/settings/',
-      array('query' => array('destination' => $_GET['q']))
+      array('query' => array('destination' => current_path()))
     );
     $output .= '<h3>';
     $output .= t(

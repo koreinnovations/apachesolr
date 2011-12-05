@@ -265,7 +265,7 @@ function apachesolr_settings($form, &$form_state) {
         'class' => 'operation',
         'data' => l(t('Facets'),
           'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/facets',
-          array('query' => array('destination' => $_GET['q']))
+          array('query' => array('destination' => current_path()))
         ),
      );
     }
@@ -275,7 +275,7 @@ function apachesolr_settings($form, &$form_state) {
         'class' => 'operation',
         'data' => l(t('Bias'),
           'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/bias',
-          array('query' => array('destination' => $_GET['q']))
+          array('query' => array('destination' => current_path()))
         ),
       );
     }
@@ -284,7 +284,7 @@ function apachesolr_settings($form, &$form_state) {
       'class' => 'operation',
       'data' => l(t('Edit'),
         'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/edit',
-         array('query' => array('destination' => $_GET['q']))
+         array('query' => array('destination' => current_path()))
       ),
     );
     $ops['clone'] = array(
