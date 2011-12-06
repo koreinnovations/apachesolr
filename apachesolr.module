@@ -2002,41 +2002,69 @@ function apachesolr_fields_list_facet_map_callback($facets, $options) {
 }
 
 /**
- * Use the content.module's content_format() to format the
- * field based on its nid ($facet).
- *
  *  @param $facet string
  *    The indexed value
  *  @param $options
  *    An array of options including the hook_block $delta.
  *  @see http://drupal.org/node/1059372
  */
-function apachesolr_cck_nodereference_field_callback($facet, $options) {
-  if (function_exists('content_format')) {
-    return strip_tags(content_format($options['delta'], array('nid' => $facet)));
+function apachesolr_nodereference_map_callback($facets, $options) {
+  $map = array();
+  $allowed_values = array();
+  // @see list_field_formatter_view()
+  $fields = field_info_fields();
+  $field_name = $options['field']['field_name'];
+  if (isset($fields[$field_name])) {
+    $allowed_values = node_reference_potential_references($fields[$field_name]);
   }
-  else {
-    return $facet;
+  foreach ($facets as $key) {
+    if (isset($allowed_values[$key])) {
+      $map[$key]['#markup'] = field_filter_xss($allowed_values[$key]['title']);
+    }
+    elseif ($key == '_empty_' && $options['facet missing allowed']) {
+      // Facet missing.
+      $map[$key]['#markup'] = theme('facetapi_facet_missing', array('field_name' => $options['display_name']));
+    }
+    else {
+      $map[$key]['#markup'] = field_filter_xss($key);
+    }
+    // The value has already been filtered.
+    $map[$key]['#html'] = TRUE;
   }
+  return $map;
 }
 
 /**
- * Use the content.module's content_format() to format the
- * field based on its uid ($facet).
- *
  *  @param $facet string
  *    The indexed value
  *  @param $options
  *    An array of options including the hook_block $delta.
  *  @see http://drupal.org/node/1059372
  */
-function apachesolr_cck_userreference_field_callback($facet, $options) {
-  if (function_exists('content_format')) {
-    return strip_tags(content_format($options['delta'], array('uid' => $facet)));
+function apachesolr_userreference_map_callback($facets, $options) {
+	$map = array();
+  $allowed_values = array();
+  // @see list_field_formatter_view()
+  $fields = field_info_fields();
+  $field_name = $options['field']['field_name'];
+  if (isset($fields[$field_name])) {
+    $allowed_values = user_reference_potential_references($fields[$field_name]);
   }
-  else {
-    return $facet;
+  foreach ($facets as $key) {
+    if (isset($allowed_values[$key])) {
+      $map[$key]['#markup'] = field_filter_xss($allowed_values[$key]['title']);
+    }
+    elseif ($key == '_empty_' && $options['facet missing allowed']) {
+      // Facet missing.
+      $map[$key]['#markup'] = theme('facetapi_facet_missing', array('field_name' => $options['display_name']));
+    }
+    else {
+      $map[$key]['#markup'] = field_filter_xss($key);
+    }
+    // The value has already been filtered.
+    $map[$key]['#html'] = TRUE;
   }
+  return $map;
 }
 
 /**
@@ -2314,23 +2342,34 @@ function apachesolr_get_max_date(array $facet) {
   return $return;
 }
 
-
-
 /**
- * Implements hook_apachesolr_field_mappings() on behalf of CCK.
+ * Implements hook_apachesolr_field_mappings() on behalf of References (node_reference).
  * @see http://drupal.org/node/1059372
  */
-function content_apachesolr_field_mappings() {
+function node_reference_apachesolr_field_mappings() {
   $mappings = array(
     'node_reference' => array(
-      'display_callback' => 'apachesolr_cck_nodereference_field_callback',
-      'indexing_callback' => 'apachesolr_cck_nodereference_indexing_callback',
+      'indexing_callback' => 'apachesolr_nodereference_indexing_callback',
       'index_type' => 'integer',
-    ),
+      'map callback' => 'apachesolr_nodereference_map_callback',
+      'facets' => TRUE,
+    )
+  );
+
+  return $mappings;
+}
+
+/**
+ * Implements hook_apachesolr_field_mappings() on behalf of References (user_reference).
+ * @see http://drupal.org/node/1059372
+ */
+function user_reference_apachesolr_field_mappings() {
+  $mappings = array(
     'user_reference' => array(
-      'display_callback' => 'apachesolr_cck_userreference_field_callback',
-      'indexing_callback' => 'apachesolr_cck_userreference_indexing_callback',
+      'indexing_callback' => 'apachesolr_userreference_indexing_callback',
       'index_type' => 'integer',
+      'map callback' => 'apachesolr_userreference_map_callback',
+      'facets' => TRUE,
     ),
   );
 

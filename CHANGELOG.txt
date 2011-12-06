@@ -1,6 +1,7 @@
 
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1059372 by jpmckinney, Georgique, Nick_vh: Fixed References integration is broken.
 #1323676 by Nick_vh: Global functions should be context driven.
 #1359294 by Nick_vh: Follow-up : Fixed Test is not enabling the correct modules.
 #1359386 by Nick_vh: Replace all instances of $_GET['q'] with current_path().

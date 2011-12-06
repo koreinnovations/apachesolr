@@ -343,18 +343,21 @@ function apachesolr_floatval($value) {
 }
 
 /**
- *  @see http://drupal.org/node/1059372
+ *  Indexing callback for the node_reference module
+ *  by the references module
  */
-function apachesolr_cck_nodereference_indexing_callback($node, $field_name, $index_key, $cck_info) {
+function apachesolr_nodereference_indexing_callback($entity, $field_name, $index_key, $field_info) {
   $fields = array();
-  if (!empty($node->{$field_name})) {
-    $index_key = apachesolr_index_key($cck_info);
-    foreach ($node->$field_name as $field) {
-      if ($index_value = (isset($field['nid']) && strlen($field['nid'])) ? $field['nid'] : FALSE) {
-        $fields[] = array(
-          'key' => $index_key,
-          'value' => $index_value,
-        );
+  if (!empty($entity->{$field_name})) {
+    $index_key = apachesolr_index_key($field_info);
+    foreach ($entity->$field_name as $field_references) {
+      foreach ($field_references as $reference) {
+        if ($index_value = (!empty($reference['nid'])) ? $reference['nid'] : FALSE) {
+          $fields[] = array(
+            'key' => $index_key,
+            'value' => $index_value,
+          );
+        }
       }
     }
   }
@@ -362,18 +365,21 @@ function apachesolr_cck_nodereference_indexing_callback($node, $field_name, $ind
 }
 
 /**
- *  @see http://drupal.org/node/1059372
+ *  Indexing callback for the user_reference module
+ *  by the references module
  */
-function apachesolr_cck_userreference_indexing_callback($node, $field_name, $index_key, $cck_info) {
+function apachesolr_userreference_indexing_callback($entity, $field_name, $index_key, $field_info) {
   $fields = array();
-  if (!empty($node->$field_name)) {
-    $index_key = apachesolr_index_key($cck_info);
-    foreach ($node->{$field_name} as $field) {
-      if ($index_value = (isset($field['uid']) && strlen($field['uid'])) ? $field['uid'] : FALSE) {
-        $fields[] = array(
-          'key' => $index_key,
-          'value' => $index_value,
-        );
+  if (!empty($entity->$field_name)) {
+    $index_key = apachesolr_index_key($field_info);
+    foreach ($entity->$field_name as $field_references) {
+      foreach ($field_references as $reference) {
+        if ($index_value = (isset($reference['uid']) && strlen($reference['uid'])) ? $reference['uid'] : FALSE) {
+          $fields[] = array(
+            'key' => $index_key,
+            'value' => $index_value,
+          );
+        }
       }
     }
   }
