@@ -43,8 +43,9 @@ class ApacheSolrFacetapiAdapter extends FacetapiAdapter {
    * Returns a boolean flagging whether $this->_searcher executed a search.
    */
   public function searchExecuted() {
-    // Initial check - has ANY solr query run.
-    $this_has_searched = apachesolr_has_searched();
+    // Initial check - has ANY solr query run in our environment.
+    $env_id = $this->info['instance'];
+    $this_has_searched = apachesolr_has_searched($env_id);
     // Secondary check - do we have results for this searcher?
     $this_has_searched = $this_has_searched && apachesolr_static_response_cache($this->getSearcher());
     return $this_has_searched;
@@ -53,7 +54,8 @@ class ApacheSolrFacetapiAdapter extends FacetapiAdapter {
   public function suppressOutput($realm_name) {
     $flag = FALSE;
     if ($realm_name == 'block') {
-      $flag = apachesolr_suppress_blocks();
+      $env_id = $this->info['instance'];
+      $flag = apachesolr_suppress_blocks($env_id);
     }
     return $flag || !$this->searchExecuted();
   }
@@ -63,7 +65,8 @@ class ApacheSolrFacetapiAdapter extends FacetapiAdapter {
    */
   public function getSearchKeys() {
     if (NULL === $this->keys) {
-      if ($query = apachesolr_current_query()) {
+      $env_id = $this->info['instance'];
+      if ($query = apachesolr_current_query($env_id)) {
         return $query->getParam('q');
       }
     }
@@ -81,7 +84,8 @@ class ApacheSolrFacetapiAdapter extends FacetapiAdapter {
    * @todo D8 should provide an API function for this.
    */
   public function getSearchPath() {
-    $query = apachesolr_current_query();
+    $env_id = $this->info['instance'];
+    $query = apachesolr_current_query($env_id);
     if (NULL === $this->searchPath && NULL === $query->getPath()) {
       if ($path = module_invoke($this->info['module'] . '_search', 'search_info')) {
         $this->searchPath = 'search/' . $path['path'];

@@ -68,11 +68,11 @@ function apachesolr_search_custom_page_search_form($form, &$form_state, $search_
 
   // Set our solr environment for easy retrieval
   // TODO: this should be generic and not duplicated
-  $apachesolr_has_searched = apachesolr_has_searched();
-  $query = apachesolr_current_query();
+  $apachesolr_has_searched = apachesolr_has_searched($search_page->env_id);
+  $query = apachesolr_current_query($search_page->env_id);
 
   if ($apachesolr_has_searched) {
-    $query = apachesolr_current_query();
+    $query = apachesolr_current_query($search_page->env_id);
     $searcher = $query->getSearcher();
     // We use the presence of filter query params as a flag for the retain filters checkbox.
     $fq = $query->getParam('fq');

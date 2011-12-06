@@ -1040,57 +1040,59 @@ function apachesolr_set_stats_message($text, $type = 'status', $repeat = FALSE) 
  * Implements hook_block_view().
  */
 function apachesolr_block_view($delta = '') {
-  if (apachesolr_has_searched() && !apachesolr_suppress_blocks() && $delta == 'sort') {
-
-    $response = NULL;
-    $query = apachesolr_current_query();
-    if ($query) {
-      // Get the query and response. Without these no blocks make sense.
-      $response = apachesolr_static_response_cache($query->getSearcher());
-    }
-    if (empty($response) || ($response->response->numFound < 2)) {
-      return;
-    }
-
-    $sorts = $query->getAvailableSorts();
-
-    // Get the current sort as an array.
-    $solrsort = $query->getSolrsort();
-
-    $sort_links = array();
-    $path = $query->getPath();
-    $new_query = clone $query;
-    $toggle = array('asc' => 'desc', 'desc' => 'asc');
-    foreach ($sorts as $name => $sort) {
-      $active = $solrsort['#name'] == $name;
-      if ($name == 'score') {
-        $direction = '';
-        $new_direction = 'desc'; // We only sort by descending score.
+  $environments = apachesolr_load_all_environments();
+  foreach ($environments as $env_id => $environment) {
+    if (apachesolr_has_searched($env_id) && !apachesolr_suppress_blocks($env_id) && $delta == 'sort') {
+      $response = NULL;
+      $query = apachesolr_current_query($env_id);
+      if ($query) {
+        // Get the query and response. Without these no blocks make sense.
+        $response = apachesolr_static_response_cache($query->getSearcher());
       }
-      elseif ($active) {
-        $direction = $toggle[$solrsort['#direction']];
-        $new_direction = $toggle[$solrsort['#direction']];
+      if (empty($response) || ($response->response->numFound < 2)) {
+        return;
       }
-      else {
-        $direction = '';
-        $new_direction = $sort['default'];
+
+      $sorts = $query->getAvailableSorts();
+
+      // Get the current sort as an array.
+      $solrsort = $query->getSolrsort();
+
+      $sort_links = array();
+      $path = $query->getPath();
+      $new_query = clone $query;
+      $toggle = array('asc' => 'desc', 'desc' => 'asc');
+      foreach ($sorts as $name => $sort) {
+        $active = $solrsort['#name'] == $name;
+        if ($name == 'score') {
+          $direction = '';
+          $new_direction = 'desc'; // We only sort by descending score.
+        }
+        elseif ($active) {
+          $direction = $toggle[$solrsort['#direction']];
+          $new_direction = $toggle[$solrsort['#direction']];
+        }
+        else {
+          $direction = '';
+          $new_direction = $sort['default'];
+        }
+        $new_query->setSolrsort($name, $new_direction);
+        $sort_links[$name] = array(
+          'text' => $sort['title'],
+          'path' => $path,
+          'options' => array('query' => $new_query->getSolrsortUrlQuery()),
+          'active' => $active,
+          'direction' => $direction,
+        );
       }
-      $new_query->setSolrsort($name, $new_direction);
-      $sort_links[$name] = array(
-        'text' => $sort['title'],
-        'path' => $path,
-        'options' => array('query' => $new_query->getSolrsortUrlQuery()),
-        'active' => $active,
-        'direction' => $direction,
+      foreach ($sort_links as $name => $link) {
+        $themed_links[$name] = theme('apachesolr_sort_link', $link);
+      }
+      return array(
+      'subject' => t('Sort by'),
+        'content' => theme('apachesolr_sort_list', array('items' => $themed_links))
       );
     }
-    foreach ($sort_links as $name => $link) {
-      $themed_links[$name] = theme('apachesolr_sort_link', $link);
-    }
-    return array(
-    'subject' => t('Sort by'),
-      'content' => theme('apachesolr_sort_list', array('items' => $themed_links))
-  );
   }
 }
 
@@ -1166,31 +1168,47 @@ function apachesolr_form_facetapi_facet_dependencies_form_alter(&$form, $form_st
  *   TRUE if a search has been executed.
  *   FALSE otherwise.
  */
-function apachesolr_has_searched($searched = NULL) {
-  $_searched = &drupal_static(__FUNCTION__, FALSE);
-  if (is_bool($searched)) {
-    $_searched = $searched;
+function apachesolr_has_searched($env_id = NULL, $searched = NULL) {
+  $_searched  = &drupal_static(__FUNCTION__, FALSE);
+
+  if (empty($env_id)) {
+    $env_id = apachesolr_default_environment();
   }
-  return $_searched;
+  if (is_bool($searched)) {
+    $_searched[$env_id] = $searched;
+  }
+  // Return false if the search environment is not available in our array
+  if (!isset($_searched[$env_id])) {
+    return FALSE;
+  }
+  return $_searched[$env_id];
 }
 
 /**
  * Semaphore that indicates whether Blocks should be suppressed regardless
  * of whether a search has run.
  *
- * @param $flag
+ * @param $suppress
  *   A boolean indicating whether to suppress.
  *
  * @return
  *   TRUE if a search has been executed.
  *   FALSE otherwise.
  */
-function apachesolr_suppress_blocks($flag = NULL) {
-  $_flag = &drupal_static(__FUNCTION__, FALSE);
-  if (is_bool($flag)) {
-    $_flag = $flag;
+function apachesolr_suppress_blocks($env_id = NULL, $suppress = NULL) {
+  $_suppress = &drupal_static(__FUNCTION__, FALSE);
+
+  if (empty($env_id)) {
+    $env_id = apachesolr_default_environment();
   }
-  return $_flag;
+  if (is_bool($suppress)) {
+    $_suppress[$env_id] = $suppress;
+  }
+  // Return false if the search environment is not available in our array
+  if (!isset($_suppress[$env_id])) {
+    return FALSE;
+  }
+  return $_suppress[$env_id];
 }
 
 /**
@@ -1629,7 +1647,8 @@ function apachesolr_do_query(DrupalSolrQueryInterface $current_query, $page = 0)
 
   // Cache the original query. Since all the built queries go through
   // this process, all the hook_invocations will happen later
-  $query = apachesolr_current_query($current_query);
+  $env_id = $current_query->solr('getId');
+  $query = apachesolr_current_query($env_id, $current_query);
 
   // This hook allows modules to modify the query and params objects.
   drupal_alter('apachesolr_query', $query);
@@ -1722,14 +1741,19 @@ function apachesolr_drupal_query($name, $params = array(), $solrsort = '', $base
 /**
  * Static getter/setter for the current query. Only set once per page.
  */
-function apachesolr_current_query(DrupalSolrQueryInterface $query = NULL) {
+function apachesolr_current_query($env_id = NULL, DrupalSolrQueryInterface $query = NULL) {
   $saved_query = &drupal_static(__FUNCTION__, NULL);
 
-  if (is_object($query)) {
-    $saved_query = clone $query;
+  if (empty($env_id)) {
+    $env_id = apachesolr_default_environment();
   }
-
-  return is_object($saved_query) ? clone $saved_query : NULL;
+  if (is_object($query)) {
+    $saved_query[$env_id] = clone $query;
+  }
+  if (empty($saved_query[$env_id])) {
+    return NULL;
+  }
+  return is_object($saved_query[$env_id]) ? clone $saved_query[$env_id] : NULL;
 }
 
 /**

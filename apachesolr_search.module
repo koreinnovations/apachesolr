@@ -255,8 +255,8 @@ function apachesolr_search_block_view($delta = '') {
     $block = apachesolr_search_mlt_block_load($delta);
     if ($block && node_access('view', $node)) {
       // Get our specific environment for the MLT block
-      $solr_id = (!empty($block['mlt_env_id'])) ? $block['mlt_env_id'] : '';
-      $solr = apachesolr_get_solr($solr_id);
+      $env_id = (!empty($block['mlt_env_id'])) ? $block['mlt_env_id'] : '';
+      $solr = apachesolr_get_solr($env_id);
       $docs = apachesolr_search_mlt_suggestions($block, apachesolr_document_id($node->nid), $solr);
       if (!empty($docs)) {
         $suggestions['subject'] = check_plain($block['name']);
@@ -482,7 +482,8 @@ function apachesolr_search_search_execute($keys = NULL, $conditions = NULL) {
  */
 function apachesolr_search_conditions() {
   //get default conditions from the core_search
-  $conditions = apachesolr_search_conditions_default();
+  $search_page = apachesolr_search_page_load('core_search');
+  $conditions = apachesolr_search_conditions_default($search_page);
   return $conditions;
 }
 
@@ -509,9 +510,9 @@ function apachesolr_search_search_page($results) {
  * @param $search_page
  *   the search page that is requesting an output
  */
-function apachesolr_search_search_page_custom($results, $search_page = NULL, $build = array()) {
+function apachesolr_search_search_page_custom($results, $search_page, $build = array()) {
   // Retrieve suggestion
-  $suggestions = apachesolr_search_get_search_suggestions();
+  $suggestions = apachesolr_search_get_search_suggestions($search_page->env_id);
   if ($search_page && !empty($suggestions)) {
     $build['suggestions'] = array(
       '#theme' => 'apachesolr_search_suggestions',
@@ -521,13 +522,14 @@ function apachesolr_search_search_page_custom($results, $search_page = NULL, $bu
   // Retrieve expected results from searching
   if (!empty($results['apachesolr_search_browse'])) {
     // Show facet browsing blocks.
-    $build['search_results'] = apachesolr_search_page_browse($results['apachesolr_search_browse']);
+    $build['search_results'] = apachesolr_search_page_browse($results['apachesolr_search_browse'], $search_page->env_id);
   }
   elseif ($results) {
     $build['search_results'] = array(
       '#theme' => 'search_results',
       '#results' => $results,
       '#module' => 'apachesolr_search',
+      '#search_page' => $search_page,
     );
   }
   else {
@@ -562,6 +564,7 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
   $params = array();
   $results = array();
   try {
+
     $solr = apachesolr_get_solr($search_page->env_id);
     // Default parameters
     $params['fq'] = isset($conditions['fq']) ? $conditions['fq'] : array();
@@ -578,12 +581,12 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
     // Empty text Behavior
     if (!$keys && ($empty_search_behavior == 'browse' || $empty_search_behavior == 'blocks')) {
       // Pass empty search behavior as string on to apachesolr_search_search_page()
-      apachesolr_search_run_empty('apachesolr', $search_page->search_path);
+      apachesolr_search_run_empty('apachesolr', $search_page->search_path, $solr);
       $results['apachesolr_search_browse'] = $empty_search_behavior;
 
       if ($empty_search_behavior == 'browse') {
         // Hide sidebar blocks for content-area browsing instead.
-        apachesolr_suppress_blocks(TRUE);
+        apachesolr_suppress_blocks($search_page->env_id, TRUE);
       }
     }
     // Full text behavior
@@ -599,12 +602,8 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
   return $results;
 }
 
-function apachesolr_search_conditions_default($search_page = NULL) {
+function apachesolr_search_conditions_default($search_page) {
   $conditions = array();
-  if (empty($search_page)) {
-    $search_page = apachesolr_search_page_load('core_search');
-  }
-
   $search_type = isset($search_page->settings['apachesolr_search_search_type']) ? $search_page->settings['apachesolr_search_search_type'] : '';
   $path_replacer = isset($search_page->settings['apachesolr_search_path_replacer']) ? $search_page->settings['apachesolr_search_path_replacer'] : '';
   $search_page_fq = !empty($search_page->settings['fq']) ? $search_page->settings['fq'] : '';
@@ -669,13 +668,16 @@ function apachesolr_search_apachesolr_document_handlers($type, $namespace) {
 /**
  * Handle browse results for empty searches.
  */
-function apachesolr_search_page_browse($empty_search_behavior) {
+function apachesolr_search_page_browse($empty_search_behavior, $env_id = NULL) {
   $build = array();
 
+  if (empty($env_id)) {
+    $env_id = apachesolr_default_environment();
+  }
   // Switch in case we come up with new flags.
   switch ($empty_search_behavior) {
     case 'browse':
-      if (module_exists('facetapi') && $query = apachesolr_current_query()) {
+      if (module_exists('facetapi') && $query = apachesolr_current_query($env_id)) {
         module_load_include('inc', 'facetapi', 'facetapi.block');
         // Get facet render elements.
         $searcher = $query->getSearcher();
@@ -722,11 +724,12 @@ function theme_apachesolr_search_browse_blocks($vars) {
 /**
  * Execute a search with zero results rows so as to populate facets.
  */
-function apachesolr_search_run_empty($name, $base_path = '') {
-  $query = apachesolr_drupal_query($name, array(), '', $base_path);
+function apachesolr_search_run_empty($name, $base_path = '', $solr) {
+  $query = apachesolr_drupal_query($name, array(), '', $base_path, $solr);
   $query->addParam('rows', '0');
+  $solr_id = $query->solr('getId');
   list($final_query, $response) = apachesolr_do_query($query, 0);
-  apachesolr_has_searched(TRUE);
+  apachesolr_has_searched($solr_id, TRUE);
 }
 
 /**
@@ -780,10 +783,10 @@ function apachesolr_search_run($name, array $params = array(), $solrsort = '', $
     $query->addParam('fl', 'teaser');
   }
   list($final_query, $response) = apachesolr_do_query($query, $page);
-  apachesolr_has_searched(TRUE);
+  $solr_id = $query->solr('getId');
+  apachesolr_has_searched($solr_id, TRUE);
   return apachesolr_search_process_response($response, $final_query);
 }
-
 
 function apachesolr_search_basic_params(DrupalSolrQueryInterface $query = NULL) {
   $params = array(
@@ -1045,10 +1048,14 @@ function apachesolr_search_process_response($response, DrupalSolrQueryInterface 
  * Retrieve all of the suggestions that were given after a certain search
  * @return array()
  */
-function apachesolr_search_get_search_suggestions() {
+function apachesolr_search_get_search_suggestions($env_id = NULL) {
   $suggestions_output = array();
-  if (apachesolr_has_searched()) {
-    $query = apachesolr_current_query();
+
+  if (empty($env_id)) {
+    $env_id = apachesolr_default_environment();
+  }
+  if (apachesolr_has_searched($env_id)) {
+    $query = apachesolr_current_query($env_id);
     $keyword = $query->getParam('q');
     $searcher = $query->getSearcher();
     $response = apachesolr_static_response_cache($searcher);
@@ -1138,7 +1145,13 @@ function apachesolr_search_preprocess_search_result(&$variables) {
 function apachesolr_search_preprocess_search_results(&$variables) {
   // If this is a solr search, expose more data to themes to play with.
   if ($variables['module'] == 'apachesolr_search') {
-    $query = apachesolr_current_query();
+    // Fetch our current query
+    $env_id = NULL;
+    if (!empty($variables['search_page']->env_id)) {
+      $env_id = $variables['search_page']->env_id;
+    }
+    $query = apachesolr_current_query($env_id);
+
     if ($query) {
       $variables['query'] = $query;
       $variables['response'] = apachesolr_static_response_cache($query->getSearcher());
@@ -1187,12 +1200,14 @@ function apachesolr_search_form_search_form_alter(&$form, $form_state) {
     // No other modification make sense unless a query is active.
     // Note - this means that the query must always be run before
     // calling drupal_get_form('search_form').
-    $apachesolr_has_searched = apachesolr_has_searched();
+    // Load core search page
+    $search_page = apachesolr_search_page_load('core_search');
+    $apachesolr_has_searched = apachesolr_has_searched($search_page->env_id);
 
     $searcher = NULL;
     $fq = NULL;
     if ($apachesolr_has_searched) {
-      $query = apachesolr_current_query();
+      $query = apachesolr_current_query($search_page->env_id);
       $searcher = $query->getSearcher();
       // We use the presence of filter query params as a flag for the retain filters checkbox.
       $fq = $query->getParam('fq');
@@ -1248,10 +1263,14 @@ function apachesolr_search_form_search_submit($form, &$form_state) {
  *
  * Rebuild (empty) the spellcheck dictionary when the index is deleted..
  */
-function apachesolr_search_form_apachesolr_delete_index_form_alter(&$form, $form_state) {
+function apachesolr_search_form_apachesolr_delete_index_confirm_alter(&$form, $form_state) {
   $form['submit']['#submit'][] = 'apachesolr_search_build_spellcheck';
 }
 
+/**
+ * submit function for the delete_index form.
+ *
+ */
 function apachesolr_search_build_spellcheck($form, &$form_state) {
   try {
     $solr = apachesolr_get_solr();
@@ -1300,6 +1319,15 @@ function apachesolr_search_theme() {
       'variables' => array('docs' => NULL, 'delta' => NULL),
     ),
   );
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function apachesolr_search_theme_registry_alter(&$theme_registry) {
+  if (isset($theme_registry['search_results'])) {
+    $theme_registry['search_results']['variables']['search_page'] = NULL;
+  }
 }
 
 /**
