@@ -4,6 +4,7 @@ Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 
 Apache Solr integration 7.x-1.0-beta12, 2011-12-xx
 ------------------------------
+#1357820 by Nick_vh | vrc3: Fixed Titles for taxonomy pages are double encoded.
 #1358730 by Nick_vh | rooby: Fixed Facet only searching isn't working.
 #1362294 by pwolanin: Fix for undefined variable: title in apachesolr_get_user_title().
 #1059372 by jpmckinney, Georgique, Nick_vh: Fixed References integration is broken.
