@@ -579,9 +579,9 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
     }
 
     // Empty text Behavior
-    if (!$keys && ($empty_search_behavior == 'browse' || $empty_search_behavior == 'blocks')) {
+    if (!$keys && !isset($conditions['f']) && ($empty_search_behavior == 'browse' || $empty_search_behavior == 'blocks')) {
       // Pass empty search behavior as string on to apachesolr_search_search_page()
-      apachesolr_search_run_empty('apachesolr', $search_page->search_path, $solr);
+      apachesolr_search_run_empty('apachesolr', $params, $search_page->search_path, $solr);
       $results['apachesolr_search_browse'] = $empty_search_behavior;
 
       if ($empty_search_behavior == 'browse') {
@@ -589,8 +589,8 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
         apachesolr_suppress_blocks($search_page->env_id, TRUE);
       }
     }
-    // Full text behavior
-    elseif ($keys || ($empty_search_behavior == 'results')) {
+    // Full text behavior. Triggers with a text search or a facet
+    elseif (($keys || isset($conditions['f'])) || ($empty_search_behavior == 'results')) {
       $params['q'] = $keys;
       $results = apachesolr_search_run('apachesolr', $params, $solrsort, $search_page->search_path, pager_find_page(), $solr);
     }
@@ -724,8 +724,8 @@ function theme_apachesolr_search_browse_blocks($vars) {
 /**
  * Execute a search with zero results rows so as to populate facets.
  */
-function apachesolr_search_run_empty($name, $base_path = '', $solr) {
-  $query = apachesolr_drupal_query($name, array(), '', $base_path, $solr);
+function apachesolr_search_run_empty($name, array $params = array(), $base_path = '', $solr) {
+  $query = apachesolr_drupal_query($name, $params, '', $base_path, $solr);
   $query->addParam('rows', '0');
   $solr_id = $query->solr('getId');
   list($final_query, $response) = apachesolr_do_query($query, 0);
