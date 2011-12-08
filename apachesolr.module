@@ -1358,6 +1358,7 @@ function apachesolr_get_taxonomy_term_title($search_page_id = NULL, $value = NUL
  */
 function apachesolr_get_user_title($search_page_id = NULL, $value = NULL) {
   $page_title = 'Search results for %value';
+  $title = '';
   if (isset($value) && isset($search_page_id)) {
     $search_page = apachesolr_search_page_load($search_page_id);
     $page_title = str_replace('%value', '@value', $search_page->page_title);
