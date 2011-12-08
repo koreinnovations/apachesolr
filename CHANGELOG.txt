@@ -2,7 +2,7 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
 
-Apache Solr integration 7.x-1.0-beta12, 2011-12-07
+Apache Solr integration 7.x-1.0-beta12, 2011-12-xx
 ------------------------------
 #1362294 by pwolanin: Fix for undefined variable: title in apachesolr_get_user_title().
 #1059372 by jpmckinney, Georgique, Nick_vh: Fixed References integration is broken.
