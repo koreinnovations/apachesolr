@@ -455,15 +455,19 @@ function apachesolr_index_page($environment = NULL) {
       if (version_compare($stats_summary['@schema_version'], 'drupal-3.0-beta3', '<=')) {
         drupal_set_message(t('Your schema.xml version is too old. You must update it and re-index your content.'), 'error');
       }
-
+      $pending_msg = $stats_summary['@pending_docs'] ? t('(@pending_docs sent but not yet processed)', $stats_summary) : '';
       $status = apachesolr_index_status('apachesolr_search');
-      $indexed_message = t('@num Items (%percentage)', array(
-        '%percentage' => ((int)min(100, 100 * ($status['total'] - $status['remaining']) / max(1, $status['total']))) . '%',
+      $indexed_message = t('@num Items !pending', array(
         '@num' => $data->index->numDocs,
+        '!pending' => $pending_msg,
       ));
       $messages[] = array('Indexed', $indexed_message);
 
-      $remaining_message = t('@items', array('@items' => format_plural($status['remaining'], t('1 item'), t('@count items'))));
+      $remaining_message = t('@items (@percentage% has been sent to the server)', array(
+          '@items' => format_plural($status['remaining'], t('1 item'), t('@count items')),
+          '@percentage' => ((int)min(100, 100 * ($status['total'] - $status['remaining']) / max(1, $status['total']))),
+        )
+      );
       $messages[] = array('Remaining', $remaining_message);
 
       $messages[] = array('Schema', t('@schema_version', $stats_summary));
@@ -496,7 +500,7 @@ function apachesolr_index_page($environment = NULL) {
     // Display the Delete Index form.
     $output['apachesolr_index_action_form'] = array(
       '#prefix' => '<h3>' . t('Search Index Actions') . '</h3>',
-      'form' => drupal_get_form('apachesolr_index_action_form'),
+      'form' => drupal_get_form('apachesolr_index_action_form', $status),
     );
   }
   else {
@@ -585,19 +589,19 @@ function apachesolr_index_report($env_id = NULL) {
 /**
  * Create a form for deleting the contents of the Solr index.
  */
-function apachesolr_index_action_form() {
+function apachesolr_index_action_form($form, &$form_state, $status) {
   $form = array();
   // Jump through some forms hoops to get a description under each radio button.
   $actions = array(
     'remaining' => array(
-      'title' => t('Index Queued content'),
-      'description' => t('Could take time and could put an increased load on your server.'),
+      'title' => t('Index all queued content (@items Items)', array('@items' => $status['remaining'])),
+      'description' => t('Starts a batch job which could take a long time and could put an increased load on your server.'),
     ),
     'reindex' => array(
       'title' => t('Queue all content for reindexing'),
     ),
     'delete' => array(
-      'title' => t('Delete the Search & Solr index'),
+      'title' => t('Delete the Solr index'),
       'description' => t('Useful with a corrupt index or a new schema.xml.'),
     ),
   );
