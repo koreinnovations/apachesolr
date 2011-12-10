@@ -262,7 +262,7 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
     '#default_value' => !empty($search_page->page_title) ? $search_page->page_title : '',
   );
 
-  $search_types = apachesolr_load_all_search_types();
+  $search_types = apachesolr_search_load_all_search_types();
   $options = array('custom' => t('Custom Field'));
   foreach ($search_types as $id => $search_type) {
     $options[$id] = $search_type['name'];
@@ -388,7 +388,7 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
 function apachesolr_search_ajax_search_page_default($form, $form_state, $search_page = NULL) {
 
   $search_page = $form_state['values']['search_page'];
-  $search_types = apachesolr_load_all_search_types();
+  $search_types = apachesolr_search_load_all_search_types();
 
   // Helping with sensible defaults for the search path
   $default_search_path = '';

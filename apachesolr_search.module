@@ -105,7 +105,7 @@ function apachesolr_search_menu_alter(&$items) {
 
   // Gets default search information.
   $default_info = search_get_default_module_info();
-  $search_types = apachesolr_load_all_search_types();
+  $search_types = apachesolr_search_load_all_search_types();
 
   // Iterates over search pages, builds menu items.
   foreach ($result as $record) {
@@ -173,6 +173,116 @@ function apachesolr_search_menu_alter(&$items) {
   }
 }
 
+/**
+ * Function that loads all the search types
+ *
+ * @return array $search_types
+ */
+function apachesolr_search_load_all_search_types() {
+  $search_types = &drupal_static(__FUNCTION__);
+
+  if (isset($search_types)) {
+    return $search_types;
+  }
+  // Use cache_get to avoid DB when using memcache, etc.
+  $cache = cache_get('apachesolr_search:search_types', 'cache_apachesolr');
+  if (isset($cache->data)) {
+    $search_types = $cache->data;
+  }
+  else {
+    $search_types = array(
+        'tid' => array(
+          'name' => apachesolr_field_name_map('tid'),
+          'default menu' => 'taxonomy/term/%',
+          'title callback' => 'apachesolr_search_get_taxonomy_term_title',
+        ),
+        'is_uid' => array(
+          'name' => apachesolr_field_name_map('is_uid'),
+          'default menu' => 'user/%/search',
+          'title callback' => 'apachesolr_search_get_user_title',
+        ),
+        'bundle' => array(
+          'name' => apachesolr_field_name_map('bundle'),
+          'default menu' => 'search/type/%',
+          'title callback' => 'apachesolr_search_get_value_title',
+        ),
+        'ss_language' => array(
+          'name' => apachesolr_field_name_map('ss_language'),
+          'default menu' => 'search/language/%',
+          'title callback' => 'apachesolr_search_get_value_title',
+        ),
+    );
+    module_invoke_all('apachesolr_search_types', $search_types);
+    cache_set('apachesolr_search:search_types', $search_types, 'cache_apachesolr');
+  }
+  return $search_types;
+}
+
+/**
+ * Used as a callback function to generate a title for the taxonomy term
+ * depending on the input in the configuration screen
+ * @param integer $search_page_id
+ * @param integer $value
+ * @return String
+ */
+function apachesolr_search_get_taxonomy_term_title($search_page_id = NULL, $value = NULL) {
+   $page_title = 'Search results for %value';
+   if (isset($value) && isset($search_page_id)) {
+     $search_page = apachesolr_search_page_load($search_page_id);
+     $page_title = str_replace('%value', '!value', $search_page->page_title);
+     $term = taxonomy_term_load($value);
+     if (!$term) {
+       return;
+     }
+     $title = $term->name;
+   }
+   return t($page_title, array('!value' => $title));
+}
+
+/**
+ * Used as a callback function to generate a title for a user name depending
+ * on the input in the configuration screen
+ * @param integer $search_page_id
+ * @param integer $value
+ * @return String
+ */
+function apachesolr_search_get_user_title($search_page_id = NULL, $value = NULL) {
+  $page_title = 'Search results for %value';
+  $title = '';
+  if (isset($value) && isset($search_page_id)) {
+    $search_page = apachesolr_search_page_load($search_page_id);
+    $page_title = str_replace('%value', '!value', $search_page->page_title);
+    $user = user_load($value);
+    if (!$user) {
+       return;
+     }
+    $title = $user->name;
+  }
+  return t($page_title, array('!value' => $title));
+}
+
+/**
+ * Used as a callback function to generate a title for a node/page depending
+ * on the input in the configuration screen
+ * @param integer $search_page_id
+ * @param integer $value
+ * @return String
+ */
+function apachesolr_search_get_value_title($search_page_id = NULL, $value = NULL) {
+  $page_title = 'Search results for %value';
+  if (isset($value)  && isset($search_page_id)) {
+    $search_page = apachesolr_search_page_load($search_page_id);
+    $page_title = str_replace('%value', '!value', $search_page->page_title);
+    $title = $value;
+  }
+  return t($page_title, array('!value' => $title));
+}
+
+/**
+ * Load a search page
+ * @param string $page_id
+ * @return array
+ */
 function apachesolr_search_page_load($page_id) {
   $pages = &drupal_static(__FUNCTION__, array());
 
@@ -409,19 +519,13 @@ function theme_apachesolr_search_mlt_recommendation_block($vars) {
 }
 
 /**
- * Implements hook_cron(). Indexes nodes.
- */
-function apachesolr_search_cron() {
-  $cron_limit = variable_get('apachesolr_cron_limit', 50);
-  $rows = apachesolr_get_nodes_to_index('apachesolr_search', $cron_limit);
-  apachesolr_index_nodes($rows, 'apachesolr_search');
-}
-
-/**
  * Implements hook_apachesolr_types_exclude().
  */
 function apachesolr_search_apachesolr_types_exclude($namespace) {
-  if ($namespace == 'apachesolr_search') {
+  // Makes sure our bias setting is respected
+  // Indexing happens in apachesolr.module so tell that module to exclude
+  // certain types
+  if ($namespace == 'apachesolr_search' || $namespace == 'apachesolr') {
     $excluded_types = apachesolr_environment_variable_get(apachesolr_default_environment(), 'apachesolr_search_excluded_types', array());
     return array_filter($excluded_types);
   }
@@ -643,26 +747,6 @@ function apachesolr_search_conditions_default($search_page) {
   $sort = isset($_GET['solrsort']) ? $_GET['solrsort'] : '';
   $conditions['apachesolr_search_sort'] = $sort;
   return $conditions;
-}
-
-
-/**
- * Implements hook_apachesolr_document_handlers().
- *
- * @param string $type
- *   Entity type. 'node', 'comment', and so forth. Used to evaluate whether this module
- *   should be interested in creating documents.
- * @param string $namespace
- *   Usually the name of the module that is initiating indexing. In this case
- *   we want to register a handler if the namespace is 'apachesolr_search'.
- * @return array $handlers
- *   An array of strings that are function names. Each function returns a $document from
- *   an entity (of type $type).
- */
-function apachesolr_search_apachesolr_document_handlers($type, $namespace) {
-  if ($type == 'node' && $namespace == 'apachesolr_search') {
-    return array('apachesolr_node_to_document');
-  }
 }
 
 /**

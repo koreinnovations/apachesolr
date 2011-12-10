@@ -456,7 +456,7 @@ function apachesolr_index_page($environment = NULL) {
         drupal_set_message(t('Your schema.xml version is too old. You must update it and re-index your content.'), 'error');
       }
       $pending_msg = $stats_summary['@pending_docs'] ? t('(@pending_docs sent but not yet processed)', $stats_summary) : '';
-      $status = apachesolr_index_status('apachesolr_search');
+      $status = apachesolr_index_status('apachesolr');
       $indexed_message = t('@num Items !pending', array(
         '@num' => $data->index->numDocs,
         '!pending' => $pending_msg,
@@ -845,7 +845,7 @@ function apachesolr_batch_index_nodes(&$context) {
       return FALSE;
     }
 
-    $status = apachesolr_index_status('apachesolr_search');
+    $status = apachesolr_index_status('apachesolr');
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['max'] = $status['remaining'];
   }
@@ -855,8 +855,8 @@ function apachesolr_batch_index_nodes(&$context) {
   $limit = variable_get('apachesolr_cron_limit', 50);
 
   // With each pass through the callback, retrieve the next group of nids.
-  $rows = apachesolr_get_nodes_to_index('apachesolr_search', $limit);
-  $pos = apachesolr_index_nodes($rows, 'apachesolr_search');
+  $rows = apachesolr_get_nodes_to_index('apachesolr', $limit);
+  $pos = apachesolr_index_nodes($rows, 'apachesolr');
 
   $context['sandbox']['progress'] += $pos['nodes_processed'];
   $context['message'] = t('Indexed @current of @total nodes', array('@current' => $context['sandbox']['progress'], '@total' => $context['sandbox']['max']));

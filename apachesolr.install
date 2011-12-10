@@ -511,3 +511,17 @@ function apachesolr_update_7010() {
   db_drop_field('cache_apachesolr', 'headers');
   return 'Updated cache table schema for Drupal 7.';
 }
+
+/**
+ * Change the namespace for the indexer from apachesolr_search to apachesolr
+ */
+function apachesolr_update_7011() {
+  $stored = variable_get('apachesolr_index_last', array());
+  if (isset($stored['apachesolr_search'])) {
+    $stored['apachesolr'] = $stored['apachesolr_search'];
+    unset($stored['apachesolr_search']);
+    variable_del('apachesolr_index_last');
+    variable_set('apachesolr_index_last', $stored);
+  }
+  return 'Updated the namespace variable for the index process.';
+}
