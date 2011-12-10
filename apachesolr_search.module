@@ -1279,7 +1279,7 @@ function apachesolr_search_apachesolr_environment_delete($server) {
  * This adds the retain filters to the search form.
  */
 function apachesolr_search_form_search_form_alter(&$form, $form_state) {
-  if ($form['module']['#value'] == 'apachesolr_search') {
+  if (!empty($form['module']['#value']) && $form['module']['#value'] == 'apachesolr_search') {
     $form['#submit'][] = 'apachesolr_search_form_search_submit';
     // No other modification make sense unless a query is active.
     // Note - this means that the query must always be run before
