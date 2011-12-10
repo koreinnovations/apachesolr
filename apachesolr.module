@@ -563,7 +563,7 @@ function apachesolr_node_type_update($info) {
 function apachesolr_index_status($namespace) {
   $excluded_types = apachesolr_get_excluded_types($namespace);
   list($last_change, $last_nid) = apachesolr_get_last_change($namespace);
-
+  
   $query = db_select('apachesolr_search_node', 'asn')->condition('asn.status', 1);
   apachesolr_query_add_excluded_types($query, $excluded_types);
   $total = $query->countQuery()->execute()->fetchField();
@@ -2234,12 +2234,17 @@ function apachesolr_get_min_date(array $facet) {
   $column = $facet['field api name'] . '_value';
   $query = db_select($table, 't');
   $query->addExpression('MIN(' . $column . ')', 'min');
-  $return = $query->execute()->fetch()->min;
+  $query_min = $query->execute()->fetch()->min;
   // Update to unix timestamp if this is an ISO or other format.
-  if (!is_int($return)) {
-   $return = strtotime($return);
+  if (!is_int($query_min)) {
+    $return = strtotime($query_min);
+    if ($return === FALSE) {
+      // Not a string that strtotime accepts (ex. '0000-00-00T00:00:00').
+      // Return default start date of 1 as the date query type getDateRange()
+      // function expects a non-0 integer.
+      $return = 1;
+    }
   }
-
   return $return;
 }
 
@@ -2261,10 +2266,15 @@ function apachesolr_get_max_date(array $facet) {
   $column = $facet['field api name'] . '_value';
   $query = db_select($table, 't');
   $query->addExpression('MAX(' . $column . ')', 'max');
-  $return = $query->execute()->fetch()->max;
+  $query_max = $query->execute()->fetch()->max;
   // Update to unix timestamp if this is an ISO or other format.
-  if (!is_int($return)) {
-   $return = strtotime($return);
+  if (!is_int($query_max)) {
+    $return = strtotime($query_min);
+    if ($return === FALSE) {
+      // Not a string that strtotime accepts (ex. '0000-00-00T00:00:00').
+      // Return default end date of 1 year from now.
+      $return = time() + (52 * 7 * 24 * 60 * 60);
+    }
   }
   return $return;
 }
