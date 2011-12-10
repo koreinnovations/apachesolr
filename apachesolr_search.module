@@ -370,7 +370,11 @@ function apachesolr_search_block_view($delta = '') {
       $docs = apachesolr_search_mlt_suggestions($block, apachesolr_document_id($node->nid), $solr);
       if (!empty($docs)) {
         $suggestions['subject'] = check_plain($block['name']);
-        $suggestions['content'] = theme('apachesolr_search_mlt_recommendation_block', array('docs' => $docs, 'delta' => $delta));
+        $suggestions['content'] = array(
+          '#theme' => 'apachesolr_search_mlt_recommendation_block',
+          '#docs' => $docs,
+          '#delta' => $delta
+        );
       }
     }
     return $suggestions;
@@ -512,10 +516,11 @@ function theme_apachesolr_search_mlt_recommendation_block($vars) {
     // Suitable for single-site mode. Label is already safe.
     $links[] = l($result->label, $result->path, array('html' => TRUE));
   }
-  return array(
+  $links = array(
     '#theme' => 'item_list',
     '#items' => $links,
   );
+  return render($links);
 }
 
 /**
