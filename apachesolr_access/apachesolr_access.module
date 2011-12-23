@@ -3,7 +3,7 @@
 /**
  * Implements apachesolr_update_index
  */
-function apachesolr_access_apachesolr_update_index(&$document, $node, $namespace) {
+function apachesolr_access_apachesolr_update_index(&$document, $node, $env_id) {
   $account = &drupal_static(__FUNCTION__);
 
   if (!isset($account)) {
@@ -100,7 +100,7 @@ function apachesolr_access_node_access_records($node) {
   // full rebuild.
   if (empty($node->apachesolr_access_node_ignore) && !node_access_needs_rebuild()) {
     // Only one node is being changed - mark for re-indexing.
-    apachesolr_mark_node($node->nid);
+    apachesolr_mark_entity('node', $node->nid);
   }
 }
 
@@ -121,7 +121,8 @@ function apachesolr_access_form_alter(&$form, $form_state, $form_id) {
  */
 function apachesolr_access_rebuild_nodeaccess(&$form, $form_state) {
   drupal_set_message(t('Solr search index will be rebuilt.'));
-  apachesolr_clear_last_index();
+  // Clear last updated
+  apachesolr_index_set_last_updated();
 }
 
 function apachesolr_access_enable() {

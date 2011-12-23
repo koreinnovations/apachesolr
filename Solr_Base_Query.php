@@ -178,7 +178,8 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
   protected $available_sorts;
 
   /**
-   * The query name is used to construct a searcher string. Typically something like 'apachesolr'
+   * The query name is used to construct a searcher string. Mostly the
+   * environment id
    */
   protected $name;
   // Makes sure we always have a valid sort.
@@ -187,8 +188,8 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
   public $abort_search = FALSE;
 
   /**
-   * @param $name
-   *   A name (namespce) for this query.  Typically 'apachesolr'.
+   * @param $env_id
+   *   The environment where you are calling the query from.  Typically the default environment.
    *
    * @param $solr
    *   An instantiated DrupalApacheSolrService Object.

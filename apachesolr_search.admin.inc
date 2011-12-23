@@ -656,7 +656,6 @@ function apachesolr_search_bias_form_submit(&$form, &$form_state) {
         case 'apachesolr_search_comment_boost' :
         case 'apachesolr_search_changed_boost' :
         case 'apachesolr_search_type_boosts' :
-        case 'apachesolr_search_excluded_types' :
         case 'field_bias' :
           apachesolr_environment_variable_set($form['#env_id'], $key, $value);
       }
@@ -849,59 +848,8 @@ function apachesolr_search_type_boost_form($env_id) {
     );
   }
 
-  $form['type_boost']['apachesolr_search_excluded_types'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Types to exclude from the search index'),
-    '#options' => $names,
-    '#default_value' => apachesolr_environment_variable_get($env_id, 'apachesolr_search_excluded_types', array()),
-    '#description' => t("Specify here which node types should be totally excluded from the search index. Content excluded from the index will never appear in any search results."),
-  );
-  $form['#original_excluded_types'] =  $form['type_boost']['apachesolr_search_excluded_types']['#default_value'];
-
-  $form['#submit'][] = 'apachesolr_search_type_boost_form_submit';
-
   return $form;
 }
-
-/**
- * Submit callback for apachesolr_search_type_boost_form().
- *
- * This is called before system_settings_form_submit().
- */
-function apachesolr_search_type_boost_form_submit($form, &$form_state) {
-  $old_excluded_types = $form['#original_excluded_types'];
-  $new_excluded_types = $form_state['values']['apachesolr_search_excluded_types'];
-  // Check whether we are resetting the values.
-  if ($form_state['clicked_button']['#value'] == t('Reset to defaults')) {
-    $new_excluded_types = array();
-  }
-
-  foreach ($new_excluded_types as $type => $excluded) {
-    // Remove newly omitted node types.
-    // Note - we omit a check on empty($old_excluded_types[$type]) so that
-    // the admin can re-submit this page if the delete operation fails.
-    if (!empty($new_excluded_types[$type])) {
-      try {
-        $solr = apachesolr_get_solr($form['#env_id']);
-        $solr->deleteByQuery("bundle:$type");
-        apachesolr_index_set_last_updated(REQUEST_TIME);
-      }
-      catch (Exception $e) {
-        watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
-        drupal_set_message(t('The Apache Solr search engine is not available. Please contact your site administrator.'), 'error');
-      }
-    }
-  }
-
-  foreach ($old_excluded_types as $type => $excluded) {
-    // Set no longer omitted node types for reindexing.
-    if (empty($new_excluded_types[$type]) && !empty($old_excluded_types[$type])) {
-      $nids = db_select('node')->fields('node', array('nid'))->condition('type', $type);
-      db_update('apachesolr_search_node')->fields(array('changed' => REQUEST_TIME))->condition('nid', $nids, 'IN')->execute();
-    }
-  }
-}
-
 
 /**
  * MoreLikeThis administration and utility functions.
@@ -1034,11 +982,9 @@ function apachesolr_search_mlt_delete_block_form_submit($form, &$form_state) {
  * @param int $delta If editing, the id of the block to edit.
  *
  * @return array The form used for editing.
- * TODO:
- *   Add term boost settings.
- *   Enable the user to specify a query, rather then forcing suggestions based
- *     on the node id.
- *
+ * @todo Add term boost settings.
+ * @todo Enable the user to specify a query, rather then forcing suggestions
+ *  based on the node id.
  */
 function apachesolr_search_mlt_block_form($block_id = NULL) {
   if (!empty($block_id)) {

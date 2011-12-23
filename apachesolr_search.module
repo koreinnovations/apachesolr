@@ -183,28 +183,28 @@ function apachesolr_search_load_all_search_types() {
   }
   else {
     $search_types = array(
-        'tid' => array(
-          'name' => apachesolr_field_name_map('tid'),
-          'default menu' => 'taxonomy/term/%',
-          'title callback' => 'apachesolr_search_get_taxonomy_term_title',
-        ),
-        'is_uid' => array(
-          'name' => apachesolr_field_name_map('is_uid'),
-          'default menu' => 'user/%/search',
-          'title callback' => 'apachesolr_search_get_user_title',
-        ),
-        'bundle' => array(
-          'name' => apachesolr_field_name_map('bundle'),
-          'default menu' => 'search/type/%',
-          'title callback' => 'apachesolr_search_get_value_title',
-        ),
-        'ss_language' => array(
-          'name' => apachesolr_field_name_map('ss_language'),
-          'default menu' => 'search/language/%',
-          'title callback' => 'apachesolr_search_get_value_title',
-        ),
+      'tid' => array(
+        'name' => apachesolr_field_name_map('tid'),
+        'default menu' => 'taxonomy/term/%',
+        'title callback' => 'apachesolr_search_get_taxonomy_term_title',
+      ),
+      'is_uid' => array(
+        'name' => apachesolr_field_name_map('is_uid'),
+        'default menu' => 'user/%/search',
+        'title callback' => 'apachesolr_search_get_user_title',
+      ),
+      'bundle' => array(
+        'name' => apachesolr_field_name_map('bundle'),
+        'default menu' => 'search/type/%',
+        'title callback' => 'apachesolr_search_get_value_title',
+      ),
+      'ss_language' => array(
+        'name' => apachesolr_field_name_map('ss_language'),
+        'default menu' => 'search/language/%',
+        'title callback' => 'apachesolr_search_get_value_title',
+      ),
     );
-    module_invoke_all('apachesolr_search_types', $search_types);
+    drupal_alter('apachesolr_search_types', $search_types);
     cache_set('apachesolr_search:search_types', $search_types, 'cache_apachesolr');
   }
   return $search_types;
@@ -515,19 +515,6 @@ function theme_apachesolr_search_mlt_recommendation_block($vars) {
 }
 
 /**
- * Implements hook_apachesolr_types_exclude().
- */
-function apachesolr_search_apachesolr_types_exclude($namespace) {
-  // Makes sure our bias setting is respected
-  // Indexing happens in apachesolr.module so tell that module to exclude
-  // certain types
-  if ($namespace == 'apachesolr_search' || $namespace == 'apachesolr') {
-    $excluded_types = apachesolr_environment_variable_get(apachesolr_default_environment(), 'apachesolr_search_excluded_types', array());
-    return array_filter($excluded_types);
-  }
-}
-
-/**
  * Implementation of hook_search_info().
  */
 function apachesolr_search_search_info() {
@@ -553,14 +540,16 @@ function apachesolr_search_search_info() {
  * Implementation of hook_search_reset().
  */
 function apachesolr_search_search_reset() {
-  apachesolr_clear_last_index('apachesolr_search');
+  $env_id = apachesolr_default_environment();
+  apachesolr_index_mark_for_reindex($env_id);
 }
 
 /**
  * Implementation of hook_search_status().
  */
 function apachesolr_search_search_status() {
-  return apachesolr_index_status('apachesolr_search');
+  $env_id = apachesolr_default_environment();
+  return apachesolr_index_status($env_id);
 }
 
 /**
@@ -681,6 +670,7 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
     // Empty text Behavior
     if (!$keys && !isset($conditions['f']) && ($empty_search_behavior == 'browse' || $empty_search_behavior == 'blocks')) {
       // Pass empty search behavior as string on to apachesolr_search_search_page()
+      // Hardcoded apachesolr name since we rely on this for the facets
       apachesolr_search_run_empty('apachesolr', $params, $search_page->search_path, $solr);
       $results['apachesolr_search_browse'] = $empty_search_behavior;
 
@@ -692,6 +682,7 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
     // Full text behavior. Triggers with a text search or a facet
     elseif (($keys || isset($conditions['f'])) || ($empty_search_behavior == 'results')) {
       $params['q'] = $keys;
+      // Hardcoded apachesolr name since we rely on this for the facets
       $results = apachesolr_search_run('apachesolr', $params, $solrsort, $search_page->search_path, pager_find_page(), $solr);
     }
   }
@@ -748,12 +739,8 @@ function apachesolr_search_conditions_default($search_page) {
 /**
  * Handle browse results for empty searches.
  */
-function apachesolr_search_page_browse($empty_search_behavior, $env_id = NULL) {
+function apachesolr_search_page_browse($empty_search_behavior, $env_id) {
   $build = array();
-
-  if (empty($env_id)) {
-    $env_id = apachesolr_default_environment();
-  }
   // Switch in case we come up with new flags.
   switch ($empty_search_behavior) {
     case 'browse':
@@ -1128,12 +1115,8 @@ function apachesolr_search_process_response($response, DrupalSolrQueryInterface 
  * Retrieve all of the suggestions that were given after a certain search
  * @return array()
  */
-function apachesolr_search_get_search_suggestions($env_id = NULL) {
+function apachesolr_search_get_search_suggestions($env_id) {
   $suggestions_output = array();
-
-  if (empty($env_id)) {
-    $env_id = apachesolr_default_environment();
-  }
   if (apachesolr_has_searched($env_id)) {
     $query = apachesolr_current_query($env_id);
     $keyword = $query->getParam('q');
@@ -1163,19 +1146,14 @@ function apachesolr_search_get_search_suggestions($env_id = NULL) {
 /**
  * Implements hook_entity_info_alter().
  */
-function apachesolr_search_entity_info_alter(&$entity_info) {
-
-  // First set defaults so that we needn't worry about NULL keys.
+function apachesolr_search_apachesolr_entity_info_alter(&$entity_info) {
+  // First set defaults so that we don't need to worry about NULL keys.
   foreach (array_keys($entity_info) as $type) {
-    $entity_info[$type] += array('apachesolr' => array());
-    $entity_info[$type]['apachesolr'] += array(
-      'result callback' => '',
-    );
+    $entity_info[$type]['result callback'] = '';
   }
-
   // Now set those values that we know.  Other modules can do so
   // for their own entities if they want.
-  $entity_info['node']['apachesolr']['result callback'] = 'apachesolr_search_node_result';
+  $entity_info['node']['result callback'] = 'apachesolr_search_node_result';
 }
 
 /**
@@ -1223,10 +1201,12 @@ function apachesolr_search_preprocess_search_result(&$variables) {
 }
 
 function apachesolr_search_preprocess_search_results(&$variables) {
+  // Initialize variables
+  $env_id = NULL;
+
   // If this is a solr search, expose more data to themes to play with.
   if ($variables['module'] == 'apachesolr_search') {
     // Fetch our current query
-    $env_id = NULL;
     if (!empty($variables['search_page']->env_id)) {
       $env_id = $variables['search_page']->env_id;
     }
@@ -1449,6 +1429,3 @@ function theme_apachesolr_search_noresults() {
 <li>You can require or exclude terms using + and -: <em>big +blue drop</em> will require a match on <em>blue</em> while <em>big blue -drop</em> will exclude results that contain <em>drop</em>.</li>
 </ul>');
 }
-
-
-
