@@ -144,5 +144,85 @@ class SolrBaseQueryTests extends DrupalWebTestCase {
     $this->assertEqual(count($query->getParam('fq')), 3, count($query->getParam('fq')) . ' fq params found, expected 3 after adding subquery');
     $this->assertEqual(array('sort_label:hello', 'label:hello', '(access__all:0 OR hash:' . apachesolr_site_hash() . ')'), $query->getParam('fq'));
   }
-}
 
+  function testAddParams() {
+    $examples = array();
+    $examples['{!cache=false}inStock:true'] = array(
+      '#local' => 'cache=false',
+      '#exclude' => FALSE,
+      '#name' => 'inStock',
+      '#value' => 'true',
+    );
+    $examples['{!frange l=1 u=4 cache=false}sqrt(popularity)'] = array(
+      '#local' => 'frange l=1 u=4 cache=false',
+      '#exclude' => FALSE,
+      '#name' => NULL,
+      '#value' => 'sqrt(popularity)',
+    );
+    $examples['{!cache=false cost=5}inStock:true'] = array(
+      '#local' => 'cache=false cost=5',
+      '#exclude' => FALSE,
+      '#name' => 'inStock',
+      '#value' => 'true',
+    );
+    $examples['{!tag=impala}model:Impala'] = array(
+      '#local' => 'tag=impala',
+      '#exclude' => FALSE,
+      '#name' => 'model',
+      '#value' => 'Impala',
+    );
+    $examples['{!anything that appears to be local}'] = array(
+      '#local' => 'anything that appears to be local',
+      '#exclude' => FALSE,
+      '#name' => NULL,
+      '#value' => NULL,
+    );
+    $examples['bundle:(article OR page)'] = array(
+      '#local' => NULL,
+      '#exclude' => FALSE,
+      '#name' => 'bundle',
+      '#value' => '(article OR page)',
+    );
+    $examples['-bundle:(article OR page)'] = array(
+      '#local' => NULL,
+      '#exclude' => TRUE,
+      '#name' => 'bundle',
+      '#value' => '(article OR page)',
+    );
+    $examples['-{!anything that appears to be local}'] = array(
+      '#local' => 'anything that appears to be local',
+      '#exclude' => TRUE,
+      '#name' => NULL,
+      '#value' => NULL,
+    );
+    $examples['title:"double words"'] = array(
+      '#local' => NULL,
+      '#exclude' => FALSE,
+      '#name' => 'title',
+      '#value' => '"double words"',
+    );
+    $examples['field_date:[1970-12-31T23:59:59Z TO NOW]'] = array(
+      '#local' => NULL,
+      '#exclude' => FALSE,
+      '#name' => 'field_date',
+      '#value' => '[1970-12-31T23:59:59Z TO NOW]',
+    );
+    $query = new SolrBaseQuery("apachesolr_tests", new DummySolr());
+    foreach ($examples as $fq => $example) {
+      $query->addParam('fq', $fq);
+      // Check if filter was added
+      $message = t('hasFilter(@name, @value) is True', array('@name' => $example['#name'], '@value' => $example['#value']));
+      $this->assertTrue($query->hasFilter($example['#name'], $example['#value'], $example['#exclude']), $message);
+      $filters = $query->getFilters();
+      $filter = reset($filters);
+      $message = t('The filter "@fq" was added with all the given properties', array('@fq' => $fq));
+      $this->assertTrue(!array_diff($example, $filter), $message);
+      $query->removeFilter($example['#name']);
+      $message = t('The filter "@fq" was correctly removed', array('@fq' => $fq));
+      $this->assertFalse($query->hasFilter($example['#name'], $example['#value'], $example['#exclude']), $message);
+      // Since we cannot remove filters without names yet we have to clear the whole fq array
+      $query->removeParam('fq');
+      // Check the ones without the name also
+    }
+  }
+}

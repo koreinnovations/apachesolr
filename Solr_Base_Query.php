@@ -135,6 +135,96 @@ class SolrFilterSubQuery {
   }
 
   /**
+   * Make sure our query matches the pattern name:value or name:"value"
+   * Make sure that if we are ranges we use name:[ AND ]
+   * allowed inputs :
+   * a. bundle:article
+   * b. date:[1970-12-31T23:59:59Z TO NOW]
+   * Split the text in 4 different parts
+   * 1. name, eg.: bundle or date
+   * 2. The first opening bracket (or nothing), eg.: [
+   * 3. The value of the field, eg. article or 1970-12-31T23:59:59Z TO NOW
+   * 4. The last closing bracket, eg.: ]
+   * @param string $filter
+   *   The filter to validate
+   * @return boolean
+   */
+  public static function validFilterValue($filter) {
+    $opening = 0;
+    $closing = 0;
+    $name = NULL;
+    $value = NULL;
+
+    if (preg_match('/(?P<name>[^:]+):(?P<value>.+)?$/', $filter, $matches)) {
+      foreach ($matches as $match_id => $match) {
+        switch($match_id) {
+          case 'name' :
+            $name = $match;
+            break;
+          case 'value' :
+            $value = $match;
+            break;
+        }
+      }
+      // Only allow the regular characters, numeric characters and
+      // + - / . : and spaces
+      if (!drupal_validate_utf8($name)) {
+        return FALSE;
+      }
+
+      // For the value we any character that fits between the A-Z0-9 range and
+      // any alternative for this in other languages.
+      if (preg_match('/^[a-zA-Z0-9_\x7f-\xff]+$/', $value)) {
+        return FALSE;
+      }
+      // Check our bracket count. If it does not match it is also not valid
+      $valid_brackets = TRUE;
+      $brackets['opening']['{'] = substr_count($value, '{');
+      $brackets['closing']['}'] = substr_count($value, '}');
+      $valid_brackets = ($brackets['opening']['{'] != $brackets['closing']['}']) ? FALSE : TRUE;
+      $brackets['opening']['['] = substr_count($value, '[');
+      $brackets['closing'][']'] = substr_count($value, ']');
+      $valid_brackets = ($brackets['opening']['['] != $brackets['closing'][']']) ? FALSE : TRUE;
+      $brackets['opening']['('] = substr_count($value, '(');
+      $brackets['closing'][')'] = substr_count($value, ')');
+      $valid_brackets = ($brackets['opening']['('] != $brackets['closing'][')']) ? FALSE : TRUE;
+      if (!$valid_brackets) {
+        return FALSE;
+      }
+
+      // Check the date field inputs
+      if (preg_match('/\[(.+) TO (.+)\]$/', $value, $datefields)) {
+        // Only Allow a value in the form of
+        // http://lucene.apache.org/solr/api/org/apache/solr/schema/DateField.html
+        // http://lucene.apache.org/solr/api/org/apache/solr/util/DateMathParser.html
+        // http://wiki.apache.org/solr/SolrQuerySyntax
+        // 1976-03-06T23:59:59.999Z (valid)
+        // * (valid)
+        // 1995-12-31T23:59:59.999Z (valid)
+        // 2007-03-06T00:00:00Z (valid)
+        // NOW-1YEAR/DAY (valid)
+        // NOW/DAY+1DAY (valid)
+        // 1976-03-06T23:59:59.999Z (valid)
+        // 1976-03-06T23:59:59.999Z+1YEAR (valid)
+        // 1976-03-06T23:59:59.999Z/YEAR (valid)
+        // 1976-03-06T23:59:59.999Z (valid)
+        // 1976-03-06T23::59::59.999Z (invalid)
+        if (!empty($datefields[1]) && !empty($datefields[2])) {
+          // Do not check to full value, only the splitted ones
+          unset($datefields[0]);
+          // Check if both matches are valid datefields
+          foreach ($datefields as $datefield) {
+            if (!preg_match('/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:[\d\.]{2,6}Z(\S)*)|(^([A-Z\*]+)(\A-Z0-9\+\-\/)*)/', $datefield, $datefield_match)) {
+              return FALSE;
+            }
+          }
+        }
+      }
+    }
+    return TRUE;
+  }
+
+  /**
    * Builds a set of filter queries from $this->fields and all subqueries.
    *
    * Returns an array of strings that can be combined into
@@ -314,32 +404,33 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
   }
 
   protected function addFq($string, $index = NULL) {
-    // Gets information about the fields already in solr index.
     $string = trim($string);
     $local = '';
     $exclude = FALSE;
-    if (preg_match('/\({!([^}]+)\}(.*)/', $string, $matches)) {
+    $name = NULL;
+    $value = NULL;
+
+    // Check if we are dealing with an exclude
+    if (preg_match('/^-(.*)/', $string, $matches)) {
+      $exclude = TRUE;
+      $string = $matches[1];
+    }
+
+    // If {!something} is found as first character then this is a local value
+    if (preg_match('/\{!([^}]+)\}(.*)/', $string, $matches)) {
       $local = $matches[1];
       $string = $matches[2];
     }
-    if (preg_match('/(-|)(\(\S+\))/', $string, $matches)) {
-      // Something complicated
-      $exclude = !empty($matches[1]);
-      $this->addFilter('', $matches[2], $exclude, $local);
+
+    // Anything that has a name and value
+    // check if we have a : in the string
+    if (strstr($string, ':')) {
+      list($name, $value) = explode(":", $string, 2);
     }
-    elseif (preg_match('/(-|)([^:]+):([\("\[].+[\)"\]])/', $string, $matches)) {
-      // Something with a complicated right-hand-side.
-      // Ex.: bundle:(article OR page)
-      // Ex.: title:"double words"
-      // Ex.: field_date:[1970-12-31T23:59:59Z TO NOW]
-      $exclude = !empty($matches[1]);
-      $this->addFilter($matches[2], $matches[3], $exclude, $local);
+    else {
+      $value = $string;
     }
-    elseif (preg_match('/(-|)([^:]+):(\S+)/', $string, $matches)) {
-      //$index_fields = (array) $this->solr->getFields();
-      $exclude = !empty($matches[1]);
-      $this->addFilter($matches[2], $matches[3], $exclude, $local);
-    }
+    $this->addFilter($name, $value, $exclude, $local);
     return $this;
   }
 
