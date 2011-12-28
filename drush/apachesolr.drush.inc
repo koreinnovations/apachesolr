@@ -98,6 +98,7 @@ function apachesolr_drush_solr_delete_index() {
   $args = func_get_args();
   $env_id = apachesolr_default_environment();
   apachesolr_index_delete_index($env_id);
+  drush_print(t('Deleted the Solr index'));
 }
 
 function apachesolr_drush_solr_mark_for_reindex() {
@@ -111,9 +112,11 @@ function apachesolr_drush_solr_mark_for_reindex() {
   else {
     apachesolr_index_mark_for_reindex($env_id);
   }
+  drush_print(t('Marked content for reindexing'));
 }
 
 function apachesolr_drush_solr_index() {
+  module_load_include('inc', 'apachesolr', 'apachesolr.admin');
   $env_id = apachesolr_default_environment();
   apachesolr_index_batch_index_remaining($env_id);
   drush_backend_batch_process();
