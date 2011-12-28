@@ -75,14 +75,14 @@ function apachesolr_install() {
     ->execute();
 
   // Initialize the queue we will use for processing entities into the Solr index.
-  //DrupalQueue::get('apachesolr_indexer_entities')->createQueue();
+  DrupalQueue::get('apachesolr_indexer_entities')->createQueue();
 
   // Initialize the entities to index. We enable all node types by default
   //$info = entity_get_info('node');
   //$bundles = array_keys($info['bundles']);
   $env_id = apachesolr_default_environment();
   $bundles = content_types();
-  apachesolr_index_set_bundles($env_id, 'node', $bundles);
+  apachesolr_index_set_bundles($env_id, 'node', array_keys($bundles));
 
   // Reset the last run
   variable_set('apachesolr_index_last_run', 1);
@@ -274,11 +274,12 @@ function apachesolr_uninstall() {
   variable_del('apachesolr_index_last');
   variable_del('apachesolr_search_mlt_blocks');
   variable_del('apachesolr_cron_limit');
-  variable_del('apachesolr_exclude_nodeapi_types');
   variable_del('apachesolr_failure');
   variable_del('apachesolr_index_updated');
   variable_del('apachesolr_read_only');
   variable_del('apachesolr_set_nodeapi_messages');
+  // Remove tables.
+  drupal_uninstall_schema('apachesolr');
   // Remove blocks.
-  //db_delete('block')->condition('module', 'apachesolr')->execute();
+  db_query('DELETE FROM {blocks} WHERE module = "apachesolr"');
 }

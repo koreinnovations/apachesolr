@@ -17,12 +17,17 @@
  *   The type of entity.
  * @return boolean
  *   TRUE if this entity should be indexed, FALSE otherwise.
+ * @todo Make this more granular, backport problem
  */
 function apachesolr_entity_should_index($entity, $type) {
-  $info = entity_get_info($type);
-  list($id, $vid, $bundle) = entity_extract_ids($type, $entity);
+  // We only support node in Drupal 6
+  $type = 'node';
+  list($id, $vid, $bundle) = entity_extract_ids('node', $entity);
 
-  if ($bundle && isset($info['bundles'][$bundle]['apachesolr']['index']) && $info['bundles'][$bundle]['apachesolr']['index']) {
+  //if ($bundle && isset($info['bundles'][$bundle]['apachesolr']['index']) && $info['bundles'][$bundle]['apachesolr']['index']) {
+  //  return TRUE;
+  //}
+  if ($bundle) {
     return TRUE;
   }
   return FALSE;
@@ -35,31 +40,25 @@ function apachesolr_index_status($env_id) {
   $remaining = 0;
   $total = 0;
   $last_change = variable_get('apachesolr_index_last_run', 1);
+  $bundles = apachesolr_index_get_bundles($env_id, $type = 'node');
+  $table = apachesolr_index_get_indexer_table($type);
 
-  foreach (entity_get_info() as $type => $info) {
-    $bundles = apachesolr_index_get_bundles($env_id, $type);
-    $table = apachesolr_index_get_indexer_table($type);
-    if (empty($bundles)) {
-      continue;
-    }
-    
-    $query = db_select($table, 'asn')->condition('asn.status', 1);
-    $total += $query->countQuery()->execute()->fetchField();
+  $query = db_select($table, 'asn')->condition('asn.status', 1);
+  $total += $query->countQuery()->execute()->fetchField();
 
-    $last_entity_id = variable_get('apachesolr_index_last_run_id_' . $type, 0);
+  $last_entity_id = variable_get('apachesolr_index_last_run_id_' . $type, 0);
 
-    // Find the next batch of entities to index for this entity type.  Note that
-    // for ordering we're grabbing the oldest first and then ordering by ID so
-    // that we get a definitive order.
-    $query = db_select($table, 'aie')
-      ->condition('aie.status', 1)
-      ->condition('aie.entity_type', $type)
-      ->condition('aie.bundle', $bundles)
-      ->condition(db_or()->condition('aie.changed', $last_change, '>')
-                         ->condition('aie.changed', $last_change, '=')
-                         ->condition('aie.entity_id', $last_entity_id, '>'));
-    $remaining += $query->countQuery()->execute()->fetchField();
-  }
+  // Find the next batch of entities to index for this entity type.  Note that
+  // for ordering we're grabbing the oldest first and then ordering by ID so
+  // that we get a definitive order.
+  $query = db_select($table, 'aie')
+    ->condition('aie.status', 1)
+    ->condition('aie.entity_type', $type)
+    ->condition('aie.bundle', $bundles)
+    ->condition(db_or()->condition('aie.changed', $last_change, '>')
+                       ->condition('aie.changed', $last_change, '=')
+                       ->condition('aie.entity_id', $last_entity_id, '>'));
+  $remaining += $query->countQuery()->execute()->fetchField();
 
   return array('remaining' => $remaining, 'total' => $total);
 }
@@ -314,51 +313,50 @@ function apachesolr_index_get_entities_to_index($limit, $env_id, $entity_type = 
     return $rows;
   }
   $last_change = apachesolr_index_get_last_updated();
+  $type = 'node';
 
-  foreach (entity_get_info() as $type => $info) {
-    if (($type == $entity_type) || ($entity_type == NULL)) {
-      $bundles = apachesolr_index_get_bundles($env_id, $type);
-      $table = apachesolr_index_get_indexer_table($type);
-      $last_entity_id = variable_get('apachesolr_index_last_run_id_' . $type, 0);
+  if (($type == $entity_type) || ($entity_type == NULL)) {
+    $bundles = apachesolr_index_get_bundles($env_id, $type);
+    $table = apachesolr_index_get_indexer_table($type);
+    $last_entity_id = variable_get('apachesolr_index_last_run_id_' . $type, 0);
 
-      if (empty($bundles)) {
-        continue;
-      }
+    if (empty($bundles)) {
+      continue;
+    }
 
-      // Find the next batch of entities to index for this entity type.  Note that
-      // for ordering we're grabbing the oldest first and then ordering by ID so
-      // that we get a definitive order.
-      $query = db_select($table, 'aie')
-        ->fields('aie', array('entity_type', 'entity_id', 'changed'))
-        ->condition('aie.status', 1)
-        ->condition('aie.entity_type', $type)
-        ->condition('aie.bundle', $bundles)
-        ->condition(db_or()->condition('aie.changed', $last_change, '>')
-                           ->condition('aie.changed', $last_change)
-                           ->condition('aie.entity_id', $last_entity_id, '>'))
-        ->orderBy('aie.changed')
-        ->orderBy('aie.entity_id')
-        ->range(0, $limit);
+    // Find the next batch of entities to index for this entity type.  Note that
+    // for ordering we're grabbing the oldest first and then ordering by ID so
+    // that we get a definitive order.
+    $query = db_select($table, 'aie')
+      ->fields('aie', array('entity_type', 'entity_id', 'changed'))
+      ->condition('aie.status', 1)
+      ->condition('aie.entity_type', $type)
+      ->condition('aie.bundle', $bundles)
+      ->condition(db_or()->condition('aie.changed', $last_change, '>')
+                         ->condition('aie.changed', $last_change)
+                         ->condition('aie.entity_id', $last_entity_id, '>'))
+      ->orderBy('aie.changed')
+      ->orderBy('aie.entity_id')
+      ->range(0, $limit);
 
-      $records = $query->execute()->fetchAll();
+    $records = $query->execute()->fetchAll();
 
-      // Technically the entity system does not require an integer.
-      // However, documentation mentions :
-      // id: The name of the property that contains the primary id of the
-      // entity. Every entity object passed to the Field API must have this
-      // property and its value must be numeric.
-      // Knowing this we can savely use integer functions such as max() on
-      // the id.
-      $max_id = 0;
-      foreach ($records as $record) {
-        $rows[] = $record;
-        $max_id = max($max_id, $record->entity_id);
-      }
+    // Technically the entity system does not require an integer.
+    // However, documentation mentions :
+    // id: The name of the property that contains the primary id of the
+    // entity. Every entity object passed to the Field API must have this
+    // property and its value must be numeric.
+    // Knowing this we can savely use integer functions such as max() on
+    // the id.
+    $max_id = 0;
+    foreach ($records as $record) {
+      $rows[] = $record;
+      $max_id = max($max_id, $record->entity_id);
+    }
 
-      //do not set it to 0 because this would enable reindexing of all the types
-      if (!empty($max_id)) {
-        variable_set('apachesolr_index_last_run_id_' . $type, $max_id);
-      }
+    //do not set it to 0 because this would enable reindexing of all the types
+    if (!empty($max_id)) {
+      variable_set('apachesolr_index_last_run_id_' . $type, $max_id);
     }
   }
   return $rows;
@@ -437,13 +435,8 @@ function apachesolr_index_mark_for_reindex($env_id, $entity_type = NULL) {
  * Retrieve the indexer table for an entity type.
  */
 function apachesolr_index_get_indexer_table($type) {
-  $entity_info = entity_get_info();
-  if (isset($entity_info[$type]['apachesolr']['index_table'])) {
-    $indexer_table = $entity_info[$type]['apachesolr']['index_table'];
-  }
-  else {
-    $indexer_table = 'apachesolr_index_entities';
-  }
+  // We only support node in Drupal 6
+  $indexer_table = 'apachesolr_index_entities_node';
   return $indexer_table;
 }
 
@@ -524,17 +517,14 @@ if (!function_exists('entity_bundle_label')) {
  *   A string with the human-readable name of the bundle, or FALSE if not specified.
  */
 function entity_bundle_label($entity_type, $bundle_name) {
-  $labels = &drupal_static(__FUNCTION__, array());
-
+  static $labels = array();
   if (empty($labels)) {
-    foreach (entity_get_info() as $type => $info) {
-      foreach ($info['bundles'] as $bundle => $bundle_info) {
-        $labels[$type][$bundle] = !empty($bundle_info['label']) ? $bundle_info['label'] : FALSE;
-      }
+    foreach (content_types() as $bundle => $bundle_info) {
+        $labels['node'][$bundle] = !empty($bundle_info['name']) ? $bundle_info['name'] : FALSE;
     }
   }
-
-  return $labels[$entity_type][$bundle_name];
+  // Backport only supports node
+  return $labels['node'][$bundle_name];
 }
 
 }
@@ -982,7 +972,6 @@ function apachesolr_index_node_check_table() {
     ->where('aien.status <> n.status');
   $query->innerJoin('node', 'n', 'n.nid = aien.entity_id');
   $nodes = $query->execute();
-  dsm($nodes);
 
   // Update or delete at most this many in each Solr query.
   $limit = variable_get('apachesolr_cron_mass_limit', 500);

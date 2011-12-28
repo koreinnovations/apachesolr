@@ -146,7 +146,7 @@ class DrupalApacheSolrService {
   public function setSystemInfo() {
     $url = $this->_constructUrl(self::SYSTEM_SERVLET, array('wt' => 'json'));
     if ($this->env_id) {
-      $this->system_info_cid = $this->env_id . ":system:" . drupal_hash_base64($url);
+      $this->system_info_cid = $this->env_id . ":system:" . $this->drupal_apachesolr_hash_base64($url);
       $cache = cache_get($this->system_info_cid, 'cache_apachesolr');
       if (isset($cache->data)) {
         $this->system_info = json_decode($cache->data);
@@ -182,7 +182,7 @@ class DrupalApacheSolrService {
     if (empty($this->luke[$num_terms])) {
       $url = $this->_constructUrl(self::LUKE_SERVLET, array('numTerms' => "$num_terms", 'wt' => 'json'));
       if ($this->env_id) {
-        $cid = $this->env_id . ":luke:" . drupal_hash_base64($url);
+        $cid = $this->env_id . ":luke:" . $this->drupal_apachesolr_hash_base64($url);
         $cache = cache_get($cid, 'cache_apachesolr');
         if (isset($cache->data)) {
           $this->luke = $cache->data;
@@ -224,7 +224,7 @@ class DrupalApacheSolrService {
     if (empty($this->stats) && isset($data->index->numDocs)) {
       $url = $this->_constructUrl(self::STATS_SERVLET);
       if ($this->env_id) {
-        $this->stats_cid = $this->env_id . ":stats:" . drupal_hash_base64($url);
+        $this->stats_cid = $this->env_id . ":stats:" . $this->drupal_apachesolr_hash_base64($url);
         $cache = cache_get($this->stats_cid, 'cache_apachesolr');
         if (isset($cache->data)) {
           $this->stats = simplexml_load_string($cache->data);
@@ -792,5 +792,10 @@ class DrupalApacheSolrService {
     else {
       throw new Exception("Unsupported method '$method' for search(), use GET or POST");
     }
+  }
+  private function drupal_apachesolr_hash_base64($data) {
+    $hash = base64_encode(hash('sha256', $data, TRUE));
+    // Modify the hash so it's safe to use in URLs.
+    return strtr($hash, array('+' => '-', '/' => '_', '=' => ''));
   }
 }

@@ -738,6 +738,7 @@ function apachesolr_block_view($delta = '') {
 /**
  * We run the indexing process only for the default environment
  * Implements hook_cron().
+ * @todo See if we can add info to the content type array for the cron_check
  */
 function apachesolr_cron($env_id = NULL) {
   if (empty($env_id)) {
@@ -749,18 +750,16 @@ function apachesolr_cron($env_id = NULL) {
   }
 
   // For every entity type that requires extra validation
-  foreach (entity_get_info() as $type => $info) {
-    $bundles = apachesolr_index_get_bundles($env_id, $type);
+  $bundles = apachesolr_index_get_bundles($env_id, 'node');
 
-    // If we're not checking any bundles of this entity type, just skip them all.
-    if (empty($bundles)) {
-      continue;
-    }
+  // If we're not checking any bundles of this entity type, just skip them all.
+  if (empty($bundles)) {
+    continue;
+  }
 
-    if (isset($info['apachesolr']['cron_check'])) {
-      $callback = $info['apachesolr']['cron_check'];
-      call_user_func($callback);
-    }
+  if (isset($info['apachesolr']['cron_check'])) {
+    $callback = $info['apachesolr']['cron_check'];
+    call_user_func($callback);
   }
 
   try {
@@ -1032,6 +1031,8 @@ function apachesolr_environment_delete_page_access($permission, $environment) {
  *
  */
 function apachesolr_environment_delete($env_id) {
+  static $environments;
+  static $solr_cache;
   $environment = apachesolr_environment_load($env_id);
   if ($environment) {
     db_delete('apachesolr_environment')
@@ -1044,8 +1045,8 @@ function apachesolr_environment_delete($env_id) {
     module_invoke_all('apachesolr_environment_delete', $environment);
 
     cache_clear_all('apachesolr:environments', 'cache_apachesolr');
-    drupal_static_reset('apachesolr_load_all_environments');
-    drupal_static_reset('apachesolr_get_solr');
+    $environments = NULL;
+    $solr_cache = NULL;
   }
 }
 
@@ -1057,7 +1058,8 @@ function apachesolr_environment_delete($env_id) {
  *
  */
 function apachesolr_environment_clone($env_id) {
-
+  static $environments;
+  static $solr_cache;
   $default = array('env_id' => NULL, 'name' => '', 'url' => '', 'service_class' => '');
   $environment = apachesolr_environment_load($env_id);
   $conf = isset($environment['conf']) ? $environment['conf'] : array();
@@ -1082,8 +1084,8 @@ function apachesolr_environment_clone($env_id) {
       ->execute();
   }
   cache_clear_all('apachesolr:environments', 'cache_apachesolr');
-  drupal_static_reset('apachesolr_load_all_environments');
-  drupal_static_reset('apachesolr_get_solr');
+  $environments = NULL;
+  $solr_cache = NULL;
 }
 
 /**
@@ -1115,6 +1117,8 @@ function apachesolr_create_unique_id($existing, $id) {
  *
  */
 function apachesolr_environment_save($environment) {
+  static $environments;
+  static $solr_cache;
   $default = array('env_id' => NULL, 'name' => '', 'url' => '', 'service_class' => '');
   $is_new = !apachesolr_environment_load($environment['env_id']);
   $conf = isset($environment['conf']) ? $environment['conf'] : array();
@@ -1140,8 +1144,8 @@ function apachesolr_environment_save($environment) {
       ->execute();
   }
   cache_clear_all('apachesolr:environments', 'cache_apachesolr');
-  drupal_static_reset('apachesolr_load_all_environments');
-  drupal_static_reset('apachesolr_get_solr');
+  $environments = NULL;
+  $solr_cache = NULL;
 }
 
 /**
@@ -1163,13 +1167,15 @@ function apachesolr_environment_variable_get($env_id, $name, $default = NULL) {
  * @see variable_set()
  */
 function apachesolr_environment_variable_set($env_id, $name, $value) {
+  static $environments;
+  static $solr_cache;
   db_merge('apachesolr_environment_variable')
     ->key(array('env_id' => $env_id, 'name' => $name))
     ->fields(array('value' => serialize($value)))
     ->execute();
   cache_clear_all('apachesolr:environments', 'cache_apachesolr');
-  drupal_static_reset('apachesolr_load_all_environments');
-  drupal_static_reset('apachesolr_get_solr');
+  $environments = NULL;
+  $solr_cache = NULL;
 }
 
 /**
@@ -1178,13 +1184,15 @@ function apachesolr_environment_variable_set($env_id, $name, $value) {
  * @see variable_del()
  */
 function apachesolr_environment_variable_del($env_id, $name) {
+  static $environments;
+  static $solr_cache;
   db_delete('apachesolr_environment_variable')
     ->condition('env_id', $env_id)
     ->condition('name', $name)
     ->execute();
   cache_clear_all('apachesolr:environments', 'cache_apachesolr');
-  drupal_static_reset('apachesolr_load_all_environments');
-  drupal_static_reset('apachesolr_get_solr');
+  $environments = NULL;
+  $solr_cache = NULL;
 }
 
 /**
@@ -1872,9 +1880,10 @@ function apachesolr_userreference_map_callback($facets, $options) {
  *   callback will be checked.
  * @return string
  *   The function name for this callback, or NULL if not specified.
+ * @todo Backport work for the callbacks
  */
 function apachesolr_entity_get_callback($entity_type, $callback, $bundle = NULL) {
-  $info = entity_get_info($entity_type);
+  $info = content_types();
 
   // A bundle-specific callback takes precedence over the generic one for the
   // entity type.
@@ -1964,15 +1973,13 @@ function apachesolr_hook_info() {
   $hooks['apachesolr_index_document_alter'] = array(
     'group' => 'apachesolr',
   );
-  foreach (entity_get_info() as $entity_type => $info) {
-    $hooks['apachesolr_index_document_' . $entity_type . '_build'] = array(
+  $hooks['apachesolr_index_document_node_build'] = array(
+    'group' => 'apachesolr',
+  );
+  foreach (content_types() as $bundle => $bundle_info) {
+    $hooks['apachesolr_index_document_node_' . $bundle . '_build'] = array(
       'group' => 'apachesolr',
     );
-    foreach ($info['bundles'] as $bundle => $bundle_info) {
-      $hooks['apachesolr_index_document_' . $entity_type . '_' . $bundle . '_build'] = array(
-        'group' => 'apachesolr',
-      );
-    }
   }
 
   return $hooks;

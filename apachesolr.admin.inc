@@ -37,7 +37,6 @@ function apachesolr_environment_edit_delete_submit($form, &$form_state) {
 
   // Regardlessly of the destination parameter we want to go to another page
   unset($_GET['destination']);
-  drupal_static_reset('drupal_get_destination');
   drupal_get_destination();
 }
 
@@ -89,7 +88,7 @@ function apachesolr_environment_clone_submit($form, &$form_state) {
 /**
  * Form builder for adding/editing a Solr environment used as a menu callback.
  */
-function apachesolr_environment_edit_form($form, &$form_state, $environment = NULL) {
+function apachesolr_environment_edit_form(&$form_state, $environment = NULL) {
   if (empty($environment)) {
     $environment = array();
   }
@@ -115,17 +114,6 @@ function apachesolr_environment_edit_form($form, &$form_state, $environment = NU
     '#default_value' => $environment['name'],
     '#required' => TRUE,
   );
-  $form['env_id'] = array(
-    '#type' => 'machine_name',
-    '#title' => t('Environment id'),
-    '#machine_name' => array(
-      'exists' => 'apachesolr_environment_load',
-    ),
-    '#default_value' => $environment['env_id'],
-    '#disabled' => !empty($environment['env_id']), // Cannot change it once set.
-    '#description' => t('Unique, machine-readable identifier for this Solr environment.'),
-    '#required' => TRUE,
-  );
   $form['service_class'] = array(
     '#type' => 'value',
     '#value' => $environment['service_class'],
@@ -140,9 +128,7 @@ function apachesolr_environment_edit_form($form, &$form_state, $environment = NU
     '#options' => array(APACHESOLR_READ_WRITE => t('Read and write (normal)'), APACHESOLR_READ_ONLY => t('Read only')),
     '#description' => t('<em>Read only</em> stops this site from sending updates to this search environment. Useful for development sites.'),
   );
-  $form['actions'] = array(
-    '#type' => 'actions',
-  );
+
   $form['actions']['save'] = array(
     '#type' => 'submit',
     '#validate' => array('apachesolr_environment_edit_validate'),
@@ -164,7 +150,7 @@ function apachesolr_environment_edit_form($form, &$form_state, $environment = NU
   }
 
   // Ensures destination is an internal URL, builds "cancel" link.
-  if (isset($_GET['destination']) && !url_is_external($_GET['destination'])) {
+  if (isset($_GET['destination'])) {
     $destination = $_GET['destination'];
   }
   else {
@@ -175,7 +161,6 @@ function apachesolr_environment_edit_form($form, &$form_state, $environment = NU
     '#title' => t('Cancel'),
     '#href' => $destination,
   );
-
   return $form;
 }
 
@@ -210,6 +195,8 @@ function apachesolr_environment_edit_validate($form, &$form_state) {
 }
 
 function apachesolr_environment_edit_submit($form, &$form_state) {
+  // Backport for Drupal 6
+  $form_state['values']['env_id'] = strtolower(preg_replace(array('/[^a-zA-Z0-9]+/','/-+/','/^-+/','/-+$/',), array('-', '-', '', ''), $form_state['values']['name']));
   apachesolr_environment_save($form_state['values']);
   if (!empty($form_state['values']['make_default'])) {
     variable_set('apachesolr_default_environment', $form_state['values']['env_id']);
@@ -242,7 +229,7 @@ function apachesolr_check_facetapi() {
 /**
  * Form builder for general settings used as a menu callback.
  */
-function apachesolr_settings($form, &$form_state) {
+function apachesolr_settings(&$form_state) {
   $form = array();
   $rows = array();
 
@@ -355,10 +342,7 @@ function apachesolr_settings($form, &$form_state) {
     '#markup' => '<ul class="action-links">' . drupal_render($actions) . '</ul>',
   );
   $form['apachesolr_host_settings']['table'] = array(
-    '#theme' => 'table',
-    '#header' => $headers,
-    '#rows' => array_values($rows),
-    '#attributes' => array('class' => array('admin-apachesolr')),
+    '#value' => theme('table', $headers, array_values($rows), array('class' => array('admin-apachesolr'))),
   );
 
   $form['advanced'] = array(
@@ -487,16 +471,9 @@ function apachesolr_status_page($environment = NULL) {
   }
   // Initializes output with information about which server's setting we are
   // editing, as it is otherwise not transparent to the end user.
-  $output['apachesolr_index_action_status'] = array(
-    '#prefix' => '<h3>' . t('@environment: Search Index Content', array('@environment' => $environment['name'])) . '</h3>',
-    '#theme' => 'table',
-    '#header' => array('type', 'value'),
-    '#rows' => $messages,
-  );
-
-  $output['viewmore'] = array(
-    '#markup' => l(t('View more details on the search index contents'), 'admin/reports/apachesolr'),
-  );
+  $output['apachesolr_index_action_status_prefix'] = '<h3>' . t('@environment: Search Index Content', array('@environment' => $environment['name'])) . '</h3>';
+  $output['apachesolr_index_action_status'] = theme('table', array('type', 'value'), $messages);
+  $output['viewmore'] = l(t('View more details on the search index contents'), 'admin/reports/apachesolr');
 
   $write_status = apachesolr_environment_variable_get($env_id, 'apachesolr_read_only', APACHESOLR_READ_WRITE);
   if (($write_status == APACHESOLR_READ_WRITE) && $env_id == apachesolr_default_environment()) {
@@ -507,7 +484,13 @@ function apachesolr_status_page($environment = NULL) {
     drupal_set_message(t('Options for deleting and re-indexing are not available. This could be because the index is read-only or you are not viewing the default environment. This can be changed on the <a href="!settings_page">settings page</a>', array('!settings_page' => url('admin/config/search/apachesolr/settings/' . $env_id . '/edit', array('query' =>  drupal_get_destination())))), 'warning');
   }
 
-  return $output;
+  // Print in a similar way as the Drupal 7 version
+  $output_print = NULL;
+  foreach ($output as $print) {
+    $output_print .= $print;
+  }
+
+  return $output_print;
 }
 
 function apachesolr_index_report($env_id) {
@@ -669,7 +652,7 @@ function apachesolr_config_file($name) {
  *
  * @see apachesolr_index_action_form_delete_submit().
  */
-function apachesolr_index_action_form($form, $form_state, $env_id) {
+function apachesolr_index_action_form($form_state, $env_id) {
   $form = array();
   $form['action'] = array(
     '#type' => 'fieldset',
@@ -975,7 +958,7 @@ function apachesolr_index_batch_index_finished($success, $results, $operations) 
  *
  * @see apachesolr_index_config_form_submit().
  */
-function apachesolr_index_config_form($form, $form_state, $env_id) {
+function apachesolr_index_config_form($form_state, $env_id) {
   $form['config'] = array(
     '#type' => 'fieldset',
     '#title' => t('Configuration'),
@@ -993,26 +976,22 @@ function apachesolr_index_config_form($form, $form_state, $env_id) {
     '#value' => $env_id,
   );
 
-  foreach (entity_get_info() as $entity_type => $entity_info) {
-    if (!empty($entity_info['apachesolr']['indexable'])) {
-      $options = array();
-      foreach ($entity_info['bundles'] as $key => $info) {
-        $options[$key] = $info['label'];
-      }
-
-      $form['config']['entities']['#tree'] = TRUE;
-      $form['config']['entities'][$entity_type] = array(
-        '#type' => 'checkboxes',
-        '#title' => check_plain($entity_info['label']),
-        '#options' => $options,
-        '#default_value' => apachesolr_index_get_bundles($env_id, $entity_type),
-      );
-    }
+  $options = array();
+  foreach (content_types() as $key => $info) {
+    $options[$key] = $info['name'];
   }
+
+  $form['config']['entities']['#tree'] = TRUE;
+  $form['config']['entities']['node'] = array(
+    '#type' => 'checkboxes',
+    '#title' => 'node',
+    '#options' => $options,
+    '#default_value' => apachesolr_index_get_bundles($env_id, 'node'),
+  );
 
   $form['config']['submit'] = array('#type' => 'submit', '#value' => t('Save'));
 
-  return $form;
+  return system_settings_form($form);
 }
 
 /**
