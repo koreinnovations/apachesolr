@@ -1,5 +1,6 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1387272 by cpliakas: Fixed The cancel links and button submission redirects in facet configuration forms are broken.
 #1387088 by swentel, Nick_vh: Fixed apachesolr_index_mark_for_reindex() not found during enable/disable and drush can't load apachesolr.index.inc.
 #1313698 by Nick_vh, denikin: Fixed Support for search of multiword content in facets/fields .
 #966796 by Nick_vh, scor, BarisW, wesnick, swentel, LSU_JBob | Crell: Added Separate indexer for multiple entity types.
