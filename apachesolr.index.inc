@@ -42,7 +42,7 @@ function apachesolr_index_status($env_id) {
     if (empty($bundles)) {
       continue;
     }
-
+    
     $query = db_select($table, 'asn')->condition('asn.status', 1);
     $total += $query->countQuery()->execute()->fetchField();
 
@@ -412,7 +412,7 @@ function apachesolr_index_delete_entity_from_index($entity_type, $entity) {
  * @todo Add Type support
  */
 function apachesolr_index_mark_for_reindex($env_id, $entity_type = NULL) {
-  foreach (entity_get_info() as $type => $entity_info) {
+  foreach (content_types() as $type => $entity_info) {
     if (($type == $entity_type) || ($entity_type == NULL)) {
       if ($entity_info['apachesolr']['indexable']) {
         $bundles = apachesolr_index_get_bundles($env_id, $type);
@@ -481,7 +481,7 @@ function apachesolr_index_set_bundles($env_id, $entity_type, array $bundles) {
   }
   catch (Exception $e) {
     $transaction->rollback();
-    watchdog_exception('Apache Solr', $e);
+    watchdog('Apache Solr','Could not set bundles', WATCHDOG_ERROR);
   }
 }
 
@@ -499,7 +499,7 @@ function apachesolr_index_get_bundles($env_id, $entity_type) {
   // This could be called before the schema is installed so it is wise to
   // Verify this
   if (db_table_exists('apachesolr_index_bundles')) {
-    return db_query("SELECT bundle FROM {apachesolr_index_bundles} WHERE env_id = :env_id AND entity_type = :entity_type", array(
+    return dbtng_query("SELECT bundle FROM {apachesolr_index_bundles} WHERE env_id = :env_id AND entity_type = :entity_type", array(
       ':env_id' => $env_id,
       ':entity_type' => $entity_type,
       ))->fetchCol();
@@ -760,7 +760,7 @@ function apachesolr_vocab_name($vid) {
   $names = &drupal_static(__FUNCTION__, array());
 
   if (!isset($names[$vid])) {
-    $vocab_name = db_query('SELECT v.name FROM {taxonomy_vocabulary} v WHERE v.vid = :vid', array(':vid' => $vid))->fetchField();
+    $vocab_name = dbtng_query('SELECT v.name FROM {taxonomy_vocabulary} v WHERE v.vid = :vid', array(':vid' => $vid))->fetchField();
     $names[$vid] = preg_replace('/[^a-zA-Z0-9_\x7f-\xff]/', '_', $vocab_name);
     // Fallback for names ending up all as '_'.
     $check = rtrim($names[$vid], '_');
@@ -981,7 +981,8 @@ function apachesolr_index_node_check_table() {
     ->fields('n', array('nid', 'status'))
     ->where('aien.status <> n.status');
   $query->innerJoin('node', 'n', 'n.nid = aien.entity_id');
-  $nodes = $query->execute()->fetchAllAssoc('nid');
+  $nodes = $query->execute();
+  dsm($nodes);
 
   // Update or delete at most this many in each Solr query.
   $limit = variable_get('apachesolr_cron_mass_limit', 500);
@@ -999,7 +1000,7 @@ function apachesolr_index_node_check_table() {
     ->fields('aien', array('entity_id'))
     ->isNull('n.nid');
   $query->leftJoin('node', 'n', 'n.nid = aien.entity_id');
-  $nodes = $query->execute()->fetchAllAssoc('nid');
+  $nodes = $query->execute();
   $node_lists = array_chunk($nodes, $limit, TRUE);
 
   foreach ($node_lists as $nodes) {

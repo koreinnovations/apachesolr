@@ -1,7 +1,10 @@
 name = Apache Solr framework
 description = Framework for searching with Solr
 package = Search Toolkit
-core = 7.x
+dependencies[] = search
+dependencies[] = autoload
+dependencies[] = dbtng
+core = 6.x
 configure = admin/config/search/apachesolr/settings
 
 files[] = apachesolr.install

@@ -228,7 +228,7 @@ function apachesolr_environment_edit_submit($form, &$form_state) {
  */
 function apachesolr_check_facetapi() {
   if (!module_exists('facetapi')) {
-    $filename = db_query_range("SELECT filename FROM {system} WHERE type = 'module' AND name = 'facetapi'", 0, 1)
+    $filename = dbtng_query_range("SELECT filename FROM {system} WHERE type = 'module' AND name = 'facetapi'", 0, 1)
       ->fetchField();
     if ($filename && file_exists($filename)) {
       drupal_set_message(t('If you <a href="@modules">enable the facetapi module</a>, Apache Solr Search will provide you with configurable facets.', array('@modules' => url('admin/modules'))));
@@ -265,7 +265,7 @@ function apachesolr_settings($form, &$form_state) {
         'class' => 'operation',
         'data' => l(t('Facets'),
           'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/facets',
-          array('query' => array('destination' => current_path()))
+          array('query' => array('destination' => $_GET['q']))
         ),
      );
     }
@@ -275,7 +275,7 @@ function apachesolr_settings($form, &$form_state) {
         'class' => 'operation',
         'data' => l(t('Bias'),
           'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/bias',
-          array('query' => array('destination' => current_path()))
+          array('query' => array('destination' => $_GET['q']))
         ),
       );
     }
@@ -283,14 +283,14 @@ function apachesolr_settings($form, &$form_state) {
       'class' => 'operation',
       'data' => l(t('Index'),
         'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/index',
-         array('query' => array('destination' => current_path()))
+         array('query' => array('destination' => $_GET['q']))
       ),
     );
     $ops['edit'] = array(
       'class' => 'operation',
       'data' => l(t('Edit'),
         'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/edit',
-         array('query' => array('destination' => current_path()))
+         array('query' => array('destination' => $_GET['q']))
       ),
     );
 
@@ -344,7 +344,7 @@ function apachesolr_settings($form, &$form_state) {
         ),
         check_plain($data['url']),
       ),
-      'class' => array(drupal_html_class($class)),
+      'class' => array(drupal_strtolower($class)),
     );
     // Add the links to the page
     $rows[$environment_id]['data'] = array_merge($rows[$environment_id]['data'], $confs);
@@ -393,14 +393,15 @@ function apachesolr_settings($form, &$form_state) {
   );
 
   $options = array('apachesolr:show_error' => t('Show error message'));
-  $system_info = system_get_info('module');
-  foreach (search_get_info() as $module => $search_info) {
+
+  /*foreach (module_implements('search_info') as $module) {
+    dsm($module);
     // Don't allow apachesolr to return results on failure of apachesolr.
     if ($module == 'apachesolr_search') {
       continue;
     }
-    $options[$module] = t('Show @name search results', array('@name' => $system_info[$module]['name']));
-  }
+    $options[$module] = t('Show @name search results', array('@name' => $module));
+  }*/
 
   $options['apachesolr:show_no_results'] = t('Show no results');
   $form['advanced']['apachesolr_failure'] = array(

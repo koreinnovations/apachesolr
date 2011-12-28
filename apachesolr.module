@@ -882,7 +882,7 @@ function apachesolr_form_facetapi_facet_dependencies_form_alter(&$form, $form_st
  *   FALSE otherwise.
  */
 function apachesolr_has_searched($env_id, $searched = NULL) {
-  $_searched  = &drupal_static(__FUNCTION__, FALSE);
+  static $_searched  = FALSE;
   if (is_bool($searched)) {
     $_searched[$env_id] = $searched;
   }
@@ -905,7 +905,7 @@ function apachesolr_has_searched($env_id, $searched = NULL) {
  *   FALSE otherwise.
  */
 function apachesolr_suppress_blocks($env_id, $suppress = NULL) {
-  $_suppress = &drupal_static(__FUNCTION__, FALSE);
+  static $_suppress = FALSE;
   if (is_bool($suppress)) {
     $_suppress[$env_id] = $suppress;
   }
@@ -920,7 +920,7 @@ function apachesolr_suppress_blocks($env_id, $suppress = NULL) {
  * Get or set the default environment ID for the current page.
  */
 function apachesolr_default_environment($env_id = NULL) {
-  $default_env_id = &drupal_static(__FUNCTION__, NULL);
+  static $default_env_id;
 
   if (isset($env_id)) {
     $default_env_id = $env_id;
@@ -941,7 +941,7 @@ function apachesolr_default_environment($env_id = NULL) {
  * @throws Exception
  */
 function apachesolr_get_solr($env_id = NULL) {
-  $solr_cache = &drupal_static(__FUNCTION__);
+  static $solr_cache;
   $environments = apachesolr_load_all_environments();
 
   if (empty($env_id) || empty($environments[$env_id])) {
@@ -969,26 +969,28 @@ function apachesolr_get_solr($env_id = NULL) {
  *   The environments in the database
  */
 function apachesolr_load_all_environments() {
-  $environments = &drupal_static(__FUNCTION__);
+  static $environments;
 
   if (isset($environments)) {
     return $environments;
   }
   // Use cache_get to avoid DB when using memcache, etc.
   $cache = cache_get('apachesolr:environments', 'cache_apachesolr');
-  if (isset($cache->data)) {
+
+  if (!empty($cache->data)) {
     $environments = $cache->data;
   }
   else {
-    $environments = db_query('SELECT * FROM {apachesolr_environment}')->fetchAllAssoc('env_id', PDO::FETCH_ASSOC);
+    $environments = dbtng_query('SELECT * FROM {apachesolr_environment}')->fetchAllAssoc('env_id', PDO::FETCH_ASSOC);
     foreach ($environments as $id => &$environment) {
-      $conf = db_query('SELECT name, value FROM {apachesolr_environment_variable} WHERE env_id = :env_id', array('env_id' => $id))->fetchAllAssoc('name', PDO::FETCH_ASSOC);
+      $conf = dbtng_query('SELECT name, value FROM {apachesolr_environment_variable} WHERE env_id = :env_id', array('env_id' => $id))->fetchAllAssoc('name', PDO::FETCH_ASSOC);
       foreach ($conf as $name => $data) {
         $environment['conf'][$name] = unserialize($data['value']);
       }
     }
     cache_set('apachesolr:environments', $environments, 'cache_apachesolr');
   }
+
   return $environments;
 }
 
@@ -1191,7 +1193,7 @@ function apachesolr_environment_variable_del($env_id, $name) {
  * @return boolean TRUE if the server can be pinged, FALSE otherwise.
  */
 function apachesolr_server_status($url, $class = NULL) {
-  $status = &drupal_static(__FUNCTION__, array());
+  static $status = array();
 
   if (empty($class)) {
     $class = variable_get('apachesolr_service_class', 'DrupalApacheSolrService');
@@ -1307,7 +1309,7 @@ function apachesolr_do_query(DrupalSolrQueryInterface $current_query, $page = 0)
  *   Name of the searcher - e.g. from $query->getSearcher().
  */
 function apachesolr_static_response_cache($searcher, $response = NULL) {
-  $_response = &drupal_static(__FUNCTION__, array());
+  static $_response = array();
 
   if (is_object($response)) {
     $_response[$searcher] = clone $response;
@@ -1351,7 +1353,7 @@ function apachesolr_drupal_query($name, $params = array(), $solrsort = '', $base
  * Static getter/setter for the current query. Only set once per page.
  */
 function apachesolr_current_query($env_id, DrupalSolrQueryInterface $query = NULL) {
-  $saved_query = &drupal_static(__FUNCTION__, NULL);
+  static $saved_query = NULL;
   if (is_object($query)) {
     $saved_query[$env_id] = clone $query;
   }
@@ -1436,7 +1438,7 @@ function apachesolr_index_key($field) {
  * Try to map a schema field name to a human-readable description.
  */
 function apachesolr_field_name_map($field_name) {
-  $map = &drupal_static(__FUNCTION__);
+  static $map;
 
   if (!isset($map)) {
     $map = array(
@@ -1595,7 +1597,7 @@ function apachesolr_entity_delete($entity, $type) {
  * Returns array containing information about node fields that should be indexed
  */
 function apachesolr_entity_fields($entity_type = 'node') {
-  $fields = &drupal_static(__FUNCTION__, array());
+  static $fields = array();
 
   if (!isset($fields[$entity_type])) {
     $fields[$entity_type] = array();
@@ -2237,7 +2239,7 @@ function theme_apachesolr_settings_title($vars) {
   if ($environment = apachesolr_environment_load($vars['env_id'])) {
     $url = url(
       'admin/config/search/apachesolr/settings/',
-      array('query' => array('destination' => current_path()))
+      array('query' => array('destination' => $_GET['q']))
     );
     $output .= '<h3>';
     $output .= t(

@@ -140,7 +140,7 @@ function apachesolr_search_page_list_blocks() {
     $row[] = $environment ? check_plain($environment['name']) : check_plain(t('<Disabled>'));
     // Operations
     if (module_exists('block')) {
-      $row[] = array('data' => l(t('Configure'), 'admin/structure/block/manage/apachesolr_search/' . $search_block_id . '/configure', array('query' => array('destination' => current_path()))));
+      $row[] = array('data' => l(t('Configure'), 'admin/structure/block/manage/apachesolr_search/' . $search_block_id . '/configure', array('query' => array('destination' => $_GET['q']))));
     }
     $row[] = array('data' => l(t('Delete'), 'admin/config/search/apachesolr/search-pages/block/' . $search_block_id . '/delete'));
     $rows[$search_block_id] = $row;
