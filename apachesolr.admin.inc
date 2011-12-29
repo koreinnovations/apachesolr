@@ -378,14 +378,13 @@ function apachesolr_settings(&$form_state) {
 
   $options = array('apachesolr:show_error' => t('Show error message'));
 
-  /*foreach (module_implements('search_info') as $module) {
-    dsm($module);
+  foreach (module_implements('search_info') as $module) {
     // Don't allow apachesolr to return results on failure of apachesolr.
     if ($module == 'apachesolr_search') {
       continue;
     }
     $options[$module] = t('Show @name search results', array('@name' => $module));
-  }*/
+  }
 
   $options['apachesolr:show_no_results'] = t('Show no results');
   $form['advanced']['apachesolr_failure'] = array(
@@ -991,7 +990,7 @@ function apachesolr_index_config_form($form_state, $env_id) {
 
   $form['config']['submit'] = array('#type' => 'submit', '#value' => t('Save'));
 
-  return system_settings_form($form);
+  return $form;
 }
 
 /**
@@ -1013,8 +1012,7 @@ function apachesolr_index_config_form_submit($form, &$form_state) {
     apachesolr_index_mark_for_reindex($env_id, $entity_type);
   }
 
-  // Clear the entity cache, since we will be changing its data.
-  entity_info_cache_clear();
-
+  // Clear the content type cache, since we will be changing its data.
+  content_clear_type_cache();
   drupal_set_message(t('Your settings have been saved. You should reindex your site for the changes to take effect.'));
 }

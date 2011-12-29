@@ -96,7 +96,7 @@ function apachesolr_search_menu_alter(&$items) {
   }
 
   // Gets default search information.
-  $default_info = search_get_default_module_info();
+  //$default_info = search_get_default_module_info();
   $search_types = apachesolr_search_load_all_search_types();
 
   // Iterates over search pages, builds menu items.
