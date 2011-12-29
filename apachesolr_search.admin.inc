@@ -168,7 +168,8 @@ function apachesolr_search_page_list_blocks() {
 /**
  * Menu callback/form-builder for the form to create or edit a search page.
  */
-function apachesolr_search_page_settings_form($form, &$form_state, $search_page = NULL) {
+function apachesolr_search_page_settings_form(&$form_state, $search_page = NULL) {
+  $form = array();
   $environments = apachesolr_load_all_environments();
   $options = array('' => t('<Disabled>'));
   foreach ($environments as $id => $environment) {
@@ -481,8 +482,8 @@ function apachesolr_search_page_settings_form_submit($form, &$form_state) {
 /**
  * Deletes a single search page configuration.
  */
-function apachesolr_search_delete_search_page_confirm($form, &$form_state, $search_page) {
-
+function apachesolr_search_delete_search_page_confirm(&$form_state, $search_page) {
+  $form = array();
   // Sets values required for deletion.
   $form['page_id'] = array('#type' => 'value', '#value' => $search_page->page_id);
   $form['label'] = array('#type' => 'value', '#value' => $search_page->label);
@@ -543,7 +544,8 @@ function apachesolr_search_delete_search_page_confirm_submit($form, &$form_state
  * @param $search_page
  *   The search page that needs to be cloned
  */
-function apachesolr_search_clone_search_page_confirm($form, &$form_state, $search_page) {
+function apachesolr_search_clone_search_page_confirm(&$form_state, $search_page) {
+  $form = array();
   $form['page_id'] = array(
     '#type' => 'value',
     '#value' => $search_page->page_id,
@@ -618,7 +620,8 @@ function apachesolr_bias_settings_page($environment = NULL) {
   return $output;
 }
 
-function apachesolr_search_bias_form($form, &$form_state, $env_id, $fields) {
+function apachesolr_search_bias_form(&$form_state, $env_id, $fields) {
+  $form = array();
   $form['#env_id'] = $env_id;
   $form['bias_tabs'] = array(
     '#type' => 'vertical_tabs',
@@ -944,7 +947,8 @@ function apachesolr_search_mlt_save_block($block_settings = array(), $delta = NU
   variable_set('apachesolr_search_mlt_blocks', $blocks);
 }
 
-function apachesolr_search_mlt_delete_block_form($form, &$form_state, $block) {
+function apachesolr_search_mlt_delete_block_form(&$form_state, $block) {
+  $form = array();
   if ($block) {
     // Backwards compatibility for the block deltas
     if (isset($block['delta'])) {

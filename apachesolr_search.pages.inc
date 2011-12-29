@@ -39,7 +39,8 @@ function apachesolr_search_custom_page($page_id, $keys = '', $path_replacer = NU
 /**
  * Search for placed on user defined search pages.
  */
-function apachesolr_search_custom_page_search_form($form, &$form_state, $search_page, $keys = '') {
+function apachesolr_search_custom_page_search_form(&$form_state, $search_page, $keys = '') {
+  $form = array();
   // Loads the core Search CSS file, use the core search module's classes.
   drupal_add_css(drupal_get_path('module', 'search') . '/search.css');
 

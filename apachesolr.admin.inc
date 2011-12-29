@@ -10,7 +10,8 @@
  * @param $environment
  *   The environment to delete
  */
-function apachesolr_environment_delete_form($form, &$form_state, $environment) {
+function apachesolr_environment_delete_form(&$form_state, $environment) {
+  $form = array();
   $form['env_id'] = array(
     '#type' => 'value',
     '#value' => $environment['env_id'],
@@ -59,7 +60,8 @@ function apachesolr_environment_settings_page($environment = NULL) {
   return $output;
 }
 
-function apachesolr_environment_clone_form($form, &$form_state, $environment) {
+function apachesolr_environment_clone_form(&$form_state, $environment) {
+  $form = array();
   $form['env_id'] = array(
     '#type' => 'value',
     '#value' => $environment['env_id'],
@@ -988,7 +990,8 @@ function apachesolr_index_batch_index_finished($success, $results, $operations) 
  *
  * @see apachesolr_index_config_form_submit().
  */
-function apachesolr_index_config_form($form_state, $env_id) {
+function apachesolr_index_config_form(&$form_state, $env_id) {
+  $form = array();
   $form['config'] = array(
     '#type' => 'fieldset',
     '#title' => t('Configuration'),
