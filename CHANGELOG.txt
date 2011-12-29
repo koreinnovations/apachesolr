@@ -4,6 +4,7 @@ Apache Solr Search Integration x.x-x.x, xxxx-xx-xx
 
 Apache Solr Search Integration 6.x-1.x, xxxx-xx-xx
 ------------------------------
+#1098038 by pwolanin | mgifford: Fixed Did you mean - shouldn't be a <label> element.
 #1369192 by pwolanin: In schema rename 'partitioned" handler to "drupal" for consistency with 7.x.
 #1320554 by catch: Unnecessary count() in Solr_Base_Query::parse_filters().
 
