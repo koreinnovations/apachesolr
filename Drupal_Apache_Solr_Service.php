@@ -422,7 +422,13 @@ class DrupalApacheSolrService {
       $options['data'] = NULL;
     }
 
-    $result = drupal_http_request($url, $options);
+    // Add our default params. This does not override our existing values
+    $options += array(
+      'headers' => array(),
+      'method' => 'GET',
+      'data' => NULL,
+    );
+    $result = drupal_http_request($url, $options['headers'], $options['method'], $options['data']);
 
     if (!isset($result->code) || $result->code < 0) {
       $result->code = 0;

@@ -25,7 +25,7 @@ function apachesolr_init() {
  */
 function apachesolr_menu() {
   $items = array();
-  $items['admin/config/search/apachesolr'] = array(
+  $items['admin/settings/apachesolr'] = array(
     'title'              => 'Apache Solr search',
     'description'        => 'Administer Apache Solr.',
     'page callback'      => 'apachesolr_status_page',
@@ -33,7 +33,7 @@ function apachesolr_menu() {
     'weight'             => -8,
     'file'               => 'apachesolr.admin.inc',
   );
-  $items['admin/config/search/apachesolr/index'] = array(
+  $items['admin/settings/apachesolr/index'] = array(
     'title'              => 'Default index',
     'description'        => 'Administer Apache Solr.',
     'page callback'      => 'apachesolr_status_page',
@@ -43,7 +43,7 @@ function apachesolr_menu() {
     'type'               => MENU_DEFAULT_LOCAL_TASK,
   );
 
-  $items['admin/config/search/apachesolr/settings'] = array(
+  $items['admin/settings/apachesolr/settings'] = array(
     'title'              => 'Settings',
     'weight'             => 10,
     'page callback'      => 'drupal_get_form',
@@ -53,11 +53,11 @@ function apachesolr_menu() {
     'type'               => MENU_LOCAL_TASK,
   );
 
-  $settings_path = 'admin/config/search/apachesolr/settings/';
+  $settings_path = 'admin/settings/apachesolr/settings/';
   $items[$settings_path . '%apachesolr_environment/index'] = array(
     'title'              => 'Index',
     'page callback'      => 'apachesolr_status_page',
-    'page arguments'     => array(5),
+    'page arguments'     => array(4),
     'access arguments'   => array('administer search'),
     'weight'             => 0,
     'file'               => 'apachesolr.admin.inc',
@@ -65,8 +65,9 @@ function apachesolr_menu() {
   );
   $items[$settings_path . '%apachesolr_environment/index/remaining'] = array(
     'title'              => 'Remaining',
+    'page callback'      => 'apachesolr_status_page',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('apachesolr_index_action_form_remaining_confirm', 5),
+    'page arguments'     => array('apachesolr_index_action_form_remaining_confirm', 4),
     'file'               => 'apachesolr.admin.inc',
     'access arguments'   => array('administer search'),
     'type'               => MENU_CALLBACK,
@@ -74,7 +75,7 @@ function apachesolr_menu() {
   $items[$settings_path . '%apachesolr_environment/index/delete'] = array(
     'title'              => 'Reindex',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('apachesolr_index_action_form_delete_confirm', 5),
+    'page arguments'     => array('apachesolr_index_action_form_delete_confirm', 4),
     'file'               => 'apachesolr.admin.inc',
     'access arguments'   => array('administer search'),
     'type'               => MENU_CALLBACK,
@@ -82,7 +83,7 @@ function apachesolr_menu() {
   $items[$settings_path . '%apachesolr_environment/index/reset'] = array(
     'title'              => 'Reindex',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('apachesolr_index_action_form_reset_confirm', 5),
+    'page arguments'     => array('apachesolr_index_action_form_reset_confirm', 4),
     'file'               => 'apachesolr.admin.inc',
     'access arguments'   => array('administer search'),
     'type'               => MENU_CALLBACK,
@@ -90,7 +91,7 @@ function apachesolr_menu() {
   $items[$settings_path . '%apachesolr_environment/index/reset/confirm'] = array(
     'title'              => 'Confirm the re-indexing of all content',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('apachesolr_clear_index_confirm', 5),
+    'page arguments'     => array('apachesolr_clear_index_confirm', 4),
     'access arguments'   => array('administer search'),
     'file'               => 'apachesolr.admin.inc',
     'type'               => MENU_CALLBACK,
@@ -98,7 +99,7 @@ function apachesolr_menu() {
   $items[$settings_path . '%apachesolr_environment/index/delete/confirm'] = array(
     'title'              => 'Confirm index deletion',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('apachesolr_delete_index_confirm', 5),
+    'page arguments'     => array('apachesolr_delete_index_confirm', 4),
     'access arguments'   => array('administer search'),
     'file'               => 'apachesolr.admin.inc',
     'type'               => MENU_CALLBACK,
@@ -106,7 +107,7 @@ function apachesolr_menu() {
   $items[$settings_path . '%apachesolr_environment/edit'] = array(
     'title'              => 'Edit',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('apachesolr_environment_edit_form', 5),
+    'page arguments'     => array('apachesolr_environment_edit_form', 4),
     'description'        => 'Edit Apache Solr search environment.',
     'access arguments'   => array('administer search'),
     'weight'             => 10,
@@ -116,16 +117,16 @@ function apachesolr_menu() {
   $items[$settings_path . '%apachesolr_environment/clone'] = array(
     'title'              => 'Apache Solr search environment clone',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('apachesolr_environment_clone_form', 5),
+    'page arguments'     => array('apachesolr_environment_clone_form', 4),
     'access arguments'   => array('administer search'),
     'file'               => 'apachesolr.admin.inc',
   );
   $items[$settings_path . '%apachesolr_environment/delete'] = array(
     'title'              => 'Apache Solr search environment delete',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('apachesolr_environment_delete_form', 5),
+    'page arguments'     => array('apachesolr_environment_delete_form', 4),
     'access callback'    => 'apachesolr_environment_delete_page_access',
-    'access arguments'   => array('administer search', 5),
+    'access arguments'   => array('administer search', 4),
     'file'               => 'apachesolr.admin.inc',
   );
   $items[$settings_path . 'add'] = array(
@@ -137,7 +138,7 @@ function apachesolr_menu() {
     'file'               => 'apachesolr.admin.inc',
     'type'               => MENU_LOCAL_ACTION,
   );
-  $items['admin/config/search/apachesolr/index/confirm/clear'] = array(
+  $items['admin/settings/apachesolr/index/confirm/clear'] = array(
     'title'              => 'Confirm the re-indexing of all content',
     'page callback'      => 'drupal_get_form',
     'page arguments'     => array('apachesolr_clear_index_confirm'),
@@ -145,7 +146,7 @@ function apachesolr_menu() {
     'file'               => 'apachesolr.admin.inc',
     'type'               => MENU_CALLBACK,
   );
-  $items['admin/config/search/apachesolr/index/confirm/delete'] = array(
+  $items['admin/settings/apachesolr/index/confirm/delete'] = array(
     'title'              => 'Confirm index deletion',
     'page callback'      => 'drupal_get_form',
     'page arguments'     => array('apachesolr_delete_index_confirm'),
@@ -194,7 +195,7 @@ function apachesolr_menu() {
         $items[$settings_path . '%apachesolr_environment/facets'] = array(
           'title'            => 'Facets',
           'page callback'    => 'apachesolr_enabled_facets_page',
-          'page arguments'   =>  array($realm_name, 5),
+          'page arguments'   =>  array($realm_name, 4),
           'weight'           => -5,
           'access arguments' => array('administer search'),
           'file path'        => $file_path,
@@ -207,7 +208,7 @@ function apachesolr_menu() {
         $items[$settings_path . '%apachesolr_environment/facets/' . $realm_name] = array(
           'title'            => $realm['label'],
           'page callback'    => 'apachesolr_enabled_facets_page',
-          'page arguments'   => array($realm_name, 5),
+          'page arguments'   => array($realm_name, 4),
           'weight'           => -5,
           'access arguments' => array('administer search'),
           'type'             => MENU_LOCAL_TASK,
@@ -849,8 +850,8 @@ function apachesolr_set_facetapi_breadcrumb(FacetapiAdapter $adapter, array $rea
     list(, $env_id) = explode('@', $adapter->getSearcher());
     // Appends additional breadcrumb items.
     $breadcrumb = drupal_get_breadcrumb();
-    $breadcrumb[] = l(t('Apache Solr search environment edit'), 'admin/config/search/apachesolr/settings/' . $env_id);
-    $breadcrumb[] = l($realm['label'], 'admin/config/search/apachesolr/settings/' . $env_id . '/facets/' . $realm['name']);
+    $breadcrumb[] = l(t('Apache Solr search environment edit'), 'admin/settings/apachesolr/settings/' . $env_id);
+    $breadcrumb[] = l($realm['label'], 'admin/settings/apachesolr/settings/' . $env_id . '/facets/' . $realm['name']);
     drupal_set_breadcrumb($breadcrumb);
   }
 }
@@ -1549,11 +1550,19 @@ function apachesolr_content_extra_fields_alter($extra, $content_type) {
 }
 
 /**
- * Implements hook_entity_insert().
+ * Implementation of hook_nodeapi().
  */
-function apachesolr_entity_insert($entity, $type) {
-  // For our purposes there's really no difference between insert and update.
-  return apachesolr_entity_update($entity, $type);
+function apachesolr_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  switch ($op) {
+    case 'delete':
+      apachesolr_entity_delete($node, 'node');
+      break;
+    case 'insert':
+    case 'update':
+      // Insert or update are the same
+      apachesolr_entity_update($node, 'node');
+      break;
+  }
 }
 
 /**
@@ -1562,7 +1571,9 @@ function apachesolr_entity_insert($entity, $type) {
 function apachesolr_entity_update($entity, $type) {
   if (apachesolr_entity_should_index($entity, $type)) {
     $info = entity_get_info($type);
-    list($id, $vid, $bundle) = entity_extract_ids($type, $entity);
+    $id = $entity->nid;
+    $vid = $entity->vid;
+    $bundle = $entity->type;
 
     $status_callback = apachesolr_entity_get_callback($type, 'status callback');
     $status = 0;
@@ -1596,7 +1607,7 @@ function apachesolr_entity_update($entity, $type) {
 function apachesolr_entity_delete($entity, $type) {
   if (apachesolr_index_delete_entity_from_index($type, $entity)) {
     // There was no exception, so delete from the table.
-    list($id) = entity_extract_ids($type, $entity);
+    $id = $entity->nid;
     $indexer_table = apachesolr_index_get_indexer_table($type);
     db_delete($indexer_table)
       ->condition('entity_type', $type)
@@ -2249,7 +2260,7 @@ function theme_apachesolr_settings_title($vars) {
   // edit page. Skips building title if environment info could not be retrieved.
   if ($environment = apachesolr_environment_load($vars['env_id'])) {
     $url = url(
-      'admin/config/search/apachesolr/settings/',
+      'admin/settings/apachesolr/settings/',
       array('query' => array('destination' => $_GET['q']))
     );
     $output .= '<h3>';

@@ -10,7 +10,7 @@
  * Implements hook_menu().
  */
 function apachesolr_search_menu() {
-  $items['admin/config/search/apachesolr/search-pages'] = array(
+  $items['admin/settings/apachesolr/search-pages'] = array(
     'title'            => 'Pages/Blocks',
     'description'      => 'Configure search pages',
     'page callback'    => 'apachesolr_search_page_list_all',
@@ -18,7 +18,7 @@ function apachesolr_search_menu() {
     'type'             => MENU_LOCAL_TASK,
     'file'             => 'apachesolr_search.admin.inc',
   );
-  $items['admin/config/search/apachesolr/search-pages/add'] = array(
+  $items['admin/settings/apachesolr/search-pages/add'] = array(
     'title'            => 'Add search page',
     'page callback'    => 'drupal_get_form',
     'page arguments'   => array('apachesolr_search_page_settings_form'),
@@ -27,28 +27,28 @@ function apachesolr_search_menu() {
     'weight'           => 1,
     'file'             => 'apachesolr_search.admin.inc',
   );
-  $items['admin/config/search/apachesolr/search-pages/%apachesolr_search_page/edit'] = array(
+  $items['admin/settings/apachesolr/search-pages/%apachesolr_search_page/edit'] = array(
     'title' => 'Edit search page',
     'page callback'    => 'drupal_get_form',
     'page arguments'   => array('apachesolr_search_page_settings_form', 5),
     'access arguments' => array('administer search'),
     'file'             => 'apachesolr_search.admin.inc',
   );
-  $items['admin/config/search/apachesolr/search-pages/%apachesolr_search_page/delete'] = array(
+  $items['admin/settings/apachesolr/search-pages/%apachesolr_search_page/delete'] = array(
     'title'            => 'Delete search page',
     'page callback'    => 'drupal_get_form',
     'page arguments'   => array('apachesolr_search_delete_search_page_confirm', 5),
     'access arguments' => array('administer search'),
     'file'             => 'apachesolr_search.admin.inc',
   );
-  $items['admin/config/search/apachesolr/search-pages/%apachesolr_search_page/clone'] = array(
+  $items['admin/settings/apachesolr/search-pages/%apachesolr_search_page/clone'] = array(
     'title' => 'Clone search page',
     'page callback'    => 'drupal_get_form',
     'page arguments'   => array('apachesolr_search_clone_search_page_confirm', 5),
     'access arguments' => array('administer search'),
     'file'             => 'apachesolr_search.admin.inc',
   );
-  $items['admin/config/search/apachesolr/search-pages/addblock'] = array(
+  $items['admin/settings/apachesolr/search-pages/addblock'] = array(
     'title'            => 'Add search block "More Like This"',
     'page callback'    => 'drupal_get_form',
     'page arguments'   => array('apachesolr_search_mlt_add_block_form'),
@@ -57,7 +57,7 @@ function apachesolr_search_menu() {
     'weight'           => 2,
     'file'             => 'apachesolr_search.admin.inc',
   );
-  $items['admin/config/search/apachesolr/search-pages/block/%apachesolr_search_mlt_block/delete'] = array(
+  $items['admin/settings/apachesolr/search-pages/block/%apachesolr_search_mlt_block/delete'] = array(
     'page callback'      => 'drupal_get_form',
     'page arguments'     => array('apachesolr_search_mlt_delete_block_form', 6),
     'access arguments'   => array('administer search'),
@@ -66,7 +66,7 @@ function apachesolr_search_menu() {
   );
 
   // Environment specific settings
-  $settings_path = 'admin/config/search/apachesolr/settings/';
+  $settings_path = 'admin/settings/apachesolr/settings/';
   $items[$settings_path . '%apachesolr_environment/bias'] = array(
     'title'            => 'Bias',
     'page callback'    => 'apachesolr_bias_settings_page',
@@ -382,7 +382,7 @@ function apachesolr_search_form_block_admin_display_form_alter(&$form) {
       $form['blocks'][$key]['delete'] = array(
         '#type' => 'link',
         '#title' => 'delete',
-        '#href' => 'admin/config/search/apachesolr/search-pages/block/' . $block['delta']['#value'] . '/delete',
+        '#href' => 'admin/settings/apachesolr/search-pages/block/' . $block['delta']['#value'] . '/delete',
       );
     }
   }

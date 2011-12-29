@@ -18,7 +18,7 @@ function apachesolr_environment_delete_form($form, &$form_state, $environment) {
   return confirm_form(
     $form,
     t('Are you sure you want to delete search environment %name?', array('%name' => $environment['name'])),
-    'admin/config/search/apachesolr',
+    'admin/settings/apachesolr',
     t('This action cannot be undone.'),
     t('Delete'),
     t('Cancel')
@@ -29,11 +29,11 @@ function apachesolr_environment_delete_form_submit($form, &$form_state) {
   if (apachesolr_environment_delete($form_state['values']['env_id'])) {
     drupal_set_message(t('The search environment was deleted'));
   }
-  $form_state['redirect'] = 'admin/config/search/apachesolr/settings';
+  $form_state['redirect'] = 'admin/settings/apachesolr/settings';
 }
 
 function apachesolr_environment_edit_delete_submit($form, &$form_state) {
-  $form_state['redirect'] = 'admin/config/search/apachesolr/settings/' . $form_state['values']['env_id'] . '/delete';
+  $form_state['redirect'] = 'admin/settings/apachesolr/settings/' . $form_state['values']['env_id'] . '/delete';
 
   // Regardlessly of the destination parameter we want to go to another page
   unset($_GET['destination']);
@@ -67,7 +67,7 @@ function apachesolr_environment_clone_form($form, &$form_state, $environment) {
   return confirm_form(
     $form,
     t('Are you sure you want to clone search environment %name?', array('%name' => $environment['name'])),
-    'admin/config/search/apachesolr',
+    'admin/settings/apachesolr',
     '',
     t('Clone'),
     t('Cancel')
@@ -78,11 +78,11 @@ function apachesolr_environment_clone_form_submit($form, &$form_state) {
   if (apachesolr_environment_clone($form_state['values']['env_id'])) {
     drupal_set_message(t('The search environment was cloned'));
   }
-  $form_state['redirect'] = 'admin/config/search/apachesolr/settings';
+  $form_state['redirect'] = 'admin/settings/apachesolr/settings';
 }
 
 function apachesolr_environment_clone_submit($form, &$form_state) {
-  $form_state['redirect'] = 'admin/config/search/apachesolr/settings/' . $form_state['values']['env_id'] . '/clone';
+  $form_state['redirect'] = 'admin/settings/apachesolr/settings/' . $form_state['values']['env_id'] . '/clone';
 }
 
 /**
@@ -154,7 +154,7 @@ function apachesolr_environment_edit_form(&$form_state, $environment = NULL) {
     $destination = $_GET['destination'];
   }
   else {
-    $destination = 'admin/config/search/apachesolr';
+    $destination = 'admin/settings/apachesolr';
   }
   $form['actions']['cancel'] = array(
     '#type' => 'link',
@@ -203,7 +203,7 @@ function apachesolr_environment_edit_submit($form, &$form_state) {
   }
   cache_clear_all('apachesolr:environments', 'cache_apachesolr');
   drupal_set_message(t('The %name search environment has been saved.', array('%name' => $form_state['values']['name'])));
-  $form_state['redirect'] = 'admin/config/search/apachesolr/settings';
+  $form_state['redirect'] = 'admin/settings/apachesolr/settings';
 }
 
 /**
@@ -251,7 +251,7 @@ function apachesolr_settings(&$form_state) {
       $confs['facets'] = array(
         'class' => 'operation',
         'data' => l(t('Facets'),
-          'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/facets',
+          'admin/settings/apachesolr/settings/' . $data['env_id'] . '/facets',
           array('query' => array('destination' => $_GET['q']))
         ),
      );
@@ -261,7 +261,7 @@ function apachesolr_settings(&$form_state) {
       $confs['result_bias'] = array(
         'class' => 'operation',
         'data' => l(t('Bias'),
-          'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/bias',
+          'admin/settings/apachesolr/settings/' . $data['env_id'] . '/bias',
           array('query' => array('destination' => $_GET['q']))
         ),
       );
@@ -269,14 +269,14 @@ function apachesolr_settings(&$form_state) {
     $confs['index'] = array(
       'class' => 'operation',
       'data' => l(t('Index'),
-        'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/index',
+        'admin/settings/apachesolr/settings/' . $data['env_id'] . '/index',
          array('query' => array('destination' => $_GET['q']))
       ),
     );
     $ops['edit'] = array(
       'class' => 'operation',
       'data' => l(t('Edit'),
-        'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/edit',
+        'admin/settings/apachesolr/settings/' . $data['env_id'] . '/edit',
          array('query' => array('destination' => $_GET['q']))
       ),
     );
@@ -284,11 +284,11 @@ function apachesolr_settings(&$form_state) {
     $ops['clone'] = array(
       'class' => 'operation',
       'data' => l(t('Clone'),
-        'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/clone',
+        'admin/settings/apachesolr/settings/' . $data['env_id'] . '/clone',
         array('query' => array('destination' => $_GET['q']))
       ),
     );
-    $env_name = l(check_plain($data['name']), 'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/edit', array('query' => array('destination' => $_GET['q'])));
+    $env_name = l(check_plain($data['name']), 'admin/settings/apachesolr/settings/' . $data['env_id'] . '/edit', array('query' => array('destination' => $_GET['q'])));
     // Is this row our default environment?
     if ($environment_id == $default_environment) {
       $env_name = t('!environment <em>(Default)</em>', array('!environment' => $env_name));
@@ -300,7 +300,7 @@ function apachesolr_settings(&$form_state) {
       // For every non-default we add a delete link
       $ops['delete'] = array(
         'class' => 'operation',
-        'data' => l(t('Delete'), 'admin/config/search/apachesolr/settings/' . $data['env_id'] . '/delete'),
+        'data' => l(t('Delete'), 'admin/settings/apachesolr/settings/' . $data['env_id'] . '/delete'),
       );
     }
 
@@ -411,7 +411,7 @@ function apachesolr_status_page($environment = NULL) {
 
   // Check for availability
   if (!apachesolr_server_status($environment['url'])) {
-    drupal_set_message(t('The server seems to be unavailable. Please verify the server settings at the <a href="!settings_page">settings page</a>', array('!settings_page' => url("admin/config/search/apachesolr/settings/{$environment['env_id']}/edit", array('query' =>  drupal_get_destination())))), 'warning');
+    drupal_set_message(t('The server seems to be unavailable. Please verify the server settings at the <a href="!settings_page">settings page</a>', array('!settings_page' => url("admin/settings/apachesolr/settings/{$environment['env_id']}/edit", array('query' =>  drupal_get_destination())))), 'warning');
     return '';
   }
 
@@ -480,7 +480,7 @@ function apachesolr_status_page($environment = NULL) {
      $output['index_config_form'] = drupal_get_form('apachesolr_index_config_form', $env_id);
   }
   else {
-    drupal_set_message(t('Options for deleting and re-indexing are not available. This could be because the index is read-only or you are not viewing the default environment. This can be changed on the <a href="!settings_page">settings page</a>', array('!settings_page' => url('admin/config/search/apachesolr/settings/' . $env_id . '/edit', array('query' =>  drupal_get_destination())))), 'warning');
+    drupal_set_message(t('Options for deleting and re-indexing are not available. This could be because the index is read-only or you are not viewing the default environment. This can be changed on the <a href="!settings_page">settings page</a>', array('!settings_page' => url('admin/settings/apachesolr/settings/' . $env_id . '/edit', array('query' =>  drupal_get_destination())))), 'warning');
   }
 
   // Print in a similar way as the Drupal 7 version
@@ -651,7 +651,7 @@ function apachesolr_config_file($name) {
  *
  * @see apachesolr_index_action_form_delete_submit().
  */
-function apachesolr_index_action_form($form_state, $env_id) {
+function apachesolr_index_action_form(&$form_state, $env_id) {
   $form = array();
   $form['action'] = array(
     '#type' => 'fieldset',
@@ -671,9 +671,10 @@ function apachesolr_index_action_form($form_state, $env_id) {
     '#submit' => array('apachesolr_index_action_form_cron_submit'),
   );
   $form['action']['cron_description'] = array(
+    '#type' => 'markup',
     '#prefix' => '<span>',
     '#suffix' => '</span></div>',
-    '#markup' => t('Indexes just as many items as 1 cron run would do.'),
+    '#value' => t('Indexes just as many items as 1 cron run would do.'),
   );
 
   $form['action']['remaining'] = array(
@@ -683,9 +684,10 @@ function apachesolr_index_action_form($form_state, $env_id) {
     '#submit' => array('apachesolr_index_action_form_remaining_submit'),
   );
   $form['action']['remaining_description'] = array(
+    '#type' => 'markup',
     '#prefix' => '<span>',
     '#suffix' => '</span></div>',
-    '#markup' => t('Could take time and could put an increased load on your server.'),
+    '#value' => t('Could take time and could put an increased load on your server.'),
   );
 
   $form['action']['reset'] = array(
@@ -702,9 +704,10 @@ function apachesolr_index_action_form($form_state, $env_id) {
     '#submit' => array('apachesolr_index_action_form_delete_submit'),
   );
   $form['action']['delete_description'] = array(
+    '#type' => 'markup',
     '#prefix' => '<span>',
     '#suffix' => '</span></div>',
-    '#markup' => t('Useful with a corrupt index or a new schema.xml.'),
+    '#value' => t('Useful with a corrupt index or a new schema.xml.'),
   );
 
   return $form;
@@ -720,7 +723,11 @@ function apachesolr_index_action_form_remaining_submit($form, &$form_state) {
     unset($_GET['destination']);
   }
   $env_id = $form_state['values']['env_id'];
-  $form_state['redirect'] = array('admin/config/search/apachesolr/settings/' . $env_id . '/index/remaining', array('query' => $destination));
+  // $form_state['storage'] must be unset for redirection to occur. Otherwise
+  // $form_state['rebuild'] is automatically set and this form will be
+  // rebuilt.
+  unset($form_state['storage']);
+  $form_state['redirect'] = array('admin/settings/apachesolr/settings/' . $env_id . '/index/remaining', array('query' => $destination));
 }
 
 /**
@@ -733,7 +740,12 @@ function apachesolr_index_action_form_delete_submit($form, &$form_state) {
     unset($_GET['destination']);
   }
   $env_id = $form_state['values']['env_id'];
-  $form_state['redirect'] = array('admin/config/search/apachesolr/settings/' . $env_id . '/index/delete', array('query' => $destination));
+
+  // $form_state['storage'] must be unset for redirection to occur. Otherwise
+  // $form_state['rebuild'] is automatically set and this form will be
+  // rebuilt.
+  unset($form_state['storage']);
+  $form_state['redirect'] = url('admin/settings/apachesolr/settings/' . $env_id . '/index/delete', array('query' => $destination));
 }
 
 /**
@@ -746,7 +758,11 @@ function apachesolr_index_action_form_reset_submit($form, &$form_state) {
     unset($_GET['destination']);
   }
   $env_id = $form_state['values']['env_id'];
-  $form_state['redirect'] = array('admin/config/search/apachesolr/settings/' . $env_id . '/index/reset', array('query' => $destination));
+  // $form_state['storage'] must be unset for redirection to occur. Otherwise
+  // $form_state['rebuild'] is automatically set and this form will be
+  // rebuilt.
+  unset($form_state['storage']);
+  $form_state['redirect'] = url('admin/settings/apachesolr/settings/' . $env_id . '/index/reset', array('query' => $destination));
 }
 
 
@@ -760,7 +776,11 @@ function apachesolr_index_action_form_cron_submit($form, &$form_state) {
   else {
     $env_id = apachesolr_default_environment();
   }
-  $form_state['redirect'] = 'admin/config/search/apachesolr';
+  // $form_state['storage'] must be unset for redirection to occur. Otherwise
+  // $form_state['rebuild'] is automatically set and this form will be
+  // rebuilt.
+  unset($form_state['storage']);
+  $form_state['redirect'] = 'admin/settings/apachesolr';
   apachesolr_cron($env_id);
   drupal_set_message(t('Apachesolr cron succesfully executed'));
 }
@@ -770,10 +790,10 @@ function apachesolr_index_action_form_cron_submit($form, &$form_state) {
  *
  * @see apachesolr_index_action_form_delete_confirm_submit().
  */
-function apachesolr_index_action_form_remaining_confirm($form, &$form_state, $environment) {
+function apachesolr_index_action_form_remaining_confirm(&$form_state, $environment) {
   return confirm_form($form,
     t('Are you sure you want index all remaining content?'),
-    'admin/config/search/apachesolr/settings/' . $environment['env_id'] . '/index',
+    'admin/settings/apachesolr/settings/' . $environment['env_id'] . '/index',
     NULL,
     t('Index all remaining')
   );
@@ -789,7 +809,11 @@ function apachesolr_index_action_form_remaining_confirm_submit($form, &$form_sta
   else {
     $env_id = apachesolr_default_environment();
   }
-  $form_state['redirect'] = 'admin/config/search/apachesolr';
+  // $form_state['storage'] must be unset for redirection to occur. Otherwise
+  // $form_state['rebuild'] is automatically set and this form will be
+  // rebuilt.
+  unset($form_state['storage']);
+  $form_state['redirect'] = 'admin/settings/apachesolr';
   apachesolr_index_batch_index_remaining($env_id);
 }
 
@@ -798,10 +822,10 @@ function apachesolr_index_action_form_remaining_confirm_submit($form, &$form_sta
  *
  * @see apachesolr_index_action_form_reset_confirm_submit().
  */
-function apachesolr_index_action_form_reset_confirm($form, &$form_state, $environment) {
+function apachesolr_index_action_form_reset_confirm(&$form_state, $environment) {
   return confirm_form($form,
     t('Are you sure you want to queue content for reindexing?'),
-    'admin/config/search/apachesolr/settings/' . $environment['env_id'] . '/index',
+    'admin/settings/apachesolr/settings/' . $environment['env_id'] . '/index',
     t('All content on the site will be queued for indexing. The documents currently in the Solr index will remain searchable.'),
     t('Queue all content')
   );
@@ -819,7 +843,11 @@ function apachesolr_index_action_form_reset_confirm_submit($form, &$form_state) 
   }
   apachesolr_index_mark_for_reindex($env_id);
   drupal_set_message(t('All the content on your site is queued for indexing. You can wait for it to be indexed during cron runs, or you can manually reindex it.'));
-  $form_state['redirect'] = 'admin/config/search/apachesolr';
+  // $form_state['storage'] must be unset for redirection to occur. Otherwise
+  // $form_state['rebuild'] is automatically set and this form will be
+  // rebuilt.
+  unset($form_state['storage']);
+  $form_state['redirect'] = 'admin/settings/apachesolr';
 }
 
 /**
@@ -827,10 +855,10 @@ function apachesolr_index_action_form_reset_confirm_submit($form, &$form_state) 
  *
  * @see apachesolr_index_action_form_delete_confirm_submit().
  */
-function apachesolr_index_action_form_delete_confirm($form, &$form_state, $environment) {
+function apachesolr_index_action_form_delete_confirm(&$form_state, $environment) {
   return confirm_form($form,
     t('Are you sure you want to clear your index?'),
-    'admin/config/search/apachesolr/settings/' . $environment['env_id'] . '/index',
+    'admin/settings/apachesolr/settings/' . $environment['env_id'] . '/index',
     t('This will remove all data from your index and all search results will be incomplete until your site is reindexed.'),
     t('Delete index')
   );
@@ -839,7 +867,7 @@ function apachesolr_index_action_form_delete_confirm($form, &$form_state, $envir
 /**
  * Submit handler for the deletion form.
  */
-function apachesolr_index_action_form_delete_confirm_submit($form, &$form_state) {
+function apachesolr_index_action_form_delete_confirm_submit($form, $form_state) {
   if (!empty($form_state['build_info']['args'][0]['env_id'])) {
     $env_id = $form_state['build_info']['args'][0]['env_id'];
   }
@@ -850,8 +878,11 @@ function apachesolr_index_action_form_delete_confirm_submit($form, &$form_state)
   variable_get('apachesolr_index_last_run', 1);
   apachesolr_index_delete_index($env_id);
   drupal_set_message(t('The index has been deleted.'));
-
-  $form_state['redirect'] = 'admin/config/search/apachesolr';
+  // $form_state['storage'] must be unset for redirection to occur. Otherwise
+  // $form_state['rebuild'] is automatically set and this form will be
+  // rebuilt.
+  unset($form_state['storage']);
+  $form_state['redirect'] = 'admin/settings/apachesolr';
 }
 
 /**

@@ -126,7 +126,7 @@ function apachesolr_access_rebuild_nodeaccess(&$form, $form_state) {
 }
 
 function apachesolr_access_enable() {
-  drupal_set_message(t('Your content <a href="@url">must be re-indexed</a> before Apache Solr Access will be functional on searches.', array('@url' => url('admin/config/search/apachesolr/index'))), 'warning');
+  drupal_set_message(t('Your content <a href="@url">must be re-indexed</a> before Apache Solr Access will be functional on searches.', array('@url' => url('admin/settings/apachesolr/index'))), 'warning');
 }
 
 /**

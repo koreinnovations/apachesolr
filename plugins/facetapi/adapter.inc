@@ -19,7 +19,7 @@ class ApacheSolrFacetapiAdapter extends FacetapiAdapter {
    *   The path to the admin settings.
    */
   public function getPath($realm_name) {
-    $base_path = 'admin/config/search/apachesolr';
+    $base_path = 'admin/settings/apachesolr';
     return $base_path . '/facets/' . $realm_name;
   }
 

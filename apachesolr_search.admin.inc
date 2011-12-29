@@ -15,7 +15,7 @@ function _apachesolr_search_browse_form($default_value) {
   }
   else {
     $description .= t('Remember to configure the facets on the <a href="!facetslink">search environment page</a> and assign blocks to regions on the <a href="!blocklink">block settings page</a>', array(
-      '!facetslink' => url('admin/config/search/apachesolr/settings/'),
+      '!facetslink' => url('admin/settings/apachesolr/settings/'),
       '!blocklink' => url('admin/structure/block'),
     ));
   }
@@ -81,11 +81,11 @@ function apachesolr_search_page_list_pages() {
     $environment = apachesolr_environment_load($search_page['env_id']);
     $row[] = $environment ? check_plain($environment['name']) : check_plain(t('<Disabled>'));
     // Operations
-    $row[] = array('data' => l(t('Edit'), 'admin/config/search/apachesolr/search-pages/' . $search_page['page_id'] . '/edit'));
-    $row[] = array('data' => l(t('Clone'), 'admin/config/search/apachesolr/search-pages/' . $search_page['page_id'] . '/clone'));
+    $row[] = array('data' => l(t('Edit'), 'admin/settings/apachesolr/search-pages/' . $search_page['page_id'] . '/edit'));
+    $row[] = array('data' => l(t('Clone'), 'admin/settings/apachesolr/search-pages/' . $search_page['page_id'] . '/clone'));
     $settings = unserialize($search_page['settings']);
     if (!isset($settings['apachesolr_search_not_removable'])) {
-      $row[] = array('data' => l(t('Delete'), 'admin/config/search/apachesolr/search-pages/' . $search_page['page_id'] . '/delete'));
+      $row[] = array('data' => l(t('Delete'), 'admin/settings/apachesolr/search-pages/' . $search_page['page_id'] . '/delete'));
     }
     else {
       $row[] = '';
@@ -142,7 +142,7 @@ function apachesolr_search_page_list_blocks() {
     if (module_exists('block')) {
       $row[] = array('data' => l(t('Configure'), 'admin/structure/block/manage/apachesolr_search/' . $search_block_id . '/configure', array('query' => array('destination' => $_GET['q']))));
     }
-    $row[] = array('data' => l(t('Delete'), 'admin/config/search/apachesolr/search-pages/block/' . $search_block_id . '/delete'));
+    $row[] = array('data' => l(t('Delete'), 'admin/settings/apachesolr/search-pages/block/' . $search_block_id . '/delete'));
     $rows[$search_block_id] = $row;
   }
 
@@ -374,7 +374,7 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
   $form['actions']['cancel'] = array(
     '#type' => 'link',
     '#title' => t('Cancel'),
-    '#href' => 'admin/config/search/apachesolr/search-pages',
+    '#href' => 'admin/settings/apachesolr/search-pages',
   );
 
   $form['#submit'][] = 'apachesolr_search_page_settings_form_submit';
@@ -472,7 +472,7 @@ function apachesolr_search_page_settings_form_submit($form, &$form_state) {
 
   // Saves our values in the database, sets redirect path on success.
   drupal_set_message(t('The configuration options have been saved for %page.', array('%page' => $form_state['values']['label'])));
-  $form_state['redirect'] = 'admin/config/search/apachesolr/search-pages';
+  $form_state['redirect'] = 'admin/settings/apachesolr/search-pages';
 
   // Menu rebuild needed to pick up search path.
   menu_rebuild();
@@ -503,7 +503,7 @@ function apachesolr_search_delete_search_page_confirm($form, &$form_state, $sear
   $caption .= '<p><strong>' . t('This action cannot be undone.') . '</strong></p>';
 
   // Finalizes and returns the confirmation form.
-  $return_path = 'admin/config/search/apachesolr/search-pages';
+  $return_path = 'admin/settings/apachesolr/search-pages';
   $button_text = t('Delete page');
   if (!isset($search_page->settings['apachesolr_search_not_removable'])) {
     return confirm_form($form, filter_xss($message), $return_path, filter_xss($caption), check_plain($button_text));
@@ -535,7 +535,7 @@ function apachesolr_search_delete_search_page_confirm_submit($form, &$form_state
   menu_rebuild();
 
   // Returns back to search page list page.
-  $form_state['redirect'] = 'admin/config/search/apachesolr/search-pages';
+  $form_state['redirect'] = 'admin/settings/apachesolr/search-pages';
 }
 
 /**
@@ -551,7 +551,7 @@ function apachesolr_search_clone_search_page_confirm($form, &$form_state, $searc
   return confirm_form(
     $form,
     t('Are you sure you want to clone search page %name?', array('%name' => $search_page->label)),
-    'admin/config/search/apachesolr',
+    'admin/settings/apachesolr',
     '',
     t('Clone'),
     t('Cancel')
@@ -565,7 +565,7 @@ function apachesolr_search_clone_search_page_confirm_submit($form, &$form_state)
   if (apachesolr_search_page_clone($form_state['values']['page_id'])) {
     drupal_set_message(t('The search page was cloned'));
   }
-  $form_state['redirect'] = 'admin/config/search/apachesolr/search-pages';
+  $form_state['redirect'] = 'admin/settings/apachesolr/search-pages';
 }
 
 /**
@@ -868,7 +868,7 @@ function apachesolr_search_mlt_add_block_form_submit($form, &$form_state) {
   apachesolr_search_mlt_save_block($form_state['values']);
   $block_message = t('New More like this block created. <a href="!configure">Configure</a> this block in the Block administration', array('!configure' => url('admin/structure/block')));
   drupal_set_message($block_message);
-  $form_state['redirect'] = 'admin/config/search/apachesolr/search-pages';
+  $form_state['redirect'] = 'admin/settings/apachesolr/search-pages';
 }
 
 /**
@@ -973,7 +973,7 @@ function apachesolr_search_mlt_delete_block_form_submit($form, &$form_state) {
   unset($blocks[$form_state['values']['delta']]);
   variable_set('apachesolr_search_mlt_blocks', $blocks);
   drupal_set_message(t('The block has been deleted.'));
-  $form_state['redirect'] = 'admin/config/search/apachesolr/search-pages';
+  $form_state['redirect'] = 'admin/settings/apachesolr/search-pages';
 }
 
 /**
