@@ -4,6 +4,7 @@ Apache Solr Search Integration x.x-x.x, xxxx-xx-xx
 
 Apache Solr Search Integration 6.x-1.x, xxxx-xx-xx
 ------------------------------
+#1084332 by pwolanin, kyle_mathews, elliotttf | robertDouglass: Fixed Drush command to get PHP client can't run.
 #1296206 by Alexander Allen, Nick_vh: Fixed PHP Notice:  Undefined index: #name in Solr_Base_Query.php on line 219.
 #1379108 by cpliakas: Fixed Add the $namespace parameter to the hook_apachesolr_update_index() definition in README.txt.
 #1098038 by pwolanin | mgifford: Fixed Did you mean - shouldn't be a <label> element.

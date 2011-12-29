@@ -32,7 +32,7 @@ found at:  http://code.google.com/p/solr-php-client/
 
 If you use drush make, run this command from the apachesolr module directory:
 
-drush make --no-core -y  --contrib-destination=. apachesolr.make
+drush make --no-core -y  --contrib-destination=. apachesolr.make.example
 
 Otherwise, from the apachesolr module directory, run this command:
 
