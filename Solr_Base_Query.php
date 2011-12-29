@@ -209,8 +209,10 @@ class Solr_Base_Query implements Drupal_Solr_Query_Interface {
     }
     else {
       foreach ($fields as $pos => $values) {
-        if ($values['#name'] == $name && $values['#value'] == $value) {
-          unset($fields[$pos]);
+        if (!empty($values['#name']) && !empty($values['#value'])) {
+          if ($values['#name'] == $name && $values['#value'] == $value) {
+            unset($fields[$pos]);
+          }
         }
       }
     }
