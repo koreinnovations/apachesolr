@@ -40,8 +40,14 @@ function _apachesolr_search_browse_form($default_value) {
 function apachesolr_search_page_list_all() {
   $build['pages'] = apachesolr_search_page_list_pages();
   $build['blocks'] = apachesolr_search_page_list_blocks();
-  return $build;
 
+  // Print in a similar way as the Drupal 7 version
+  $build_print = NULL;
+  foreach ($build as $print) {
+    $build_print .= $print;
+  }
+
+  return $build_print;
 }
 
 /**
@@ -70,11 +76,7 @@ function apachesolr_search_page_list_pages() {
     $row[] = $label;
     // Add the link
     $row[] = array(
-      'data' => array(
-        '#type' => 'link',
-        '#title' => $search_page['search_path'],
-        '#href' => $search_page['search_path'],
-      ),
+      'data' => l($search_page['search_path'], $search_page['search_path']),
     );
 
     // Add the search environment
@@ -96,20 +98,15 @@ function apachesolr_search_page_list_pages() {
   // Automatically enlarge our header with the operations size
   $header['operations']['colspan'] = count(reset($rows)) - 3;
 
-  $build['list'] = array(
-    '#prefix' => '<h3>Pages</h3>',
-    '#theme' => 'table',
-    '#header' => $header,
-    '#rows' => array_values($rows),
-    '#empty' => t('No available search pages.'),
-  );
-  $build['pager'] = array(
-    '#theme' => 'pager',
-    '#quantity' => 20,
-    '#weight' => 10,
-  );
+  $build['prefix'] = '<h3>Pages</h3>';
+  $build['list'] =  theme('table', $header, array_values($rows));
 
-  return $build;
+  // Print in a similar way as the Drupal 7 version
+  $build_print = NULL;
+  foreach ($build as $print) {
+    $build_print .= $print;
+  }
+  return $build_print;
 }
 
 /**
@@ -149,20 +146,15 @@ function apachesolr_search_page_list_blocks() {
   // Automatically enlarge our header with the operations size
   $header['operations']['colspan'] = count(reset($rows)) - 2;
 
-  $build['list'] = array(
-    '#prefix' => '<h3>Blocks "More Like This"</h3>',
-    '#theme' => 'table',
-    '#header' => $header,
-    '#rows' => array_values($rows),
-    '#empty' => t('No available search blocks.'),
-  );
-  $build['pager'] = array(
-    '#theme' => 'pager',
-    '#quantity' => 20,
-    '#weight' => 10,
-  );
+  $build['prefix'] = '<h3>Blocks "More Like This"</h3>';
+  $build['list'] =  theme('table', $header, array_values($rows));
 
-  return $build;
+  // Print in a similar way as the Drupal 7 version
+  $build_print = NULL;
+  foreach ($build as $print) {
+    $build_print .= $print;
+  }
+  return $build_print;
 }
 
 /**
@@ -198,16 +190,13 @@ function apachesolr_search_page_settings_form(&$form_state, $search_page = NULL)
   );
 
   $form['page_id'] = array(
-    '#type' => 'machine_name',
-    '#maxlength' => 32,
-    '#required' => TRUE,
-    '#machine_name' => array(
-      'exists' => 'apachesolr_search_page_exists',
-      'source' => array('label'),
-    ),
+    '#type' => 'textfield',
+    '#title' => t('Label'),
     '#description' => '',
+    '#required' => TRUE,
+    '#size' => 30,
+    '#maxlength' => 32,
     '#default_value' => !empty($search_page->page_id) ? $search_page->page_id : '',
-    '#disabled' => !empty($search_page),
     '#description' => t('A unique machine-readable identifier for the search page configuration. It must only contain lowercase letters, numbers, and underscores.'),
   );
 
@@ -363,10 +352,6 @@ function apachesolr_search_page_settings_form(&$form_state, $search_page = NULL)
   $form['advanced']['apachesolr_search_browse'] = _apachesolr_search_browse_form($default_value);
 
   // Button for the corresponding actions
-  $form['actions'] = array(
-    '#type' => 'actions',
-  );
-
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save configuration'),
@@ -411,11 +396,18 @@ function apachesolr_search_ajax_search_page_default($form, $form_state, $search_
   return $form['info'];
 }
 
+/**
+ * Validation function for saving a search page
+ *
+ * @param type $form
+ * @param array $form_state
+ * @todo Make sure we verify that the link is local
+ */
 function apachesolr_search_page_settings_form_validate($form, &$form_state) {
   // Performs basic validation of the menu path.
-  if (url_is_external($form_state['values']['search_path'])) {
+  /*if (url_is_external($form_state['values']['search_path'])) {
     form_set_error('search_path', t('Path must be local.'));
-  }
+  }*/
   $form_state['values']['search_path'] = trim($form_state['values']['search_path'], '/');
   if (empty($form_state['values']['search_path'])) {
     form_set_error('search_path', t('Path required.'));
@@ -433,6 +425,10 @@ function apachesolr_search_page_settings_form_validate($form, &$form_state) {
   }
   elseif (count(explode('%', $form_state['values']['search_path'])) > 2) {
     form_set_error('search_path', t('Only one % placeholder is allowed.'));
+  }
+  $page_id = strtolower(preg_replace(array('/[^a-zA-Z0-9]+/','/-+/','/^-+/','/-+$/',), array('_', '_', '', ''), $form_state['values']['page_id']));
+  if (($form_state['values']['page_id'] != $page_id) && !empty($page_id)) {
+    form_set_error('page_id', t('A unique machine-readable identifier for the search page configuration. It must only contain lowercase letters, numbers, and underscores.'));
   }
 }
 

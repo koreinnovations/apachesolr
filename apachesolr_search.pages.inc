@@ -33,7 +33,12 @@ function apachesolr_search_custom_page($page_id, $keys = '', $path_replacer = NU
   }
   // Build our page and allow modification.
   $build_results = apachesolr_search_search_page_custom($results, $search_page, $build);
-  return $build_results;
+
+  $build_output = NULL;
+  foreach($build_results as $build_result) {
+    $build_output .= $build_result;
+  }
+  return $build_output;
 }
 
 /**
@@ -46,12 +51,9 @@ function apachesolr_search_custom_page_search_form(&$form_state, $search_page, $
 
   $form = array();
   $form['#id'] = 'search-form';
-  $form['#attributes']['class'][] = 'search-form';
+  //$form['#attributes']['class'][] = 'search-form';
   $form['#search_page'] = $search_page;
-  $form['basic'] = array(
-    '#type' => 'container',
-    '#attributes' => array('class' => array('container-inline')),
-  );
+
   $form['basic']['keys'] = array(
     '#type' => 'textfield',
     '#title' => t('Enter terms'),
@@ -87,7 +89,7 @@ function apachesolr_search_custom_page_search_form(&$form_state, $search_page, $
         '#default_value' => (int) isset($_GET['retain-filters']),
       );
     }
-        }
+  }
   return $form;
 }
 

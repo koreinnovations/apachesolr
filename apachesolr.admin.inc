@@ -116,6 +116,16 @@ function apachesolr_environment_edit_form(&$form_state, $environment = NULL) {
     '#default_value' => $environment['name'],
     '#required' => TRUE,
   );
+  $form['env_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Label'),
+    '#description' => '',
+    '#required' => TRUE,
+    '#size' => 30,
+    '#maxlength' => 32,
+    '#default_value' => !empty($environment['env_id']) ? $environment['env_id'] : '',
+    '#description' => t('A unique machine-readable identifier for the search page configuration. It must only contain lowercase letters, numbers, and underscores.'),
+  );
   $form['service_class'] = array(
     '#type' => 'value',
     '#value' => $environment['service_class'],
@@ -194,11 +204,13 @@ function apachesolr_environment_edit_validate($form, &$form_state) {
       $form_state['values']['url'] = trim($form_state['values']['url'], "/ \t\r\n\0\x0B");
     }
   }
+  $env_id = strtolower(preg_replace(array('/[^a-zA-Z0-9]+/','/-+/','/^-+/','/-+$/',), array('_', '_', '', ''), $form_state['values']['page_id']));
+  if ($form_state['values']['env_id'] != $env_id && !empty($env_id)) {
+    form_set_error('env_id', t('A unique machine-readable identifier for the search page configuration. It must only contain lowercase letters, numbers, and underscores.'));
+  }
 }
 
 function apachesolr_environment_edit_submit($form, &$form_state) {
-  // Backport for Drupal 6
-  $form_state['values']['env_id'] = strtolower(preg_replace(array('/[^a-zA-Z0-9]+/','/-+/','/^-+/','/-+$/',), array('-', '-', '', ''), $form_state['values']['name']));
   apachesolr_environment_save($form_state['values']);
   if (!empty($form_state['values']['make_default'])) {
     variable_set('apachesolr_default_environment', $form_state['values']['env_id']);
@@ -614,7 +626,7 @@ function apachesolr_config_files_overview() {
 
     // Display the table of field names, index types, and term counts.
     $output .= theme('table', $header, $files);
-    
+
   }
   else {
     $output = '<p>' . t('No data about any file found.') . "</p>\n";
