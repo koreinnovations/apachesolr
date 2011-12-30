@@ -1,5 +1,6 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1252648 by cpliakas, Nick_vh: Added Allow for enabling facet blocks on non-search pages.
 #1161608 by scor, Nick_vh: Added Index format_username()($account).
 #1380448 by Nick_vh | longwave: Fixed Menu item description for /admin/reports/apachesolr.
 #1387272 by cpliakas: Fixed The cancel links and button submission redirects in facet configuration forms are broken.

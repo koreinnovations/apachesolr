@@ -95,7 +95,7 @@ class ApacheSolrFacetapiAdapter extends FacetapiAdapter {
   public function getSearchPath() {
     $env_id = $this->info['instance'];
     $query = apachesolr_current_query($env_id);
-    if (NULL === $this->searchPath && NULL === $query->getPath()) {
+    if (!$query || (NULL === $this->searchPath && NULL === $query->getPath())) {
       if ($path = module_invoke($this->info['module'] . '_search', 'search_info')) {
         $this->searchPath = 'search/' . $path['path'];
         if (!isset($_GET['keys']) && ($keys = $this->getSearchKeys())) {
@@ -103,7 +103,7 @@ class ApacheSolrFacetapiAdapter extends FacetapiAdapter {
         }
       }
     }
-    if (NULL === $query->getPath()) {
+    if (!$query || NULL === $query->getPath()) {
        return $this->searchPath;
     }
     else {
