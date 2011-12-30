@@ -223,7 +223,7 @@ function apachesolr_check_facetapi() {
       drupal_set_message(t('If you <a href="@modules">enable the facetapi module</a>, Apache Solr Search will provide you with configurable facets.', array('@modules' => url('admin/modules'))));
     }
     else {
-      drupal_set_message(t('If you install the facetapi module from !href, Apache Solr Search will provide you with configurable facets.', array('@href' => url('http://drupal.org/project/facetapi'))));
+      drupal_set_message(t('If you install the facetapi module from !href, Apache Solr Search will provide you with configurable facets.', array('!href' => url('http://drupal.org/project/facetapi'))));
     }
   }
 }
@@ -551,11 +551,7 @@ function apachesolr_index_report($env_id) {
     ksort($rows);
 
     // Display the table of field names, index types, and term counts.
-    $variables = array(
-      'header' => $header,
-      'rows' => $rows,
-    );
-    $output .= theme('table', $variables);
+    $output .= theme('table', $header, $rows);
   }
   else {
     $output .= '<p>' . t('No data on indexed fields.') . "</p>\n";
@@ -617,11 +613,8 @@ function apachesolr_config_files_overview() {
     );
 
     // Display the table of field names, index types, and term counts.
-    $variables = array(
-      'header' => $header,
-      'rows' => $files,
-    );
-    $output = theme('table', $variables);
+    $output .= theme('table', $header, $files);
+    
   }
   else {
     $output = '<p>' . t('No data about any file found.') . "</p>\n";
@@ -947,7 +940,7 @@ function apachesolr_index_batch_index_entities($env_id, &$context) {
     $entities_processed++;
   }
   apachesolr_index_send_to_solr($documents);
-  apachesolr_index_set_last_updated(REQUEST_TIME);
+  apachesolr_index_set_last_updated(APACHESOLR_REQUEST_TIME);
 
   $context['sandbox']['progress'] += $entities_processed;
   $context['message'] = t('Indexed @current of @total nodes', array('@current' => $context['sandbox']['progress'], '@total' => $context['sandbox']['max']));

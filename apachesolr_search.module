@@ -91,7 +91,7 @@ function apachesolr_search_menu_alter(&$items) {
       ->execute();
   }
   catch (Exception $e) {
-    watchdog_exception('apachesolr_search', $e);
+    watchdog('Apache Solr Search', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
     $result = array();
   }
 
@@ -1154,16 +1154,12 @@ function apachesolr_search_get_search_suggestions($env_id) {
 }
 
 /**
- * Implements hook_entity_info_alter().
+ * Implements hook_content_extra_fields_alter().
  */
-function apachesolr_search_apachesolr_entity_info_alter(&$entity_info) {
-  // First set defaults so that we don't need to worry about NULL keys.
-  foreach (array_keys($entity_info) as $type) {
-    $entity_info[$type]['result callback'] = '';
-  }
+function apachesolr_search_content_extra_fields_alter(&$extra, $type_name) {
   // Now set those values that we know.  Other modules can do so
-  // for their own entities if they want.
-  $entity_info['node']['result callback'] = 'apachesolr_search_node_result';
+  // for specific content types.
+  $extra['apachesolr']['result callback'] = 'apachesolr_search_node_result';
 }
 
 /**

@@ -21,13 +21,8 @@
  */
 function apachesolr_entity_should_index($entity, $type) {
   // We only support node in Drupal 6
-  $type = 'node';
-  list($id, $vid, $bundle) = entity_extract_ids('node', $entity);
-
-  //if ($bundle && isset($info['bundles'][$bundle]['apachesolr']['index']) && $info['bundles'][$bundle]['apachesolr']['index']) {
-  //  return TRUE;
-  //}
-  if ($bundle) {
+  $info = content_types($entity->type);
+  if (isset($info['extra']['apachesolr']['index']) && $info['extra']['apachesolr']['index']) {
     return TRUE;
   }
   return FALSE;
@@ -74,24 +69,23 @@ function apachesolr_index_index_entity($item, $env_id) {
   // Always build the content for the index as an anonynmous user to avoid
   // exposing restricted fields and such.
   // @todo Uncomment these lines when we're done debugging, since they break dpm().
-  global $user;
-  drupal_save_session(FALSE);
+  /*global $user;
+  session_save_session(FALSE);
   $saved_user = $user;
   $user = drupal_anonymous_user();
-
+  */
   // Pull out all of our pertinent data.
   $entity_type = $item->entity_type;
 
   // TRUE on reset to bypass static caching and not blow out our memory limit.
-  $entity = entity_load($entity_type, array($item->entity_id), array(), TRUE);
-  $entity = $entity ? reset($entity) : FALSE;
+  $entity = node_load($item->entity_id, NULL, TRUE);
 
   if (empty($entity)) {
     // If the object failed to load, just stop.
     return FALSE;
   }
 
-  list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+  //list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
 
   //$status = apachesolr_entity_get_callback($entity, $type, 'status callback', array($entity, $type));
 
@@ -147,9 +141,8 @@ function apachesolr_index_index_entity($item, $env_id) {
 
   // Restore the user.
   // @todo Uncomment these lines when we're done debugging, since they break dpm().
-  $user = $saved_user;
-  drupal_save_session(TRUE);
-
+  /*$user = $saved_user;
+  session_save_session(TRUE);*/
   return $documents;
 
 }
@@ -263,7 +256,9 @@ function apachesolr_index_add_tags_to_document(&$document, $text) {
  * @return ApacheSolrDocument
  */
 function _apachesolr_index_process_entity_get_document($entity, $entity_type) {
-  list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+  $entity_id = $entity->nid;
+  $bundle = $entity->type;
+
 
   $document = new ApacheSolrDocument();
 
@@ -276,11 +271,12 @@ function _apachesolr_index_process_entity_get_document($entity, $entity_type) {
   $document->bundle = $bundle;
   $document->bundle_name = entity_bundle_label($entity_type, $bundle);
 
-  $path = entity_uri($entity_type, $entity);
+  // Hardcoded drupal 6 node path
+  $path = 'node/' . $entity->nid;
   // A path is not a requirement of an entity
   if (!empty($path)) {
-    $document->path = $path['path'];
-    $document->url = url($path['path'], $path['options'] + array('absolute' => TRUE));
+    $document->path = $path;
+    $document->url = url($path, array('absolute' => TRUE));
   }
   if (empty($entity->language)) {
     // 'und' is the language-neutral code in Drupal 7.
@@ -389,10 +385,10 @@ function apachesolr_index_delete_entity_from_index($entity_type, $entity) {
     return FALSE;
   }
   try {
-    list($id) = entity_extract_ids($entity_type, $entity);
+    $id = $entity->nid;
     $solr = apachesolr_get_solr();
     $solr->deleteById(apachesolr_document_id($id, $entity_type));
-    apachesolr_index_set_last_updated(REQUEST_TIME);
+    apachesolr_index_set_last_updated(APACHESOLR_REQUEST_TIME);
     return TRUE;
   }
   catch (Exception $e) {
@@ -409,21 +405,16 @@ function apachesolr_index_delete_entity_from_index($entity_type, $entity) {
  * @return type
  * @todo Add Type support
  */
-function apachesolr_index_mark_for_reindex($env_id, $entity_type = NULL) {
-  foreach (content_types() as $type => $entity_info) {
-    if (($type == $entity_type) || ($entity_type == NULL)) {
-      if ($entity_info['apachesolr']['indexable']) {
-        $bundles = apachesolr_index_get_bundles($env_id, $type);
-        $reindex_callback = '';
-        if (!empty($bundles)) {
-          $reindex_callback = apachesolr_entity_get_callback($type, 'reindex callback');
-        }
-        variable_del('apachesolr_index_last_run_id_' . $type);
-        if (!empty($reindex_callback)) {
-          if (!call_user_func($reindex_callback, $env_id)) {
-            drupal_set_message(t('There was an error reindexing @entity_type.  Please consult the log for more information.', array('@entity_type' => $entity_info['label'])), 'error');
-            return;
-          }
+function apachesolr_index_mark_for_reindex($env_id, $type = 'node') {
+  foreach (content_types() as $content_type => $entity_info) {
+    if ($entity_info['extra']['apachesolr']['index']) {
+      // Always node in the case of Drupal 6
+      $reindex_callback = apachesolr_entity_get_callback($type, 'reindex callback');
+      variable_del('apachesolr_index_last_run_id_' . $type);
+      if (!empty($reindex_callback)) {
+        if (!call_user_func($reindex_callback, $env_id)) {
+          drupal_set_message(t('There was an error reindexing @entity_type.  Please consult the log for more information.', array('@entity_type' => $entity_info['label'])), 'error');
+          return;
         }
       }
     }
@@ -548,12 +539,11 @@ function apachesolr_index_node_solr_document(ApacheSolrDocument $document, $node
   // None of these get added unless they are explicitly in our schema.xml
   $document->label = apachesolr_clean_text($node->title);
 
-  // Build the node body.
-  $build = node_view($node, 'search_index');
-  // Why do we need this?
-  unset($build['#theme']);
-  $text = drupal_render($build);
-  $document->content = apachesolr_clean_text($text);
+  $node->build_mode = NODE_BUILD_SEARCH_INDEX;
+  $node = node_build_content($node, FALSE, FALSE);
+  $node->body = drupal_render($node->content);
+
+  $document->content = apachesolr_clean_text($node->body);
   if (isset($node->teaser)) {
     $document->teaser = apachesolr_clean_text($node->teaser);
   }
@@ -615,7 +605,7 @@ function apachesolr_index_node_solr_document(ApacheSolrDocument $document, $node
     $document->tos_content_extra = apachesolr_clean_text(implode(' ', $extra));
   }
 
-  $document->type_name = node_type_get_name($node);
+  $document->type_name =  node_get_types('name', $node);
   $document->created = apachesolr_date_iso($node->created);
   $document->changed = apachesolr_date_iso($node->changed);
   $last_change = (isset($node->last_comment_timestamp) && $node->last_comment_timestamp > $node->changed) ? $node->last_comment_timestamp : $node->changed;
@@ -624,7 +614,7 @@ function apachesolr_index_node_solr_document(ApacheSolrDocument $document, $node
 
   // We need to get the real username here, since it needs a full user object.
   // That means we can't do the format_username() call on the display side.
-  $document->name = format_username(user_load($node->uid));
+  $document->name = $node->name;
 
   // Let modules add to the document.
   foreach (module_implements('apachesolr_update_index') as $module) {
@@ -656,7 +646,7 @@ function apachesolr_index_node_solr_reindex($env_id) {
     $select->addField('n', 'nid', 'entity_id');
     $select->addField('n', 'type', 'bundle');
     $select->addField('n', 'status', 'status');
-    $select->addExpression(REQUEST_TIME, 'changed');
+    $select->addExpression(APACHESOLR_REQUEST_TIME, 'changed');
     $select->condition('n.type', apachesolr_index_get_bundles($env_id, 'node'), 'IN');
 
     $insert = db_insert($indexer_table)
@@ -667,7 +657,7 @@ function apachesolr_index_node_solr_reindex($env_id) {
   catch (Exception $e) {
     $transaction->rollback();
     //drupal_set_message($e->getMessage(), 'error');
-    watchdog_exception('Apache Solr', $e);
+    watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
     return FALSE;
   }
 
@@ -971,7 +961,7 @@ function apachesolr_index_node_check_table() {
     ->fields('n', array('nid', 'status'))
     ->where('aien.status <> n.status');
   $query->innerJoin('node', 'n', 'n.nid = aien.entity_id');
-  $nodes = $query->execute();
+  $nodes = $query->execute()->fetchAllAssoc('nid');
 
   // Update or delete at most this many in each Solr query.
   $limit = variable_get('apachesolr_cron_mass_limit', 500);
@@ -989,7 +979,7 @@ function apachesolr_index_node_check_table() {
     ->fields('aien', array('entity_id'))
     ->isNull('n.nid');
   $query->leftJoin('node', 'n', 'n.nid = aien.entity_id');
-  $nodes = $query->execute();
+  $nodes = $query->execute()->fetchAllAssoc('nid');
   $node_lists = array_chunk($nodes, $limit, TRUE);
 
   foreach ($node_lists as $nodes) {
@@ -1032,18 +1022,18 @@ function apachesolr_index_nodeapi_mass_update($nodes, $table = NULL) {
   try {
     $solr = apachesolr_get_solr();
     $solr->deleteByMultipleIds($unpublished_ids);
-    apachesolr_index_set_last_updated(REQUEST_TIME);
+    apachesolr_index_set_last_updated(APACHESOLR_REQUEST_TIME);
 
       // There was no exception, so update the table.
     if ($published_ids) {
       db_update($table)
-        ->fields(array('changed' => REQUEST_TIME, 'status' => 1))
+        ->fields(array('changed' => APACHESOLR_REQUEST_TIME, 'status' => 1))
         ->condition('nid', array_keys($published_ids), 'IN')
         ->execute();
     }
     if ($unpublished_ids) {
       db_update($table)
-        ->fields(array('changed' => REQUEST_TIME, 'status' => 0))
+        ->fields(array('changed' => APACHESOLR_REQUEST_TIME, 'status' => 0))
         ->condition('nid', array_keys($unpublished_ids), 'IN')
         ->execute();
     }
@@ -1082,7 +1072,7 @@ function apachesolr_index_nodeapi_mass_delete($nodes, $table = NULL) {
   try {
     $solr = apachesolr_get_solr();
     $solr->deleteByMultipleIds($ids);
-    apachesolr_index_set_last_updated(REQUEST_TIME);
+    apachesolr_index_set_last_updated(APACHESOLR_REQUEST_TIME);
     // There was no exception, so update the table.
     db_delete($table)
       ->condition('nid', $nids, 'IN')

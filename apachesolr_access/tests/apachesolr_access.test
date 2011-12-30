@@ -112,7 +112,7 @@ class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
     $settings = apachesolr_search_mlt_block_defaults();
     // Dummy value
     $id = apachesolr_document_id($author_restricted_node->nid);
-    drupal_save_session(FALSE);
+    session_save_session(FALSE);
     $GLOBALS['user'] = $basic_user;
     $response = apachesolr_search_mlt_suggestions($settings, $id, $solr);
     $search = $solr->getLastSearch();

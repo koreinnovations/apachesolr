@@ -8,6 +8,7 @@
 define('APACHESOLR_READ_WRITE', 0);
 define('APACHESOLR_READ_ONLY', 1);
 define('APACHESOLR_API_VERSION', '3.0');
+define('APACHESOLR_REQUEST_TIME', (int) $_SERVER['REQUEST_TIME']);
 
 /**
  * Implements hook_init().
@@ -17,6 +18,30 @@ function apachesolr_init() {
   if (arg(0) == 'admin') {
     // Add the CSS for this module
     drupal_add_css(drupal_get_path('module', 'apachesolr') . '/apachesolr.css');
+  }
+  // PHP 5.1 compatability code.
+  if (!function_exists('json_decode')) {
+    // Zend files include other files.
+    set_include_path(dirname(__FILE__) . PATH_SEPARATOR . get_include_path());
+    require_once 'Zend/Json/Decoder.php';
+    require_once 'Zend/Json/Encoder.php';
+
+    /**
+     * Substitute for missing PHP built-in functions.
+     */
+    function json_decode($string, $assoc = FALSE) {
+      if ($assoc) {
+        $objectDecodeType = Zend_Json::TYPE_ARRAY;
+      }
+      else {
+        $objectDecodeType = Zend_Json::TYPE_OBJECT;
+      }
+      return Zend_Json_Decoder::decode($string, $objectDecodeType);
+    }
+
+    function json_encode($data) {
+      return Zend_Json_Encoder::encode($data, $objectDecodeType);
+    }
   }
 }
 
@@ -512,7 +537,7 @@ function apachesolr_mark_entity($entity_type, $entity_id) {
   if (!empty($table)) {
     db_update($table)
       ->condition('entity_id', $entity_id)
-      ->fields(array('changed' => REQUEST_TIME))
+      ->fields(array('changed' => APACHESOLR_REQUEST_TIME))
       ->execute();
   }
 }
@@ -527,7 +552,7 @@ function apachesolr_user_update(&$edit, $account, $category) {
   if (isset($edit['name']) && $account->name != $edit['name']) {
     $table = apachesolr_index_get_indexer_table('node');
     $entity_ids = db_select('node')->fields('node', array('nid'))->where("uid = :uid", array(':uid' => $account->uid));
-    db_update($table)->condition('entity_id', $entity_ids, 'IN')->fields(array('changed' => REQUEST_TIME))->execute();
+    db_update($table)->condition('entity_id', $entity_ids, 'IN')->fields(array('changed' => APACHESOLR_REQUEST_TIME))->execute();
   }
 }
 
@@ -541,7 +566,7 @@ function apachesolr_user_update(&$edit, $account, $category) {
 function apachesolr_taxonomy_term_update($term) {
   $table = apachesolr_index_get_indexer_table('node');
   $entity_ids = db_select('taxonomy_index')->fields('taxonomy_index', array('nid'))->where("tid = :tid", array(':tid' => $term->tid));
-  db_update($table)->condition('nid', $entity_ids, 'IN')->fields(array('changed' => REQUEST_TIME))->execute();
+  db_update($table)->condition('nid', $entity_ids, 'IN')->fields(array('changed' => APACHESOLR_REQUEST_TIME))->execute();
 }
 
 /**
@@ -602,7 +627,7 @@ function apachesolr_node_type_update($info) {
     // We cannot be sure we are going before or after node module.
     $entity_ids = db_select('node')->fields('node', array('nid'))->where("type = :new OR type = :old", array(':new' => $info->type, ':old' => $info->old_type));
     $table = apachesolr_index_get_indexer_table('node');
-    db_update($table)->condition('entity_id', $entity_ids, 'IN')->fields(array('changed' => REQUEST_TIME))->execute();
+    db_update($table)->condition('entity_id', $entity_ids, 'IN')->fields(array('changed' => APACHESOLR_REQUEST_TIME))->execute();
   }
 }
 
@@ -758,8 +783,9 @@ function apachesolr_cron($env_id = NULL) {
     continue;
   }
 
-  if (isset($info['apachesolr']['cron_check'])) {
-    $callback = $info['apachesolr']['cron_check'];
+  $callbacks = apachesolr_get_index_callbacks();
+  if (isset($callbacks['node']['cron_check'])) {
+    $callback = $callbacks['node']['cron_check'];
     call_user_func($callback);
   }
 
@@ -768,7 +794,7 @@ function apachesolr_cron($env_id = NULL) {
     // Optimize the index (by default once a day).
     $optimize_interval = variable_get('apachesolr_optimize_interval', 60 * 60 * 24);
     $last = variable_get('apachesolr_last_optimize', 0);
-    $time = REQUEST_TIME;
+    $time = APACHESOLR_REQUEST_TIME;
     if ($optimize_interval && ($time - $last > $optimize_interval)) {
       $solr->optimize(FALSE, FALSE);
       variable_set('apachesolr_last_optimize', $time);
@@ -777,6 +803,7 @@ function apachesolr_cron($env_id = NULL) {
     // Only clear the cache if the index changed.
     // TODO: clear on some schedule if running multi-site.
     $updated = apachesolr_index_get_last_updated();
+
     if (is_numeric($updated)) {
       $solr->clearCache();
       // Re-populate the luke cache.
@@ -804,9 +831,8 @@ function apachesolr_cron($env_id = NULL) {
     $documents = array_merge($documents, apachesolr_index_index_entity($row, $env_id));
     $entities_processed++;
   }
-
   apachesolr_index_send_to_solr($documents);
-  apachesolr_index_set_last_updated(REQUEST_TIME);
+  apachesolr_index_set_last_updated(APACHESOLR_REQUEST_TIME);
 }
 
 /**
@@ -1498,12 +1524,11 @@ function apachesolr_facet_form_validate($form, &$form_state) {
 
 
 /**
- * Implements hook_entity_info_alter().
+ * Return a set of callbacks for indexing a node
+ * @return array $default_entity_info
  */
-function apachesolr_content_extra_fields_alter($extra, $content_type) {
-  module_load_include('inc', 'apachesolr', 'apachesolr.index');
-
-  // Set those values that we know.  Other modules can do so
+function apachesolr_get_index_callbacks() {
+    // Set those values that we know.  Other modules can do so
   // for their own entities if they want.
   $default_entity_info = array();
   $default_entity_info['node']['indexable'] = TRUE;
@@ -1516,7 +1541,16 @@ function apachesolr_content_extra_fields_alter($extra, $content_type) {
   // $default_entity_info['node']['apachesolr']['result callback'] = 'apachesolr_search_node_result';
   //Allow implementations of HOOK_apachesolr_entity_info to modify these default indexers
   drupal_alter('apachesolr_entity_info', $default_entity_info);
+  return $default_entity_info;
+}
 
+/**
+ * Implements hook_content_extra_fields().
+ */
+function apachesolr_content_extra_fields($content_type) {
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
+
+  $default_entity_info = apachesolr_get_index_callbacks();
   // First set defaults so that we needn't worry about NULL keys.
   if (!isset($extra['apachesolr'])) {
     $extra['apachesolr'] = array();
@@ -1547,6 +1581,7 @@ function apachesolr_content_extra_fields_alter($extra, $content_type) {
       $extra['apachesolr']['index'] = FALSE;
     }
   }
+  return $extra;
 }
 
 /**
@@ -1566,13 +1601,11 @@ function apachesolr_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 }
 
 /**
- * Implements hook_entity_update().
+ * Helper function for the hook_nodeapi().
  */
 function apachesolr_entity_update($entity, $type) {
   if (apachesolr_entity_should_index($entity, $type)) {
-    $info = entity_get_info($type);
     $id = $entity->nid;
-    $vid = $entity->vid;
     $bundle = $entity->type;
 
     $status_callback = apachesolr_entity_get_callback($type, 'status callback');
@@ -1580,7 +1613,6 @@ function apachesolr_entity_update($entity, $type) {
     if (is_callable($status_callback)) {
       $status = $status_callback($entity, $type);
     }
-
     $indexer_table = apachesolr_index_get_indexer_table($type);
 
     // If we haven't seen this entity before it may not be there, so merge
@@ -1593,14 +1625,14 @@ function apachesolr_entity_update($entity, $type) {
       ->fields(array(
         'bundle' => $bundle,
         'status' => $status,
-        'changed' => REQUEST_TIME,
+        'changed' => APACHESOLR_REQUEST_TIME,
       ))
       ->execute();
   }
 }
 
 /**
- * Implements hook_entity_delete().
+ * Helper function for the hook_nodeapi().
  *
  * @see apachesolr_node_delete().
  */
@@ -1899,17 +1931,17 @@ function apachesolr_userreference_map_callback($facets, $options) {
  */
 function apachesolr_entity_get_callback($entity_type, $callback, $bundle = NULL) {
   $info = content_types();
-
+  $callback_function = NULL;
   // A bundle-specific callback takes precedence over the generic one for the
   // entity type.
-  if ($bundle && isset($info['bundles'][$bundle]['apachesolr'][$callback])) {
-    $callback_function = $info['bundles'][$bundle]['apachesolr'][$callback];
-  }
-  elseif (isset($info['apachesolr'][$callback])) {
-    $callback_function = $info['apachesolr'][$callback];
+  if ($bundle && isset($info[$bundle]['extra']['apachesolr'][$callback])) {
+    $callback_function = $info[$bundle]['extra']['apachesolr'][$callback];
   }
   else {
-    $callback_function = NULL;
+    // In case the bundle was not specified we take a general assumption of node
+    // indexation
+    $callbacks = apachesolr_get_index_callbacks();
+    $callback_function = $callbacks[$entity_type][$callback];
   }
   return $callback_function;
 }
