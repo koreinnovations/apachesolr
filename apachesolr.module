@@ -263,12 +263,15 @@ function apachesolr_enabled_facets_page($realm_name, $environment = NULL) {
 
   // Initializes output with information about which environment's setting we are
   // editing, as it is otherwise not transparent to the end user.
-  $page['apachesolr_environment'] = array(
-    '#theme' => 'apachesolr_settings_title',
-    '#env_id' => $env_id,
-  );
+  $page['apachesolr_environment'] = theme('apachesolr_settings_title', $env_id);
   $page['settings'] = drupal_get_form('facetapi_realm_settings_form', $searcher, $realm_name);
-  return $page;
+
+  $build_output = NULL;
+  foreach($page as $build_result) {
+    $build_output .= $build_result;
+  }
+
+  return $build_output;
 }
 
 /**
@@ -543,16 +546,23 @@ function apachesolr_mark_entity($entity_type, $entity_id) {
 }
 
 /**
- * Implements hook_user().
+ * Implements of hook_user().
  *
  * Mark nodes as needing re-indexing if the author name changes.
  * @todo performance issue. see http://drupal.org/node/592522
  */
-function apachesolr_user_update(&$edit, $account, $category) {
-  if (isset($edit['name']) && $account->name != $edit['name']) {
-    $table = apachesolr_index_get_indexer_table('node');
-    $entity_ids = db_select('node')->fields('node', array('nid'))->where("uid = :uid", array(':uid' => $account->uid));
-    db_update($table)->condition('entity_id', $entity_ids, 'IN')->fields(array('changed' => APACHESOLR_REQUEST_TIME))->execute();
+function apachesolr_user($op, &$edit, &$account) {
+  switch ($op) {
+    case 'update':
+      if (isset($edit['name']) && $account->name != $edit['name']) {
+        $table = apachesolr_index_get_indexer_table('node');
+        $entity_ids = db_select('node')->fields('node', array('nid'))->where("uid = :uid", array(':uid' => $account->uid));
+        db_update($table)
+          ->condition('entity_id', $entity_ids, 'IN')
+          ->fields(array('changed' => APACHESOLR_REQUEST_TIME))
+          ->execute();
+      }
+      break;
   }
 }
 
@@ -563,71 +573,60 @@ function apachesolr_user_update(&$edit, $account, $category) {
  * @todo performance issue. see http://drupal.org/node/592522
  * @todo the rest, such as term deletion.
  */
-function apachesolr_taxonomy_term_update($term) {
-  $table = apachesolr_index_get_indexer_table('node');
-  $entity_ids = db_select('taxonomy_index')->fields('taxonomy_index', array('nid'))->where("tid = :tid", array(':tid' => $term->tid));
-  db_update($table)->condition('nid', $entity_ids, 'IN')->fields(array('changed' => APACHESOLR_REQUEST_TIME))->execute();
+function apachesolr_taxonomy($op, $type, $edit) {
+  if ($type == 'term' && ($op == 'update')) {
+    $table = apachesolr_index_get_indexer_table('node');
+    $entity_ids = db_select('taxonomy_index')->fields('taxonomy_index', array('nid'))->where("tid = :tid", array(':tid' => $edit['tid']));
+    db_update($table)
+      ->condition('nid', $entity_ids, 'IN')
+      ->fields(array('changed' => APACHESOLR_REQUEST_TIME))
+      ->execute();
+  }
+  // TODO: the rest, such as term deletion.
 }
 
 /**
- * Implement hook_comment_*().
+ * Implements hook_comment().
  *
  * Mark nodes as needing re-indexing if comments are added or changed.
  * Like search_comment().
  */
-
-/**
- * Implements hook_comment_insert().
- */
-function apachesolr_comment_insert($comment) {
-  apachesolr_mark_entity('node', $comment->nid);
+function apachesolr_comment($edit, $op) {
+  $edit = (array) $edit;
+  switch ($op) {
+    // Reindex the node when comments are added or changed
+    case 'insert':
+    case 'update':
+    case 'delete':
+    case 'publish':
+    case 'unpublish':
+      // TODO: do we want to skip this if we are excluding comments
+      // from the index for this node type?
+      apachesolr_mark_entity('node', $edit['nid']);
+      break;
+  }
 }
 
 /**
- * Implements hook_comment_update().
+ * Implements hook_node_type().
+ *
+ * Mark nodes as needing re-indexing if a node type name changes.
  */
-function apachesolr_comment_update($comment) {
-  apachesolr_mark_entity('node', $comment->nid);
-}
-
-/**
- * Implements hook_comment_delete()
- */
-function apachesolr_comment_delete($comment) {
-  apachesolr_mark_entity('node', $comment->nid);
-}
-
-/**
- * Implements hook_comment_publish()
- */
-function apachesolr_comment_publish($comment) {
-  apachesolr_mark_entity('node', $comment->nid);
-}
-
-/**
- * Implements hook_comment_unpublish()
- */
-function apachesolr_comment_unpublish($comment) {
-  apachesolr_mark_entity('node', $comment->nid);
-}
-
-/**
- * Implements hook_node_type_delete().
- */
-function apachesolr_node_type_delete($info) {
-  apachesolr_index_mark_for_reindex($env_id, $info->type);
-}
-
-/**
- * Implements of hook_node_type_update().
- * @todo Support backwards compatibility
- */
-function apachesolr_node_type_update($info) {
-  if (!empty($info->old_type) && $info->old_type != $info->type) {
+function apachesolr_node_type($op, $info) {
+  $env_id = apachesolr_default_environment();
+  if ($op == 'delete') {
+    apachesolr_index_mark_for_reindex($env_id, $info->type);
+  }
+  elseif (!empty($info->old_type) && $info->old_type != $info->type) {
     // We cannot be sure we are going before or after node module.
-    $entity_ids = db_select('node')->fields('node', array('nid'))->where("type = :new OR type = :old", array(':new' => $info->type, ':old' => $info->old_type));
+    $entity_ids = db_select('node')
+      ->fields('node', array('nid'))
+      ->where("type = :new OR type = :old", array(':new' => $info->type, ':old' => $info->old_type));
     $table = apachesolr_index_get_indexer_table('node');
-    db_update($table)->condition('entity_id', $entity_ids, 'IN')->fields(array('changed' => APACHESOLR_REQUEST_TIME))->execute();
+    db_update($table)
+      ->condition('entity_id', $entity_ids, 'IN')
+      ->fields(array('changed' => APACHESOLR_REQUEST_TIME))
+      ->execute();
   }
 }
 
@@ -1585,7 +1584,7 @@ function apachesolr_content_extra_fields($content_type) {
 }
 
 /**
- * Implementation of hook_nodeapi().
+ * Implements hook_nodeapi().
  */
 function apachesolr_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   switch ($op) {

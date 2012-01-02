@@ -40,6 +40,7 @@ function _apachesolr_search_browse_form($default_value) {
 function apachesolr_search_page_list_all() {
   $build['pages'] = apachesolr_search_page_list_pages();
   $build['blocks'] = apachesolr_search_page_list_blocks();
+  $build['config'] = drupal_get_form('apachesolr_search_pages_config_form');
 
   // Print in a similar way as the Drupal 7 version
   $build_print = NULL;
@@ -48,6 +49,23 @@ function apachesolr_search_page_list_all() {
   }
 
   return $build_print;
+}
+
+function apachesolr_search_pages_config_form(&$form_state) {
+  $search_pages = apachesolr_search_load_all_search_pages();
+  foreach ($search_pages as $search_page_id => $search_page) {
+    $options[$search_page_id] = $search_page['label'];
+  }
+  $options['drupal_core'] = t('Drupal Core Search');
+
+  $form['apachesolr_search_default_search_page'] = array(
+    '#type' => 'radios',
+    '#title' => t('Submit Search block requests to this page'),
+    '#default_value' => variable_get('apachesolr_search_default_search_page', 'drupal_core'),
+    '#options' => $options,
+    '#description' => t('Makes the search block submit to Apache Solr Search'),
+  );
+  return system_settings_form($form);
 }
 
 /**
@@ -601,19 +619,18 @@ function apachesolr_bias_settings_page($environment = NULL) {
 
   // Initializes output with information about which environment's setting we are
   // editing, as it is otherwise not transparent to the end user.
-  $output = array(
-    'apachesolr_environment' => array(
-      '#theme' => 'apachesolr_settings_title',
-      '#env_id' => $env_id,
-    ),
-  );
+  $output['apachesolr_environment'] = theme('apachesolr_settings_title', $env_id);
 
   // Adds content bias and type boost / exclusion forms.
   $fields = apachesolr_search_get_fields($environment);
   $form = array();
   $form = drupal_get_form('apachesolr_search_bias_form', $env_id, $fields);
   $output['bias_forms'] = $form;
-  return $output;
+  $output_print = NULL;
+  foreach ($output as $output_field) {
+    $output_print .= $output_field;
+  }
+  return $output_print;
 }
 
 function apachesolr_search_bias_form(&$form_state, $env_id, $fields) {
@@ -622,7 +639,9 @@ function apachesolr_search_bias_form(&$form_state, $env_id, $fields) {
   $form['bias_tabs'] = array(
     '#type' => 'vertical_tabs',
   );
-  $form['actions']['#type'] = 'actions';
+  $form += apachesolr_search_result_bias_form($env_id);
+  $form += apachesolr_search_type_boost_form($env_id);
+  $form += apachesolr_search_field_bias_form($fields, $env_id);
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save configuration'),
@@ -633,9 +652,6 @@ function apachesolr_search_bias_form(&$form_state, $env_id, $fields) {
     '#value' => t('Reset to defaults'),
     '#submit' => array('apachesolr_search_bias_form_reset'),
   );
-  $form += apachesolr_search_result_bias_form($env_id);
-  $form += apachesolr_search_type_boost_form($env_id);
-  $form += apachesolr_search_field_bias_form($fields, $env_id);
   return $form;
 }
 
@@ -836,14 +852,15 @@ function apachesolr_search_type_boost_form($env_id) {
 
   // Get the current boost values.
   $type_boosts = apachesolr_environment_variable_get($env_id, 'apachesolr_search_type_boosts', array());
-  $names = node_type_get_names();
+  $names = node_get_types();
 
-  foreach ($names as $type => $name) {
-    $form['type_boost']['apachesolr_search_type_boosts'][$type] = array(
+
+  foreach ($names as $type_id => $type) {
+    $form['type_boost']['apachesolr_search_type_boosts'][$type_id] = array(
       '#type' => 'select',
-      '#title' => t('%type type content bias', array('%type' => $name)),
+      '#title' => t('%type type content bias', array('%type' => $type->name)),
       '#options' => $weights,
-      '#default_value' => isset($type_boosts[$type]) ? $type_boosts[$type] : 0,
+      '#default_value' => isset($type_boosts[$type_id]) ? $type_boosts[$type_id] : 0,
     );
   }
 

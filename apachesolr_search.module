@@ -362,13 +362,15 @@ function apachesolr_search_block_view($delta = '') {
  * Implements hook_form_[form_id]_alter().
  */
 function apachesolr_search_form_block_admin_display_form_alter(&$form) {
-  foreach ($form['blocks'] as $key => $block) {
-    if ((strpos($key, "apachesolr_search_mlt-") === 0) && $block['module']['#value'] == 'apachesolr_search') {
-      $form['blocks'][$key]['delete'] = array(
-        '#type' => 'link',
-        '#title' => 'delete',
-        '#href' => 'admin/settings/apachesolr/search-pages/block/' . $block['delta']['#value'] . '/delete',
-      );
+  foreach ($form as $key => $block) {
+    if (isset($block['delta']['#value'])) {
+      if ((strpos($key, "apachesolr_search_mlt-") === 0) && $block['module']['#value'] == 'apachesolr_search') {
+        $form['blocks'][$key]['delete'] = array(
+          '#type' => 'link',
+          '#title' => 'delete',
+          '#href' => 'admin/settings/apachesolr/search-pages/block/' . $block['delta']['#value'] . '/delete',
+        );
+      }
     }
   }
 }
@@ -500,45 +502,112 @@ function theme_apachesolr_search_mlt_recommendation_block($vars) {
 }
 
 /**
- * Implementation of hook_search_info().
+ * Implementation of hook_search().
  */
-function apachesolr_search_search_info() {
-  // Load our core search page
-  // This core search page is assumed to always be there. It cannot be deleted.
-  $search_page = apachesolr_search_page_load('core_search');
+function apachesolr_search_search($op = 'search', $keys = NULL) {
 
-  // This can happen during install, or if the DB was manually changed.
-  if (empty($search_page)) {
-    $search_page = new stdClass();
-    $search_page->page_title = 'Site';
-    $search_page->search_path = 'search/site';
+  switch ($op) {
+    case 'reset':
+      $env_id = apachesolr_default_environment();
+      apachesolr_index_mark_for_reindex($env_id);
+      return;
+
+    case 'status':
+      $env_id = apachesolr_default_environment();
+      return apachesolr_index_status($env_id);
+
+/*    case 'search':
+      $conditions_callback = variable_get('apachesolr_search_conditions_callback', 'apachesolr_search_conditions');
+      $conditions = call_user_func($conditions_callback);
+      try {
+        $results = apachesolr_search_search_execute($keys, $conditions);
+        dsm($results);
+        return $results;
+      }
+      catch (Exception $e) {
+        watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
+        apachesolr_failure(t('Solr search'), $keys);
+      }
+      break;
+ */
+  } // switch
+}
+
+/**
+ * Implementation of hook_form_[form_id]_alter().
+ *
+ * This adds the 0 option to the search admin form.
+ */
+function apachesolr_search_form_search_admin_settings_alter(&$form, $form_state) {
+  $form['indexing_throttle']['search_cron_limit']['#options']['0'] = '0';
+  ksort($form['indexing_throttle']['search_cron_limit']['#options']);
+}
+
+/**
+ * Implementation of hook_form_[form_id]_alter().
+ */
+function apachesolr_search_form_search_theme_form_alter(&$form, $form_state) {
+  apachesolr_search_form_search_block_form_alter($form, $form_state);
+}
+
+/**
+ * Implementation of hook_form_[form_id]_alter().
+ */
+function apachesolr_search_form_search_block_form_alter(&$form, &$form_state) {
+  $search_pages = apachesolr_search_load_all_search_pages();
+  $redirect_to = variable_get('apachesolr_search_default_search_page', 'drupal_core');
+  if ($redirect_to == 'drupal_core') {
+    return;
   }
 
-  return array(
-    'title' => $search_page->page_title,
-    'path' => str_replace('search/', '', $search_page->search_path),
-    'conditions_callback' => variable_get('apachesolr_search_conditions_callback', 'apachesolr_search_conditions'),
-  );
+  if (!empty($search_pages[$redirect_to])) {
+    $form['#action'] = url($search_pages[$redirect_to]['search_path']);
+    if (!isset($form['#submit'])) {
+      $form['#submit'] = array('apachesolr_search_search_box_form_submit');
+    }
+    else {
+      $key = array_search('search_box_form_submit', $form['#submit']);
+      if ($key !== FALSE) {
+        // Replace the search module's function.
+        $form['#submit'][$key] = 'apachesolr_search_search_box_form_submit';
+      }
+    }
+  }
 }
 
 /**
- * Implementation of hook_search_reset().
+ * Process a block search form submission.
+ *
+ * @see search_box_form_submit()
  */
-function apachesolr_search_search_reset() {
-  $env_id = apachesolr_default_environment();
-  apachesolr_index_mark_for_reindex($env_id);
+function apachesolr_search_search_box_form_submit($form, &$form_state) {
+  // The search form relies on control of the redirect destination for its
+  // functionality, so we override any static destination set in the request,
+  // for example by drupal_access_denied() or drupal_not_found()
+  // (see http://drupal.org/node/292565).
+  if (isset($_REQUEST['destination'])) {
+    unset($_REQUEST['destination']);
+  }
+  if (isset($_REQUEST['edit']['destination'])) {
+    unset($_REQUEST['edit']['destination']);
+  }
+
+  $form_id = $form['form_id']['#value'];
+  $keys = $form_state['values'][$form_id];
+  // Handle Apache webserver clean URL quirks.
+  if (variable_get('clean_url', '0')) {
+    $keys = str_replace('+', '%2B', $keys);
+  }
+  $path = $form['#action'];
+  // Remove leading slash
+  ($path{0} == "/" ) ? $path = substr($path, 1) : '';
+  // Set our path to the correct search page
+  $form_state['redirect'] = $path . '/' .trim($keys);
 }
 
-/**
- * Implementation of hook_search_status().
- */
-function apachesolr_search_search_status() {
-  $env_id = apachesolr_default_environment();
-  return apachesolr_index_status($env_id);
-}
 
 /**
- * Implementation of hook_search_execute().
+ * Helper function to retrieve results
  * @param $keys
  *   The keys that are available after the path that is defined in
  *   hook_search_info
@@ -552,7 +621,7 @@ function apachesolr_search_search_execute($keys = NULL, $conditions = NULL) {
 }
 
 /**
- * Implementation of a search_view() conditions callback.
+ * The default conditions callback.
  */
 function apachesolr_search_conditions() {
   //get default conditions from the core_search
@@ -562,7 +631,7 @@ function apachesolr_search_conditions() {
 }
 
 /**
- * Implements hook_search_page().
+ * The default search page
  * @param $results
  *   The results that came from apache solr
  */
