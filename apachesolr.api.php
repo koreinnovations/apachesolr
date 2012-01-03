@@ -165,7 +165,7 @@ function hook_apachesolr_entity_info_alter(&$entity_info) {
   // Following values are optional
   $entity_info['myentity']['index_table'] = 'apachesolr_index_entities_myentity';
   $entity_info['myentity']['cron_check'] = 'my_module_cron_check';
-  $entity_info['myentity']['apachesolr']['result callback'] = 'my_module_result_processing';
+  $entity_info['myentity']['result callback'] = 'my_module_result_processing';
 }
 
 /**
@@ -175,7 +175,7 @@ function hook_apachesolr_entity_info_alter(&$entity_info) {
  * conventions for the type of data being added based on the schema.xml file.
  *
  * Only useful for node
- * 
+ *
  * @param object $document
  *   The ApacheSolrDocument instance. No need for &.
  * @param object $node

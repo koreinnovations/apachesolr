@@ -87,7 +87,7 @@ function apachesolr_install() {
   // Reset the last run
   variable_set('apachesolr_index_last_run', 1);
 
-  drupal_set_message(t('Apache Solr is enabled. Visit the <a href="@settings_link">settings page</a>.', array('@settings_link' => url('admin/config/search/apachesolr'))));
+  drupal_set_message(t('Apache Solr is enabled. Visit the <a href="@settings_link">settings page</a>.', array('@settings_link' => url('admin/settings/apachesolr'))));
 }
 
 /**

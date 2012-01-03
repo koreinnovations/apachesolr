@@ -4,7 +4,7 @@ dependencies[] = search
 dependencies[] = apachesolr
 package = Search Toolkit
 core = 6.x
-configure = admin/config/search/apachesolr/search-pages
+configure = admin/settings/apachesolr/search-pages
 
 files[] = apachesolr_search.install
 files[] = apachesolr_search.module

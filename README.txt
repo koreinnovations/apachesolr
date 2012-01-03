@@ -11,7 +11,7 @@ must be used in your Solr installation.
 This module depends on the search framework in core.  When used in combination
 with core search module, Apache Solr is not the default search. Access it via a
 new tab on the default search page, called "Search".  You may configure it
-to be default at ?q=admin/config/search/settings
+to be default at ?q=admin/settings/search
 
 Updating from 6.x
 -----------------

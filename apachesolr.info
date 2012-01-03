@@ -6,7 +6,7 @@ dependencies[] = autoload
 dependencies[] = dbtng
 dependencies[] = drupal_queue
 core = 6.x
-configure = admin/config/search/apachesolr/settings
+configure = admin/settings/apachesolr/settings
 
 files[] = apachesolr.install
 files[] = apachesolr.module
