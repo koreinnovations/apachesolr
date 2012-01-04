@@ -1,5 +1,6 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1391850 by cpliakas: Fix for Fatal error when Solr server is not available on non-search pages.
 #1389306 by Nick_vh: Fixed Wrong helptext link if facetapi is not installed.
 #1252648 by cpliakas, Nick_vh: Added Allow for enabling facet blocks on non-search pages.
 #1161608 by scor, Nick_vh: Added Index format_username()($account).
