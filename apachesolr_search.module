@@ -319,7 +319,27 @@ function apachesolr_search_page_clone($page_id) {
 }
 
 /**
- * Implements hook_block_info().
+ * Implements hook_block().
+ */
+function apachesolr_search_block($op = 'list', $delta = 0, $edit = array()) {
+  switch ($op) {
+    case 'list' :
+      return apachesolr_search_block_info();
+      break;
+    case 'view' :
+      return apachesolr_search_block_view($delta);
+      break;
+    case 'configure' :
+      return apachesolr_search_block_configure($delta);
+      break;
+    case 'save' :
+      return apachesolr_search_block_save($delta, $edit);
+      break;
+  }
+}
+
+/**
+ * Retrieve all possible MLT blocks
  */
 function apachesolr_search_block_info() {
   // Get all of the moreLikeThis blocks that the user has created
@@ -335,9 +355,14 @@ function apachesolr_search_block_info() {
   return $blocks;
 }
 
+/**
+ * Vew a specific block according to the delta identifier
+ * @param string $delta
+ * @return string
+ */
 function apachesolr_search_block_view($delta = '') {
   if ($delta != 'sort' && ($node = menu_get_object()) && (!arg(2) || arg(2) == 'view')) {
-   $suggestions = array();
+    $suggestions = array();
     // Determine whether the user can view the current node. Probably not necessary.
     $block = apachesolr_search_mlt_block_load($delta);
     if ($block && node_access('view', $node)) {
@@ -347,11 +372,7 @@ function apachesolr_search_block_view($delta = '') {
       $docs = apachesolr_search_mlt_suggestions($block, apachesolr_document_id($node->nid), $solr);
       if (!empty($docs)) {
         $suggestions['subject'] = check_plain($block['name']);
-        $suggestions['content'] = array(
-          '#theme' => 'apachesolr_search_mlt_recommendation_block',
-          '#docs' => $docs,
-          '#delta' => $delta
-        );
+        $suggestions['content'] = theme('apachesolr_search_mlt_recommendation_block', $docs, $delta);
       }
     }
     return $suggestions;
@@ -488,17 +509,14 @@ function apachesolr_search_mlt_suggestions($settings, $id, $solr = NULL) {
 }
 
 function theme_apachesolr_search_mlt_recommendation_block($vars) {
-  $docs = $vars['docs'];
+  $docs = $vars;
   $links = array();
   foreach ($docs as $result) {
     // Suitable for single-site mode. Label is already safe.
     $links[] = l($result->label, $result->path, array('html' => TRUE));
   }
-  $links = array(
-    '#theme' => 'item_list',
-    '#items' => $links,
-  );
-  return render($links);
+  $links = theme('item_list', $links);
+  return $links;
 }
 
 /**
@@ -521,7 +539,6 @@ function apachesolr_search_search($op = 'search', $keys = NULL) {
       $conditions = call_user_func($conditions_callback);
       try {
         $results = apachesolr_search_search_execute($keys, $conditions);
-        dsm($results);
         return $results;
       }
       catch (Exception $e) {

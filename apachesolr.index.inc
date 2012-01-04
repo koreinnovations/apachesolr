@@ -34,8 +34,9 @@ function apachesolr_entity_should_index($entity, $type) {
 function apachesolr_index_status($env_id) {
   $remaining = 0;
   $total = 0;
+  $type = 'node';
   $last_change = variable_get('apachesolr_index_last_run', 1);
-  $bundles = apachesolr_index_get_bundles($env_id, $type = 'node');
+  $bundles = apachesolr_index_get_bundles($env_id, $type);
   $table = apachesolr_index_get_indexer_table($type);
 
   $query = db_select($table, 'asn')->condition('asn.status', 1);
@@ -50,9 +51,11 @@ function apachesolr_index_status($env_id) {
     ->condition('aie.status', 1)
     ->condition('aie.entity_type', $type)
     ->condition('aie.bundle', $bundles)
-    ->condition(db_or()->condition('aie.changed', $last_change, '>')
-                       ->condition('aie.changed', $last_change, '=')
-                       ->condition('aie.entity_id', $last_entity_id, '>'));
+    ->condition(db_or()
+      ->condition('aie.changed', $last_change, '>')
+      ->condition(db_and()
+                ->condition('aie.changed', $last_change, '=')
+                ->condition('aie.entity_id', $last_entity_id, '>')));
   $remaining += $query->countQuery()->execute()->fetchField();
 
   return array('remaining' => $remaining, 'total' => $total);

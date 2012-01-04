@@ -155,7 +155,7 @@ function apachesolr_search_page_list_blocks() {
     $row[] = $environment ? check_plain($environment['name']) : check_plain(t('<Disabled>'));
     // Operations
     if (module_exists('block')) {
-      $row[] = array('data' => l(t('Configure'), 'admin/structure/block/manage/apachesolr_search/' . $search_block_id . '/configure', array('query' => array('destination' => $_GET['q']))));
+      $row[] = array('data' => l(t('Configure'), 'admin/build/block/configure/apachesolr_search/' . $search_block_id . '/configure', array('query' => array('destination' => $_GET['q']))));
     }
     $row[] = array('data' => l(t('Delete'), 'admin/settings/apachesolr/search-pages/block/' . $search_block_id . '/delete'));
     $rows[$search_block_id] = $row;
@@ -1110,8 +1110,9 @@ function apachesolr_search_mlt_block_form($block_id = NULL) {
   );
 
   $type_options = array();
-  foreach (node_type_get_types() as $key => $type) {
-    $type_options[$key] = $type->name;
+
+  foreach (content_types() as $key => $info) {
+    $type_options[$key] = $info['type'];
   }
 
   $form['restrictions']['mlt_type_filters'] = array(

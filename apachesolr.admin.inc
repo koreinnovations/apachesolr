@@ -30,6 +30,9 @@ function apachesolr_environment_delete_form_submit($form, &$form_state) {
   if (apachesolr_environment_delete($form_state['values']['env_id'])) {
     drupal_set_message(t('The search environment was deleted'));
   }
+
+  // Regardlessly of the destination parameter we want to go to another page
+  unset($_GET['destination']);
   $form_state['redirect'] = 'admin/settings/apachesolr/settings';
 }
 
@@ -50,14 +53,14 @@ function apachesolr_environment_settings_page($environment = NULL) {
 
  // Initializes output with information about which environment's setting we are
   // editing, as it is otherwise not transparent to the end user.
-  $output = array(
-    'apachesolr_environment' => array(
-      '#theme' => 'apachesolr_settings_title',
-      '#env_id' => $env_id,
-    ),
-  );
+  $output['apachesolr_environment'] = theme('apachesolr_settings_title', $env_id);
   $output['form'] = drupal_get_form('apachesolr_environment_edit_form', $environment);
-  return $output;
+
+  $build_output = NULL;
+  foreach($output as $build_result) {
+    $build_output .= $build_result;
+  }
+  return $build_output;
 }
 
 function apachesolr_environment_clone_form(&$form_state, $environment) {
@@ -874,7 +877,7 @@ function apachesolr_index_action_form_delete_confirm(&$form_state, $environment)
 /**
  * Submit handler for the deletion form.
  */
-function apachesolr_index_action_form_delete_confirm_submit($form, $form_state) {
+function apachesolr_index_action_form_delete_confirm_submit($form, &$form_state) {
   if (!empty($form_state['build_info']['args'][0]['env_id'])) {
     $env_id = $form_state['build_info']['args'][0]['env_id'];
   }
