@@ -792,6 +792,38 @@ function apachesolr_fields_default_indexing_callback($entity, $field_name, $inde
   return $fields;
 }
 
+function apachesolr_index_content_text_indexing_callback($entity, $field_name, $index_key, $field_info) {
+  $fields = array();
+  if (isset($node->{$field_name})) {
+    $index_key = apachesolr_index_key($cck_info);
+    foreach ($node->$field_name as $field) {
+      if ($index_value = (isset($field['safe']) && strlen($field['safe'])) ? $field['safe'] : FALSE) {
+        $fields[] = array(
+          'key' => $index_key,
+          'value' => $index_value,
+        );
+      }
+    }
+  }
+  return $fields;
+}
+
+function apachesolr_index_content_numeric_indexing_callback($entity, $field_name, $index_key, $field_info) {
+  $fields = array();
+  if (isset($node->{$field_name})) {
+    $index_key = apachesolr_index_key($cck_info);
+    foreach ($node->$field_name as $field) {
+      if ($index_value = isset($field['value']) ? (int) $field['value'] : FALSE) {
+        $fields[] = array(
+          'key' => $index_key,
+          'value' => $index_value,
+        );
+      }
+    }
+  }
+  return $fields;
+}
+
 /**
  * This function is used during indexing to normalize the DATE and DATETIME
  * fields into the appropriate format for Apache Solr.

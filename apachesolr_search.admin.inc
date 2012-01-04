@@ -16,7 +16,7 @@ function _apachesolr_search_browse_form($default_value) {
   else {
     $description .= t('Remember to configure the facets on the <a href="!facetslink">search environment page</a> and assign blocks to regions on the <a href="!blocklink">block settings page</a>', array(
       '!facetslink' => url('admin/settings/apachesolr/settings/'),
-      '!blocklink' => url('admin/structure/block'),
+      '!blocklink' => url('admin/build/block'),
     ));
   }
   return array(
@@ -882,7 +882,7 @@ function apachesolr_search_mlt_add_block_form() {
 
 function apachesolr_search_mlt_add_block_form_submit($form, &$form_state) {
   apachesolr_search_mlt_save_block($form_state['values']);
-  $block_message = t('New More like this block created. <a href="!configure">Configure</a> this block in the Block administration', array('!configure' => url('admin/structure/block')));
+  $block_message = t('New More like this block created. <a href="!configure">Configure</a> this block in the Block administration', array('!configure' => url('admin/build/block')));
   drupal_set_message($block_message);
   $form_state['redirect'] = 'admin/settings/apachesolr/search-pages';
 }
@@ -976,7 +976,7 @@ function apachesolr_search_mlt_delete_block_form(&$form_state, $block) {
       '#value' => $delta,
     );
     $question = t('Are you sure you want to delete the "More Like this" block %name?', array('%name' => $block['name']));
-    $path = 'admin/structure/block';
+    $path = 'admin/build/block';
     $description = t('The block will be deleted. This action cannot be undone.');
     $yes = t('Delete');
     $no = t('Cancel');

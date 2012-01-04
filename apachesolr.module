@@ -1652,7 +1652,6 @@ function apachesolr_entity_delete($entity, $type) {
  */
 function apachesolr_entity_fields($entity_type = 'node') {
   static $fields = array();
-
   if (!isset($fields[$entity_type])) {
     $fields[$entity_type] = array();
 
@@ -1677,46 +1676,46 @@ function apachesolr_entity_fields($entity_type = 'node') {
 
     // Allow other modules to add or alter mappings.
     drupal_alter('apachesolr_field_mappings', $mappings, $entity_type);
-    //$modules = system_get_info('module');
-    //$instances = field_info_instances($entity_type);
-    /*foreach (field_info_fields() as $field_name => $field) {
-      $row = array();
-      if (isset($field['bundles'][$entity_type]) && (isset($mappings['per-field'][$field_name]) || isset($mappings[$field['type']]))) {
-        // Find the mapping.
-        if (isset($mappings['per-field'][$field_name])) {
-          $row = $mappings['per-field'][$field_name];
-        }
-        else {
-          $row = $mappings[$field['type']];
-        }
-        // The field info array.
-        $row['field'] = $field;
-
-        // @todo: for fields like taxonomy we are indexing multiple Solr fields
-        // per entity field, but are keying on a single Solr field name here.
-        $function = !empty($row['name_callback']) ? $row['name_callback'] : NULL;
-        if ($function && is_callable($function)) {
-          $row['name'] = $function($field);
-        }
-        else {
-          $row['name'] = $field['field_name'];
-        }
-        $row['module_name'] = $modules[$field['module']]['name'];
-        // Set display name
-        $display_name = array();
-        foreach ($field['bundles'][$entity_type] as $bundle) {
-          if (empty($instances[$bundle][$field_name]['display']['search_index']) || $instances[$bundle][$field_name]['display']['search_index'] != 'hidden') {
-            $row['display_name'] = $instances[$bundle][$field_name]['label'];
-            $row['bundles'][] = $bundle;
+    // Only cck can add extra fields so we don't support anything if we do not
+    // have CCK
+    if (module_exists('content')) {
+      //$modules = system_get_info('module');
+      foreach (content_fields() as $field_name => $field) {
+        $row = array();
+        if ((isset($mappings['per-field'][$field_name]) || isset($mappings[$field['type']]))) {
+          // Find the mapping.
+          if (isset($mappings['per-field'][$field_name])) {
+            $row = $mappings['per-field'][$field_name];
+          }
+          else {
+            $row = $mappings[$field['type']];
+          }
+          // The field info array.
+          $row['field'] = $field;
+          // @todo: for fields like taxonomy we are indexing multiple Solr fields
+          // per entity field, but are keying on a single Solr field name here.
+          $function = !empty($row['name_callback']) ? $row['name_callback'] : NULL;
+          if ($function && is_callable($function)) {
+            $row['name'] = $function($field);
+          }
+          else {
+            $row['name'] = $field['field_name'];
+          }
+          $row['module_name'] = $field['widget']['module'];
+          // Set display name
+          $display_name = array();
+          if (empty($field['display_settings'][NODE_BUILD_SEARCH_INDEX]) || !$field['display_settings'][NODE_BUILD_SEARCH_INDEX]['exclude']) {
+            $row['display_name'] = $field['widget']['label'];
+            $row['bundles'][] = $field['type_name'];
+          }
+          // Only add to the $fields array if some instances are displayed for the search index.
+          if (!empty($row['bundles'])) {
+            // Use the Solr index key as the array key.
+            $fields[$entity_type][apachesolr_index_key($row)] = $row;
           }
         }
-        // Only add to the $fields array if some instances are displayed for the search index.
-        if (!empty($row['bundles'])) {
-          // Use the Solr index key as the array key.
-          $fields[$entity_type][apachesolr_index_key($row)] = $row;
-        }
       }
-    }*/
+    }
   }
   return $fields[$entity_type];
 }
@@ -2034,40 +2033,8 @@ function apachesolr_hook_info() {
 /**
  * Implements hook_apachesolr_field_mappings().
  */
-function field_apachesolr_field_mappings() {
+function content_apachesolr_field_mappings() {
   $mappings = array(
-    'list_integer' => array(
-      'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
-      'map callback' => 'apachesolr_fields_list_facet_map_callback',
-      'index_type' => 'integer',
-      'facets' => TRUE,
-      'query types' => array('term', 'numeric_range'),
-      'query type' => 'term',
-      'facet missing allowed' => TRUE,
-    ),
-    'list_float' => array(
-      'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
-      'map callback' => 'apachesolr_fields_list_facet_map_callback',
-      'index_type' => 'float',
-      'facets' => TRUE,
-      'query types' => array('term', 'numeric_range'),
-      'query type' => 'term',
-      'facet missing allowed' => TRUE,
-    ),
-    'list_text' => array(
-      'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
-      'map callback' => 'apachesolr_fields_list_facet_map_callback',
-      'index_type' => 'string',
-      'facets' => TRUE,
-      'facet missing allowed' => TRUE,
-    ),
-    'list_boolean' => array(
-      'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
-      'map callback' => 'apachesolr_fields_list_facet_map_callback',
-      'index_type' => 'boolean',
-      'facets' => TRUE,
-      'facet missing allowed' => TRUE,
-    ),
     'number_integer' => array(
       'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
       'index_type' => 'tint',
@@ -2092,17 +2059,15 @@ function field_apachesolr_field_mappings() {
       'query type' => 'term',
       'facet mincount allowed' => TRUE,
     ),
-    'taxonomy_term_reference' => array(
-      'map callback' => 'facetapi_map_taxonomy_terms',
-      'hierarchy callback' => 'facetapi_get_taxonomy_hierarchy',
-      'indexing_callback' => 'apachesolr_term_reference_indexing_callback',
-      'index_type' => 'integer',
-      'facet_block_callback' => 'apachesolr_search_taxonomy_facet_block',
+    'text' => array(
+      'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
+      'index_type' => 'text',
       'facets' => TRUE,
+      'query types' => array('term'),
+      'query type' => 'term',
       'facet mincount allowed' => TRUE,
     ),
   );
-
   return $mappings;
 }
 
