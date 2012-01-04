@@ -55,9 +55,11 @@ function apachesolr_index_status($env_id) {
       ->condition('aie.status', 1)
       ->condition('aie.entity_type', $type)
       ->condition('aie.bundle', $bundles)
-      ->condition(db_or()->condition('aie.changed', $last_change, '>')
-                         ->condition('aie.changed', $last_change, '=')
-                         ->condition('aie.entity_id', $last_entity_id, '>'));
+      ->condition(db_or()
+        ->condition('aie.changed', $last_change, '>')
+        ->condition(db_and()
+          ->condition('aie.changed', $last_change, '=')
+          ->condition('aie.entity_id', $last_entity_id, '>')));
     $remaining += $query->countQuery()->execute()->fetchField();
   }
 
