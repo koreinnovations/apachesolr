@@ -391,8 +391,67 @@ function apachesolr_search_block_info() {
   return $blocks;
 }
 
+/**
+ * Implements hook_block_view().
+ */
 function apachesolr_search_block_view($delta = '') {
-  if ($delta != 'sort' && ($node = menu_get_object()) && (!arg(2) || arg(2) == 'view')) {
+  if ($delta == 'sort') {
+    $environments = apachesolr_load_all_environments();
+    foreach ($environments as $env_id => $environment) {
+      if (apachesolr_has_searched($env_id) && !apachesolr_suppress_blocks($env_id) && $delta == 'sort') {
+        $response = NULL;
+        $query = apachesolr_current_query($env_id);
+        if ($query) {
+          // Get the query and response. Without these no blocks make sense.
+          $response = apachesolr_static_response_cache($query->getSearcher());
+        }
+        if (empty($response) || ($response->response->numFound < 2)) {
+          return;
+        }
+
+        $sorts = $query->getAvailableSorts();
+
+        // Get the current sort as an array.
+        $solrsort = $query->getSolrsort();
+
+        $sort_links = array();
+        $path = $query->getPath();
+        $new_query = clone $query;
+        $toggle = array('asc' => 'desc', 'desc' => 'asc');
+        foreach ($sorts as $name => $sort) {
+          $active = $solrsort['#name'] == $name;
+          if ($name == 'score') {
+            $direction = '';
+            $new_direction = 'desc'; // We only sort by descending score.
+          }
+          elseif ($active) {
+            $direction = $toggle[$solrsort['#direction']];
+            $new_direction = $toggle[$solrsort['#direction']];
+          }
+          else {
+            $direction = '';
+            $new_direction = $sort['default'];
+          }
+          $new_query->setSolrsort($name, $new_direction);
+          $sort_links[$name] = array(
+            'text' => $sort['title'],
+            'path' => $path,
+            'options' => array('query' => $new_query->getSolrsortUrlQuery()),
+            'active' => $active,
+            'direction' => $direction,
+          );
+        }
+        foreach ($sort_links as $name => $link) {
+          $themed_links[$name] = theme('apachesolr_sort_link', $link);
+        }
+        return array(
+        'subject' => t('Sort by'),
+          'content' => theme('apachesolr_sort_list', array('items' => $themed_links))
+        );
+      }
+    }
+  }
+  elseif ($node = menu_get_object() && (!arg(2) || arg(2) == 'view')) {
    $suggestions = array();
     // Determine whether the user can view the current node. Probably not necessary.
     $block = apachesolr_search_mlt_block_load($delta);
