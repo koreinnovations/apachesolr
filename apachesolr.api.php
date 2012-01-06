@@ -169,28 +169,6 @@ function hook_apachesolr_entity_info_alter(&$entity_info) {
 }
 
 /**
- * Allows a module to change the contents of the $document object before it is
- * sent to the Solr Server. To add a new field to the document you should
- * generally use one of the pre-defined dynamic fields. Follow the naming
- * conventions for the type of data being added based on the schema.xml file.
- *
- * Only useful for node
- * 
- * @param object $document
- *   The ApacheSolrDocument instance. No need for &.
- * @param object $node
- *   The node object which is being indexed.
- * @param string $env_id
- *   For what search environment do you want to update the index
- */
-function hook_apachesolr_update_index($document, $node, $env_id) {
-  // Add the full node object of 'story' nodes to the index.
-  if ($node->type == 'story') {
-    $document->addField('xs_node', base64_encode(node_load($node->nid)));
-  }
-}
-
-/**
  * Allows a module to modify the delete query.
  *
  * @param string $query
@@ -268,51 +246,39 @@ function hook_apachesolr_search_types_alter(&$search_types) {
 }
 
 /**
- * Build the documents before sending them to Solr
+ * Build the documents before sending them to Solr.
  *
  * @param integer $document_id
  * @param array $entity
  * @param string $entity_type
  */
-function hook_apachesolr_index_document_build(ApacheSolrDocument $document, $entity, $entity_type) {
+function hook_apachesolr_index_document_build(ApacheSolrDocument $document, $entity, $entity_type, $env_id) {
 
 }
 
 /**
- * Build the documents before sending them to Solr
+ * Build the documents before sending them to Solr.
  *
  * Supports all types of
- * hook_apachesolr_index_document_' . $entity_type . '_build($documents[$id], $entity, $entity_type);
+ * hook_apachesolr_index_document_build_' . $entity_type($documents[$id], $entity, $env_id);
  *
- * @param integer $document_id
- * @param array $entity
- * @param string $entity_type
+ * @param $document
+ * @param $entity
+ * @param $entity_type
  */
-function hook_apachesolr_index_document_node_build(ApacheSolrDocument $document, $entity, $entity_type) {
+function hook_apachesolr_index_document_build_node(ApacheSolrDocument $document, $entity, $env_id) {
 
 }
 
 /**
- * Build the documents before sending them to Solr
+ * Alter the prepared documents from one entity before sending them to Solr.
  *
- * Supports all types of
- * hook_apachesolr_index_document_' . $entity_type . '_' . $bundle . '_build($documents[$id], $entity, $entity_type);
- *
- * @param integer $document_id
- * @param array $entity
- * @param string $entity_type
+ * @param $documents
+ *   Array of ApacheSolrDocument objects.
+ * @param $entity
+ * @param $entity_type
+ * @param string $env_id
  */
-function hook_apachesolr_index_document_node_page_build(ApacheSolrDocument $document, $entity, $entity_type) {
-
-}
-
-/**
- * Alter the prepared documents before sending them to Solr
- *
- * @param integer $documents_id
- * @param array $entity
- * @param string $entity_type
- */
-function hook_apachesolr_index_document(ApacheSolrDocument $documents, $entity, $entity_type) {
+function hook_apachesolr_index_documents_alter(array &$documents, $entity, $entity_type, $env_id) {
 
 }

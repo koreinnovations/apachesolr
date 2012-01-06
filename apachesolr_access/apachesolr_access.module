@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Implements apachesolr_update_index
+ * Implements hook_apachesolr_index_document_build_node()
  */
-function apachesolr_access_apachesolr_update_index(&$document, $node, $env_id) {
+function apachesolr_access_apachesolr_index_document_build_node($document, $node, $env_id) {
   $account = &drupal_static(__FUNCTION__);
 
   if (!isset($account)) {
@@ -23,7 +23,7 @@ function apachesolr_access_apachesolr_update_index(&$document, $node, $env_id) {
   else {
     // Add the generic view grant if we are not using
     // node access or the node is viewable by anonymous users.
-    // We assume we'll never have an entity with the name '_all'.
+    // We assume we'll never have an entity with the name '__all'.
     $document->setMultiValue('access__all', 0);
   }
 }

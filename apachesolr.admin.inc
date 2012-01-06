@@ -455,6 +455,7 @@ function apachesolr_status_page($environment = NULL) {
     try {
       // Collect the stats
       $stats_summary = $solr->getStatsSummary();
+      module_load_include('inc', 'apachesolr', 'apachesolr.index');
       $status = apachesolr_index_status($environment["env_id"]);
       // We need a schema version greater than beta3. This is mostly to catch
       // people using the Drupal 6 schema.
@@ -836,6 +837,7 @@ function apachesolr_index_action_form_reset_confirm_submit($form, &$form_state) 
   else {
     $env_id = apachesolr_default_environment();
   }
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   apachesolr_index_mark_for_reindex($env_id);
   drupal_set_message(t('All the content on your site is queued for indexing. You can wait for it to be indexed during cron runs, or you can manually reindex it.'));
   $form_state['redirect'] = 'admin/config/search/apachesolr';
@@ -866,7 +868,7 @@ function apachesolr_index_action_form_delete_confirm_submit($form, &$form_state)
     $env_id = apachesolr_default_environment();
   }
   // Rebuild our tracking table.
-  variable_get('apachesolr_index_last_run', 1);
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   apachesolr_index_delete_index($env_id);
   drupal_set_message(t('The index has been deleted.'));
 
@@ -901,6 +903,7 @@ function apachesolr_index_batch_index_remaining($env_id) {
  * Batch Operation Callback
  */
 function apachesolr_index_batch_index_entities($env_id, &$context) {
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   if (empty($context['sandbox'])) {
     try {
       // Get the $solr object
@@ -924,18 +927,7 @@ function apachesolr_index_batch_index_entities($env_id, &$context) {
   // timeout or out of memory error.
   $limit = variable_get('apachesolr_cron_limit', 50);
 
-  // With each pass through the callback, retrieve the next group of nids.
-  $rows = apachesolr_index_get_entities_to_index($limit, $env_id);
-  $documents = array();
-  $entities_processed = 0;
-  foreach ($rows as $row) {
-    $documents = array_merge($documents, apachesolr_index_index_entity($row, $env_id));
-    $entities_processed++;
-  }
-  apachesolr_index_send_to_solr($documents);
-  apachesolr_index_set_last_updated(REQUEST_TIME);
-
-  $context['sandbox']['progress'] += $entities_processed;
+  $context['sandbox']['progress'] += apachesolr_index_entities($env_id, $limit);
   $context['message'] = t('Indexed @current of @total nodes', array('@current' => $context['sandbox']['progress'], '@total' => $context['sandbox']['max']));
 
   // Inform the batch engine that we are not finished, and provide an
@@ -1006,7 +998,7 @@ function apachesolr_index_config_form($form, $form_state, $env_id) {
         '#type' => 'checkboxes',
         '#title' => check_plain($entity_info['label']),
         '#options' => $options,
-        '#default_value' => apachesolr_index_get_bundles($env_id, $entity_type),
+        '#default_value' => apachesolr_get_index_bundles($env_id, $entity_type),
       );
     }
   }
@@ -1020,6 +1012,7 @@ function apachesolr_index_config_form($form, $form_state, $env_id) {
  * Submit handler for the bundle configuration form.
  */
 function apachesolr_index_config_form_submit($form, &$form_state) {
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $form_values = $form_state['values'];
   $env_id = $form_values['env_id'];
   $entity_count = 0;

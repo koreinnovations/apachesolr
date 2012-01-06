@@ -75,9 +75,6 @@ function apachesolr_install() {
   $env_id = apachesolr_default_environment();
   apachesolr_index_set_bundles($env_id, 'node', $bundles);
 
-  // Reset the last run
-  variable_set('apachesolr_index_last_run', 1);
-  
   drupal_set_message(st('Apache Solr is enabled. Visit the <a href="@settings_link">settings page</a>.', array('@settings_link' => url('admin/config/search/apachesolr'))));
 }
 
@@ -179,7 +176,12 @@ function apachesolr_schema() {
     'primary key' => array('env_id', 'name'),
   );
 
-  // Install the new schema
+  // Technically the entity system does not require an integer ID.
+  // However, documentation mentions :
+  // id: The name of the property that contains the primary id of the
+  // entity. Every entity object passed to the Field API must have this
+  // property and its value must be numeric.
+
   //Predefine an amount of types that get their own table
   $types = array(
       'other' => 'apachesolr_index_entities',
@@ -221,10 +223,14 @@ function apachesolr_schema() {
         ),
       ),
       'indexes' => array(
-        'changed' => array('changed', 'status'),
+        'changed' => array('bundle', 'status', 'changed'),
       ),
       'primary key' => array('entity_id'),
     );
+    if ($type == 'other') {
+      // Need the entity type also in the pkey for multiple entities in one table.
+      $schema[$type]['primary key'][] = 'entity_type';
+    }
   }
 
   $schema['apachesolr_index_bundles'] = array(
@@ -596,19 +602,17 @@ function apachesolr_update_7012() {
   module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $env_id = apachesolr_default_environment();
 
-  // Variable changed name
-  $stored = variable_get('apachesolr_index_last', array());
-  if (isset($stored['apachesolr'])) {
-    variable_set('apachesolr_index_last_run', $stored['apachesolr']['last_change']);
-    variable_del('apachesolr_index_last');
-  }
-
   // Variable changed from integer to array with environment integers
   $stored = variable_get('apachesolr_index_last', array());
   if (isset($stored['apachesolr'])) {
-    $stored[$env_id] = $stored['apachesolr'];
+    $stored[$env_id]['node']['last_entity_id'] = $stored['apachesolr']['last_nid'];
+    $stored[$env_id]['node']['last_changed'] = $stored['apachesolr']['last_change'];
     unset($stored['apachesolr']);
     variable_set('apachesolr_index_last', $stored);
+  }
+  $last = variable_get('apachesolr_index_updated', NULL);
+  if (isset($last)) {
+    variable_set('apachesolr_index_updated', array($env_id => (int) $last));
   }
   // Change namespace to environment id
   $excluded_types = apachesolr_environment_variable_get('apachesolr', 'apachesolr_search_excluded_types', array());
@@ -657,10 +661,14 @@ function apachesolr_update_7012() {
         ),
       ),
       'indexes' => array(
-        'changed' => array('changed', 'status'),
+        'changed' => array('bundle', 'status', 'changed'),
       ),
       'primary key' => array('entity_id'),
     );
+    if ($type == 'other') {
+      // Need the entity type also in the pkey for multiple entities in one table.
+      $schema[$type]['primary key'][] = 'entity_type';
+    }
     // Create the table
     db_create_table($type, $schema[$type]);
   }
@@ -698,7 +706,7 @@ function apachesolr_update_7012() {
   $select->addField('n', 'nid', 'entity_id');
   $select->addField('n', 'type', 'bundle');
   $select->addField('asn', 'status', 'status');
-  $select->addField('n', 'changed', 'changed');
+  $select->addField('asn', 'changed', 'changed');
   $select->addExpression("'node'", 'entity_type');
   $return_value = db_insert('apachesolr_index_entities_node')
     ->fields(array('entity_id', 'bundle', 'status', 'changed', 'entity_type'))
