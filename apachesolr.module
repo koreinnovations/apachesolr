@@ -528,7 +528,7 @@ function apachesolr_mark_entity($entity_type, $entity_id) {
  */
  function apachesolr_user_update(&$edit, $account, $category) {
    if (isset($account->name) && $account->name != $account->original->name) {
-     $table = apachesolr_index_get_indexer_table('node');
+     $table = apachesolr_get_indexer_table('node');
      switch (db_driver()) {
        case 'mysql' :
          $table = db_escape_table($table);
@@ -563,7 +563,7 @@ function apachesolr_mark_entity($entity_type, $entity_id) {
  * @todo the rest, such as term deletion.
  */
 function apachesolr_taxonomy_term_update($term) {
-  $table = apachesolr_index_get_indexer_table('node');
+  $table = apachesolr_get_indexer_table('node');
   switch (db_driver()) {
     case 'mysql' :
       $table = db_escape_table($table);
@@ -647,7 +647,7 @@ function apachesolr_node_type_delete($info) {
 function apachesolr_node_type_update($info) {
   if (!empty($info->old_type) && $info->old_type != $info->type) {
     // We cannot be sure we are going before or after node module.
-    $table = apachesolr_index_get_indexer_table('node');
+    $table = apachesolr_get_indexer_table('node');
     switch (db_driver()) {
       case 'mysql' :
         $table = db_escape_table($table);
