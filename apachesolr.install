@@ -599,7 +599,7 @@ function apachesolr_update_7012() {
   // Variable changed name
   $stored = variable_get('apachesolr_index_last', array());
   if (isset($stored['apachesolr'])) {
-    variable_set('apachesolr_index_last_run', $stored['apachesolr']);
+    variable_set('apachesolr_index_last_run', $stored['apachesolr']['last_change']);
     variable_del('apachesolr_index_last');
   }
 
