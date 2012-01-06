@@ -640,6 +640,7 @@ function apachesolr_search_search_info() {
  * Implementation of hook_search_reset().
  */
 function apachesolr_search_search_reset() {
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $env_id = apachesolr_default_environment();
   apachesolr_index_mark_for_reindex($env_id);
 }
@@ -648,6 +649,7 @@ function apachesolr_search_search_reset() {
  * Implementation of hook_search_status().
  */
 function apachesolr_search_search_status() {
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $env_id = apachesolr_default_environment();
   return apachesolr_index_status($env_id);
 }
