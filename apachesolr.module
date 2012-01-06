@@ -520,13 +520,34 @@ function apachesolr_mark_entity($entity_type, $entity_id) {
  * Implements hook_user().
  *
  * Mark nodes as needing re-indexing if the author name changes.
- * @todo performance issue. see http://drupal.org/node/592522
+ *
+ * @see http://drupal.org/node/592522
+ *   Performance issue with Mysql
+ * @see http://api.drupal.org/api/drupal/includes--database--database.inc/function/db_update/7#comment-15459
+ *   To know why PDO in drupal does not support UPDATE and JOIN at once.
  */
-function apachesolr_user_update(&$edit, $account, $category) {
-  if (isset($edit['name']) && $account->name != $edit['name']) {
-    $table = apachesolr_get_indexer_table('node');
-    $entity_ids = db_select('node')->fields('node', array('nid'))->where("uid = :uid", array(':uid' => $account->uid));
-    db_update($table)->condition('entity_id', $entity_ids, 'IN')->fields(array('changed' => REQUEST_TIME))->execute();
+ function apachesolr_user_update(&$edit, $account, $category) {
+   if (isset($account->name) && $account->name != $account->original->name) {
+     $table = apachesolr_index_get_indexer_table('node');
+     switch (db_driver()) {
+       case 'mysql' :
+         $table = db_escape_table($table);
+         $query = "UPDATE {{$table}} asn
+           INNER JOIN {node} n ON asn.entity_id = n.nid SET asn.changed = :changed
+           WHERE n.uid = :uid";
+         $result = db_query($query, array(':changed' => REQUEST_TIME,
+           ':uid' => $account->uid,
+         ));
+         break;
+       default :
+         $nids = db_select('node')
+           ->fields('node', array('nid'))
+           ->where("uid = :uid", array(':uid' => $account->uid));
+         $update = db_update($table)
+           ->condition('nid', $nids, 'IN')
+           ->fields(array('changed' => REQUEST_TIME))
+           ->execute();
+     }
   }
 }
 
@@ -534,13 +555,34 @@ function apachesolr_user_update(&$edit, $account, $category) {
  * Implements hook_taxonomy().
  *
  * Mark nodes as needing re-indexing if a term name changes.
- * @todo performance issue. see http://drupal.org/node/592522
+ *
+ * @see http://drupal.org/node/592522
+ *   Performance issue with Mysql
+ * @see http://api.drupal.org/api/drupal/includes--database--database.inc/function/db_update/7#comment-15459
+ *   To know why PDO in drupal does not support UPDATE and JOIN at once.
  * @todo the rest, such as term deletion.
  */
 function apachesolr_taxonomy_term_update($term) {
-  $table = apachesolr_get_indexer_table('node');
-  $entity_ids = db_select('taxonomy_index')->fields('taxonomy_index', array('nid'))->where("tid = :tid", array(':tid' => $term->tid));
-  db_update($table)->condition('nid', $entity_ids, 'IN')->fields(array('changed' => REQUEST_TIME))->execute();
+  $table = apachesolr_index_get_indexer_table('node');
+  switch (db_driver()) {
+    case 'mysql' :
+      $table = db_escape_table($table);
+      $query = "UPDATE {{$table}} asn
+        INNER JOIN {taxonomy_index} ti ON asn.entity_id = ti.nid SET asn.changed = :changed
+        WHERE ti.tid = :tid";
+      $result = db_query($query, array(':changed' => REQUEST_TIME,
+        ':tid' => $term->tid,
+      ));
+      break;
+    default :
+      $nids = db_select('taxonomy_index')
+        ->fields('taxonomy_index', array('nid'))
+        ->where("tid = :tid", array(':tid' => $term->tid));
+      $update = db_update($table)
+        ->condition('nid', $nids, 'IN')
+        ->fields(array('changed' => REQUEST_TIME))
+        ->execute();
+  }
 }
 
 /**
@@ -595,14 +637,37 @@ function apachesolr_node_type_delete($info) {
 
 /**
  * Implements of hook_node_type_update().
+ *
+ * @see http://drupal.org/node/592522
+ *   Performance issue with Mysql
+ * @see http://api.drupal.org/api/drupal/includes--database--database.inc/function/db_update/7#comment-15459
+ *   To know why PDO in drupal does not support UPDATE and JOIN at once.
  * @todo Support backwards compatibility
  */
 function apachesolr_node_type_update($info) {
   if (!empty($info->old_type) && $info->old_type != $info->type) {
     // We cannot be sure we are going before or after node module.
-    $entity_ids = db_select('node')->fields('node', array('nid'))->where("type = :new OR type = :old", array(':new' => $info->type, ':old' => $info->old_type));
-    $table = apachesolr_get_indexer_table('node');
-    db_update($table)->condition('entity_id', $entity_ids, 'IN')->fields(array('changed' => REQUEST_TIME))->execute();
+    $table = apachesolr_index_get_indexer_table('node');
+    switch (db_driver()) {
+      case 'mysql' :
+        $table = db_escape_table($table);
+        $query = "UPDATE {{$table}} asn
+          INNER JOIN {node} n ON asn.entity_id = n.nid SET asn.changed = :changed
+          WHERE (n.type = :type OR n.type = :old_type)";
+        $result = db_query($query, array(':changed' => REQUEST_TIME,
+          ':type' => $info->type,
+          ':old_type' => $info->old_type,
+        ));
+        break;
+      default :
+        $nids = db_select('node')
+          ->fields('node', array('nid'))
+          ->where("type = :new OR type = :old", array(':new' => $info->type, ':old' => $info->old_type));
+        $update = db_update($table)
+          ->condition('nid', $nids, 'IN')
+          ->fields(array('changed' => REQUEST_TIME))
+          ->execute();
+    }
   }
 }
 
