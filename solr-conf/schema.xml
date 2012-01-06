@@ -174,6 +174,7 @@
                 catenateAll="0"
                 splitOnCaseChange="1"
                 preserveOriginal="1"/>
+        <filter class="solr.LengthFilterFactory" min="2" max="100" />
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.SnowballPorterFilterFactory" language="English" protected="protwords.txt"/>
         <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
@@ -196,6 +197,7 @@
                 catenateAll="0"
                 splitOnCaseChange="1"
                 preserveOriginal="1"/>
+        <filter class="solr.LengthFilterFactory" min="2" max="100" />
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.SnowballPorterFilterFactory" language="English" protected="protwords.txt"/>
         <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
@@ -215,6 +217,7 @@
                 catenateNumbers="1"
                 catenateAll="0"
                 splitOnCaseChange="0"/>
+        <filter class="solr.LengthFilterFactory" min="2" max="100" />
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
       <analyzer type="query">
@@ -233,6 +236,7 @@
                 catenateNumbers="0"
                 catenateAll="0"
                 splitOnCaseChange="0"/>
+        <filter class="solr.LengthFilterFactory" min="2" max="100" />
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
     </fieldType>
@@ -444,6 +448,16 @@
    <!-- Unindexed string fields that can be used to store values that won't be searchable -->
    <dynamicField name="zs_*" type="string"   indexed="false"  stored="true" multiValued="false"/>
    <dynamicField name="zm_*" type="string"   indexed="false"  stored="true" multiValued="true"/>
+
+   <!-- Begin added fields to support modules that use features in Solr 3.4
+   but are actually using solr 1.4 -->
+   <dynamicField name="points_*" type="string" indexed="true"  stored="true" multiValued="false"/>
+   <dynamicField name="pointm_*" type="string" indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="locs_*" type="string" indexed="true"  stored="true" multiValued="false"/>
+   <dynamicField name="locm_*" type="string" indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="geos_*" type="string" indexed="true"  stored="true" multiValued="false"/>
+   <dynamicField name="geom_*" type="string" indexed="true"  stored="true" multiValued="true"/>
+   <!-- End added fields for the support of modules that should use solr 3.4 -->
 
    <!-- Sortable version of the dynamic string field -->
    <dynamicField name="sort_*" type="sortString" indexed="true" stored="false"/>
