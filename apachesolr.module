@@ -607,21 +607,21 @@ function apachesolr_comment_update($comment) {
 }
 
 /**
- * Implements hook_comment_delete()
+ * Implements hook_comment_delete().
  */
 function apachesolr_comment_delete($comment) {
   apachesolr_mark_entity('node', $comment->nid);
 }
 
 /**
- * Implements hook_comment_publish()
+ * Implements hook_comment_publish().
  */
 function apachesolr_comment_publish($comment) {
   apachesolr_mark_entity('node', $comment->nid);
 }
 
 /**
- * Implements hook_comment_unpublish()
+ * Implements hook_comment_unpublish().
  */
 function apachesolr_comment_unpublish($comment) {
   apachesolr_mark_entity('node', $comment->nid);
@@ -2244,7 +2244,8 @@ function user_reference_apachesolr_field_mappings() {
  *  - retains all $_GET parameters that ApacheSolr may not be aware of
  *  - if set, $options['query'] MUST be an array
  *
- * @see http://api.drupal.org/api/function/l/6 for parameters and options.
+ * @see http://api.drupal.org/api/function/l/6
+ *   for parameters and options.
  *
  * @return
  *   an HTML string containing a link to the given path.

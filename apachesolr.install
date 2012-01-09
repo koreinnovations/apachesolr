@@ -150,8 +150,8 @@ function apachesolr_schema() {
         'api' => 'default_apachesolr_environment_variables',
         'minimum_version' => 1,
         'current_version' => 1,
-       ),
-     ),
+      ),
+    ),
     'fields' => array(
       'env_id' => array(
         'description' => 'Unique identifier for the environment',
@@ -504,31 +504,29 @@ function apachesolr_update_7006() {
  * Rename tables to make them more generic.
  */
 function apachesolr_update_7007() {
-   db_drop_primary_key('apachesolr_server');
-   db_drop_primary_key('apachesolr_server_variable');
-   db_rename_table('apachesolr_server', 'apachesolr_environment');
-   db_rename_table('apachesolr_server_variable', 'apachesolr_environment_variable');
-   db_change_field('apachesolr_environment', 'server_id', 'env_id', array(
-      'description' => 'Unique identifier for the environment',
-      'type' => 'varchar',
-      'length' => 64,
-      'not null' => TRUE,
-     )
-   );
-   db_change_field('apachesolr_environment_variable', 'server_id', 'env_id', array(
-      'description' => 'Unique identifier for the environment',
-      'type' => 'varchar',
-      'length' => 64,
-      'not null' => TRUE,
-     )
-   );
-   db_add_primary_key('apachesolr_environment', array('env_id'));
-   db_add_primary_key('apachesolr_environment_variable', array('env_id', 'name'));
-   $id = variable_get('apachesolr_default_server', NULL);
-   if (isset($id)) {
-     variable_set('apachesolr_default_environment', $id);
-   }
-   variable_del('apachesolr_default_server');
+  db_drop_primary_key('apachesolr_server');
+  db_drop_primary_key('apachesolr_server_variable');
+  db_rename_table('apachesolr_server', 'apachesolr_environment');
+  db_rename_table('apachesolr_server_variable', 'apachesolr_environment_variable');
+  db_change_field('apachesolr_environment', 'server_id', 'env_id', array(
+    'description' => 'Unique identifier for the environment',
+    'type' => 'varchar',
+    'length' => 64,
+    'not null' => TRUE)
+  );
+  db_change_field('apachesolr_environment_variable', 'server_id', 'env_id', array(
+    'description' => 'Unique identifier for the environment',
+    'type' => 'varchar',
+    'length' => 64,
+    'not null' => TRUE)
+  );
+  db_add_primary_key('apachesolr_environment', array('env_id'));
+  db_add_primary_key('apachesolr_environment_variable', array('env_id', 'name'));
+  $id = variable_get('apachesolr_default_server', NULL);
+  if (isset($id)) {
+    variable_set('apachesolr_default_environment', $id);
+  }
+  variable_del('apachesolr_default_server');
 }
 
 /**

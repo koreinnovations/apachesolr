@@ -1,6 +1,7 @@
 <?php
 /**
- * Exposed Hooks in 7.x:
+ * @file
+ *   Exposed Hooks in 7.x:
  */
 
 /**

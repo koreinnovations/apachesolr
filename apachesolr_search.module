@@ -452,7 +452,7 @@ function apachesolr_search_block_view($delta = '') {
     }
   }
   elseif (($node = menu_get_object()) && (!arg(2) || arg(2) == 'view')) {
-   $suggestions = array();
+    $suggestions = array();
     // Determine whether the user can view the current node. Probably not necessary.
     $block = apachesolr_search_mlt_block_load($delta);
     if ($block && node_access('view', $node)) {
@@ -615,7 +615,7 @@ function theme_apachesolr_search_mlt_recommendation_block($vars) {
 }
 
 /**
- * Implementation of hook_search_info().
+ * Implements hook_search_info().
  */
 function apachesolr_search_search_info() {
   // Load our core search page
@@ -637,7 +637,7 @@ function apachesolr_search_search_info() {
 }
 
 /**
- * Implementation of hook_search_reset().
+ * Implements hook_search_reset().
  */
 function apachesolr_search_search_reset() {
   module_load_include('inc', 'apachesolr', 'apachesolr.index');
@@ -646,7 +646,7 @@ function apachesolr_search_search_reset() {
 }
 
 /**
- * Implementation of hook_search_status().
+ * Implements hook_search_status().
  */
 function apachesolr_search_search_status() {
   module_load_include('inc', 'apachesolr', 'apachesolr.index');
@@ -655,7 +655,7 @@ function apachesolr_search_search_status() {
 }
 
 /**
- * Implementation of hook_search_execute().
+ * Implements hook_search_execute().
  * @param $keys
  *   The keys that are available after the path that is defined in
  *   hook_search_info
@@ -747,7 +747,8 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
     apachesolr_failure(t('Solr search'), $keys);
   }
   // Sort options from the conditions array.
-  // @see apachesolr_search_conditions_default to find out how.
+  // @see apachesolr_search_conditions_default()
+  //   See This condition callback to find out how.
   $solrsort = isset($conditions['apachesolr_search_sort']) ? $conditions['apachesolr_search_sort'] : '';
   // What to do when we have an initial empty search
   $empty_search_behavior = isset($search_page->settings['apachesolr_search_browse']) ? $search_page->settings['apachesolr_search_browse'] : '';
@@ -1247,7 +1248,7 @@ function apachesolr_search_get_search_suggestions($env_id) {
         $suggested_keyword = strtr($keyword, $replacements);
         // Show only if suggestion is different than current query.
         if ($keyword != $suggested_keyword) {
-         $suggestions_output[] = $suggested_keyword;
+          $suggestions_output[] = $suggested_keyword;
         }
       }
     }
