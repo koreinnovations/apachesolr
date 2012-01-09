@@ -1,5 +1,6 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1031250 by EugenMayer, Nick_vh: Added an option to index as another user instead of only anonymous.
 #1388498 by Nick_vh | pwolanin: Remove s (sortable) fields from schema.xml.
 #1379128 by Nick_vh, bdragon: Fixed Treat cardinality=1 fields as single-value + caching stats response.
 #1361422 by Nick_vh: Fixed coder issues as mentioned by the drupal testing bot.
