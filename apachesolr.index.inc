@@ -734,10 +734,84 @@ function apachesolr_vocab_name($vid) {
 }
 
 /**
+ * Construct a dynamic index name based on information about a field.
+ *
+ * array('index_type' => 'integer',
+ *        'multiple' => TRUE,
+ *        'name' => 'fieldname',
+ *        ),
+ */
+function apachesolr_index_key($field) {
+  $index_type = !empty($field['index_type']) ? $field['index_type'] : NULL;
+  switch ($index_type) {
+    case 'text':
+      $type_prefix = 't';
+      break;
+    case 'text-omitNorms':
+      $type_prefix = 'to';
+      break;
+    case 'text-edgeNgram':
+      $type_prefix = 'te';
+      break;
+    case 'text-whiteSpace':
+      $type_prefix = 'tw';
+      break;
+    case 'integer':
+      $type_prefix = 'i'; // long integer
+      break;
+    case 'half-int':
+      $type_prefix = 'h'; // 32 bit integer
+      break;
+    case 'float':
+      $type_prefix = 'f'; // float; sortable.
+      break;
+    case 'double':
+      $type_prefix = 'p'; // double; sortable d was used for date.
+      break;
+    case 'sint':
+      $type_prefix = 'is'; // long integer sortable (deprecated)
+      break;
+    case 'boolean':
+      $type_prefix = 'b';
+      break;
+    case 'date':
+      $type_prefix = 'd'; // date trie
+      break;
+    case 'tint':
+      $type_prefix = 'it'; // long integer trie; sortable, best for range queries
+      break;
+    case 'thalf-int':
+      $type_prefix = 'ht'; // 32 bit integer trie (sortable)
+      break;
+    case 'tfloat':
+      $type_prefix = 'ft'; // float trie; sortable, best for range queries.
+      break;
+    case 'tdouble':
+      $type_prefix = 'pt'; // double trie; d was used for date.
+      break;
+    case 'sfloat':
+      $type_prefix = 'fs'; // float, sortable (use for sorting missing last).
+      break;
+    case 'sdouble':
+      $type_prefix = 'ps'; // double sortable; (use for sorting missing last).
+      break;
+    case 'string':
+    default:
+      $type_prefix = 's'; // String
+  }
+  $sm = !empty($field['multiple']) ? 'm_' : 's_';
+  // Block deltas are limited to 32 chars.
+  return substr($type_prefix . $sm . $field['name'], 0, 32);
+}
+
+/**
  * Callback that converts list module field into an array
+ * For every multivalued value we also add a single value to be able to
+ * use the stats
  */
 function apachesolr_fields_default_indexing_callback($entity, $field_name, $index_key, $field_info) {
   $fields = array();
+  $numeric = TRUE;
   if (!empty($entity->{$field_name})) {
     $field = $entity->$field_name;
     list($lang, $values) = each($field);
@@ -759,13 +833,25 @@ function apachesolr_fields_default_indexing_callback($entity, $field_name, $inde
         $function = 'apachesolr_floatval';
         break;
       default:
+        $numeric = FALSE;
         $function = 'apachesolr_clean_text';
     }
-    foreach ($values as $fval) {
+    for ($i = 0; $i < count($values); $i++) {
       $fields[] = array(
         'key' => $index_key,
-        'value' => $function($fval['value']),
+        'value' => $function($values[$i]['value']),
       );
+
+      // Only store the first value of the field in a singular index
+      if ($numeric && ($i == 0)) {
+        $singular_field_info = $field_info;
+        $singular_field_info['multiple'] = FALSE;
+        $single_key = apachesolr_index_key($singular_field_info);
+        $fields[] = array(
+          'key' => $single_key,
+          'value' => $function($values[$i]['value']),
+        );
+      }
     }
   }
   return $fields;
