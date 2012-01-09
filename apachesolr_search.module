@@ -451,7 +451,7 @@ function apachesolr_search_block_view($delta = '') {
       }
     }
   }
-  elseif ($node = menu_get_object() && (!arg(2) || arg(2) == 'view')) {
+  elseif (($node = menu_get_object()) && (!arg(2) || arg(2) == 'view')) {
    $suggestions = array();
     // Determine whether the user can view the current node. Probably not necessary.
     $block = apachesolr_search_mlt_block_load($delta);

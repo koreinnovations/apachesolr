@@ -1,5 +1,6 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1398122 by Nick_vh | thecarlhall: Fixed Trying to get property of non-object in apachesolr_search_block_view().
 #1398100 by thecarlhall: Fixed Configuration throws exception when starting Solr.
 #1396606 by cpliakas: Fixed Fatal error 'Call to undefined function apachesolr_index_status()" when visiting admin/config/search/settings.
 #1392742 by Nick_vh, pwolanin: Fixed Add solr.LengthFilterFactory to the text fields.
