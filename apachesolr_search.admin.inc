@@ -357,6 +357,15 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
     '#default_value' => $default_value,
   );
 
+  // Enable/disable search form on search page (replaced by a block perhaps)
+  $default_value = isset($search_page->settings['apachesolr_search_allow_user_input']) ? $search_page->settings['apachesolr_search_allow_user_input'] : FALSE;
+  $form['advanced']['apachesolr_search_allow_user_input'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Allow user input using the URL'),
+    '#description' => t('Allow users to use the URL (mysite.com?q=test&fq=userinput) for manual facetting. This will only work after a search term is searched. Recommended is to leave this unchecked'),
+    '#default_value' => $default_value,
+  );
+
   // Use the main search page setting as the default for new pages.
   $default_value = isset($search_page->settings['apachesolr_search_browse']) ? $search_page->settings['apachesolr_search_browse'] : 'browse';
   $form['advanced']['apachesolr_search_browse'] = _apachesolr_search_browse_form($default_value);
@@ -455,6 +464,7 @@ function apachesolr_search_page_settings_form_submit($form, &$form_state) {
   $settings['apachesolr_search_per_page'] = $form_state['values']['apachesolr_search_per_page'];
   $settings['apachesolr_search_browse'] = $form_state['values']['apachesolr_search_browse'];
   $settings['apachesolr_search_spellcheck'] = $form_state['values']['apachesolr_search_spellcheck'];
+  $settings['apachesolr_search_allow_user_input'] = $form_state['values']['apachesolr_search_allow_user_input'];
 
   if (isset($form_state['values']['search_page']->settings)) {
     $settings = array_merge($form_state['values']['search_page']->settings, $settings);

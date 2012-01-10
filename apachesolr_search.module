@@ -799,25 +799,27 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
 function apachesolr_search_conditions_default($search_page) {
   $conditions = array();
   $search_type = isset($search_page->settings['apachesolr_search_search_type']) ? $search_page->settings['apachesolr_search_search_type'] : '';
+  $allow_user_input = isset($search_page->settings['apachesolr_search_allow_user_input']) ? $search_page->settings['apachesolr_search_allow_user_input'] : FALSE;
   $path_replacer = isset($search_page->settings['apachesolr_search_path_replacer']) ? $search_page->settings['apachesolr_search_path_replacer'] : '';
   $search_page_fq = !empty($search_page->settings['fq']) ? $search_page->settings['fq'] : '';
 
   $conditions['fq'] = array();
-  // Get the filterQueries from the url
-  if (!empty($_GET['fq']) && is_array($_GET['fq'])) {
-    // Reset the array so that we have one level lower to go through
-    $conditions['fq'] = $_GET['fq'];
-  }
-  foreach($conditions['fq'] as $condition_id => $condition) {
-    // If the user input does not pass our validation we do not allow
-    // it to query solr
-    if (!SolrBaseQuery::validFilterValue($condition)) {
-      unset($conditions['fq'][$condition_id]);
+  // We only allow this to happen if the search page explicitely allows it
+  if ($allow_user_input) {
+    // Get the filterQueries from the url
+    if (!empty($_GET['fq']) && is_array($_GET['fq'])) {
+      // Reset the array so that we have one level lower to go through
+      $conditions['fq'] = $_GET['fq'];
+    }
+    foreach($conditions['fq'] as $condition_id => $condition) {
+      // If the user input does not pass our validation we do not allow
+      // it to query solr
+      if (!SolrBaseQuery::validFilterValue($condition)) {
+        unset($conditions['fq'][$condition_id]);
+      }
     }
   }
 
-  // Add validation for user input
-  //
   // Custom filters added in search pages
   if (!empty($search_page_fq)) {
     if (!empty($path_replacer)) {
