@@ -1308,6 +1308,14 @@ function apachesolr_do_query(DrupalSolrQueryInterface $current_query, $page = 0)
   // Cache the original query. Since all the built queries go through
   // this process, all the hook_invocations will happen later
   $env_id = $current_query->solr('getId');
+
+  // Add our defType setting here. Normally this would be dismax or the setting
+  // from the solrconfig.xml. This allows the setting to be overridden.
+  $defType = apachesolr_environment_variable_get($env_id, 'apachesolr_query_type');
+  if (!empty($defType)) {
+    $current_query->addParam('defType', $defType);
+  }
+
   $query = apachesolr_current_query($env_id, $current_query);
 
   // This hook allows modules to modify the query and params objects.
