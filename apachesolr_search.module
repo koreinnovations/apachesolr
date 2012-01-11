@@ -734,7 +734,7 @@ function apachesolr_search_search_page_custom($results, $search_page, $build = a
   return $build;
 }
 
-/*
+/**
  * Executes search depending on the conditions given.
  * See apachesolr_search.pages.inc for another use of this function
  */
