@@ -612,10 +612,13 @@ function apachesolr_update_7012() {
   if (isset($last)) {
     variable_set('apachesolr_index_updated', array($env_id => (int) $last));
   }
+
   // Change namespace to environment id
   $excluded_types = apachesolr_environment_variable_get('apachesolr', 'apachesolr_search_excluded_types', array());
-  apachesolr_environment_variable_set($env_id, 'apachesolr_search_excluded_types', $excluded_types);
-  apachesolr_environment_variable_del('apachesolr', 'apachesolr_search_excluded_types');
+  if (!empty($excluded_types)) {
+    apachesolr_environment_variable_set($env_id, 'apachesolr_search_excluded_types', $excluded_types);
+    apachesolr_environment_variable_del('apachesolr', 'apachesolr_search_excluded_types');
+  }
 
   // Install the new schema
   //Predefine an amount of types that get their own table
@@ -713,18 +716,17 @@ function apachesolr_update_7012() {
   // Drop the table apachesolr_search_node
   db_drop_table('apachesolr_search_node');
 
-  // For all environments get the excluded types
   $environments = apachesolr_load_all_environments();
   foreach ($environments as $env_id => $environment) {
     $excluded_types = apachesolr_environment_variable_get($env_id, 'apachesolr_search_excluded_types', array());
     // Get indexable entity types
     $options = array();
     foreach (entity_get_info() as $entity_type => $entity_info) {
-      if (!empty($entity_info['apachesolr']['indexable'])) {
+      if ($entity_type == 'node') {
         foreach ($entity_info['bundles'] as $key => $info) {
           // See if it was excluded & only of entity node. We will not enable
           // other entity types by default
-          if (empty($excluded_types[$key]) && $entity_type == 'node') {
+          if (empty($excluded_types[$key])) {
             $options[$entity_type][$key] = $key;
           }
         }

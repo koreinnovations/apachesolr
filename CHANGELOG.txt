@@ -1,5 +1,6 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+Issue #1402688 by Nick_vh: Fixed Upgrade from Beta13 to Beta14 does not take the excluded types into account properly.
 
 Apache Solr integration 7.x-1.x-beta14, 2011-12-21
 ------------------------------
