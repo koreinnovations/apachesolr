@@ -1,11 +1,9 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
-Issue #1397526 by Nick_vh, cpliakas: Add an option to select which search page facets link to when displayed on non-search pages. Follow-Up small bugfix
-Issue #1397138 by Nick_vh: Create Simpletests to verify base functionality of the module.
-Issue #1402688 by Nick_vh: Fixed Upgrade from Beta13 to Beta14 does not take the excluded types into account properly.
 
 Apache Solr integration 7.x-1.x-beta15, 2012-01-12
 ------------------------------
+Issue #1397526 by Nick_vh, cpliakas: Add an option to select which search page facets link to when displayed on non-search pages. Follow-Up small bugfix
 Issue #1397138 by Nick_vh: Create Simpletests to verify base functionality of the module.
 Issue #1402688 by Nick_vh: Fixed Upgrade from Beta13 to Beta14 does not take the excluded types into account properly.
 
