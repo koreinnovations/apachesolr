@@ -834,7 +834,8 @@ function apachesolr_search_conditions_default($search_page) {
     foreach($conditions['fq'] as $condition_id => $condition) {
       // If the user input does not pass our validation we do not allow
       // it to query solr
-      if (!SolrBaseQuery::validFilterValue($condition)) {
+      $test_query = apachesolr_drupal_subquery('Test');
+      if (!$test_query->validFilterValue($condition)) {
         unset($conditions['fq'][$condition_id]);
       }
     }

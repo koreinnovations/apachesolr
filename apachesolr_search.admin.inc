@@ -779,6 +779,7 @@ function apachesolr_search_result_bias_form($env_id) {
  * Form builder function to set query field weights.
  */
 function apachesolr_search_field_bias_form($fields, $env_id) {
+  $form = array();
   // get the current weights
   $defaults = array(
     'content' => '1.0',
