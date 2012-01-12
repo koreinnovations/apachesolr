@@ -1,5 +1,6 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1397526 by Nick_vh, cpliakas: Add an option to select which search page facets link to when displayed on non-search pages.
 #713142 by ygerasimov, pwolanin, Nick_vh: Added configuration option to a search environment if we want to use Dismax or EDismax.
 #1379128 by Nick_vh, bdragon: Fixed Treat cardinality=1 fields as single-value + caching stats response - Follow up.
 #370855 by Damien Tournoud, Nick_vh: Add configuration option to a search page if we allow user input using the url or not.
