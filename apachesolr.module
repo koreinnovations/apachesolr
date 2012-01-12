@@ -1704,6 +1704,7 @@ function apachesolr_entity_fields($entity_type = 'node') {
           $row['module_name'] = $field['widget']['module'];
           // Set display name
           $display_name = array();
+          // Todo, make the search index per content type
           if (empty($field['display_settings'][NODE_BUILD_SEARCH_INDEX]) || !$field['display_settings'][NODE_BUILD_SEARCH_INDEX]['exclude']) {
             $row['display_name'] = $field['widget']['label'];
             $row['bundles'][] = $field['type_name'];
@@ -1723,25 +1724,21 @@ function apachesolr_entity_fields($entity_type = 'node') {
 /**
  * Implements hook_apachesolr_index_document_build().
  */
-function field_apachesolr_index_document_build(ApacheSolrDocument $document, $entity, $entity_type) {
-  $info = entity_get_info($entity_type);
-  if ($info['fieldable']) {
-    // Handle fields including taxonomy.
-    $indexed_fields = apachesolr_entity_fields($entity_type);
-    foreach ($indexed_fields as $index_key => $field_info) {
-      $field_name = $field_info['field']['field_name'];
-      // See if the node has fields that can be indexed
-      if (isset($entity->{$field_name})) {
-        // Got a field.
-        $function = $field_info['indexing_callback'];
-        if ($function && function_exists($function)) {
-          // NOTE: This function should always return an array.  One
-          // entity field may be indexed to multiple Solr fields.
-          $fields = $function($entity, $field_name, $index_key, $field_info);
-          foreach ($fields as $field) {
-            // It's fine to use this method also for single value fields.
-            $document->setMultiValue($field['key'], $field['value']);
-          }
+function content_apachesolr_index_document_build(ApacheSolrDocument $document, $entity, $entity_type) {
+  $indexed_fields = apachesolr_entity_fields($entity_type);
+  foreach ($indexed_fields as $index_key => $field_info) {
+    $field_name = $field_info['field']['field_name'];
+    // See if the node has fields that can be indexed
+    if (isset($entity->{$field_name})) {
+      // Got a field.
+      $function = $field_info['indexing_callback'];
+      if ($function && function_exists($function)) {
+        // NOTE: This function should always return an array.  One
+        // entity field may be indexed to multiple Solr fields.
+        $fields = $function($entity, $field_name, $index_key, $field_info);
+        foreach ($fields as $field) {
+          // It's fine to use this method also for single value fields.
+          $document->setMultiValue($field['key'], $field['value']);
         }
       }
     }
@@ -2036,7 +2033,7 @@ function apachesolr_hook_info() {
 function content_apachesolr_field_mappings() {
   $mappings = array(
     'number_integer' => array(
-      'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
+      'indexing_callback' => 'apachesolr_index_content_numeric_indexing_callback',
       'index_type' => 'tint',
       'facets' => TRUE,
       'query types' => array('term', 'numeric_range'),
@@ -2044,7 +2041,7 @@ function content_apachesolr_field_mappings() {
       'facet mincount allowed' => TRUE,
     ),
     'number_decimal' => array(
-      'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
+      'indexing_callback' => 'apachesolr_index_content_numeric_indexing_callback',
       'index_type' => 'tfloat',
       'facets' => TRUE,
       'query types' => array('term', 'numeric_range'),
@@ -2052,7 +2049,7 @@ function content_apachesolr_field_mappings() {
       'facet mincount allowed' => TRUE,
     ),
     'number_float' => array(
-      'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
+      'indexing_callback' => 'apachesolr_index_content_numeric_indexing_callback',
       'index_type' => 'tfloat',
       'facets' => TRUE,
       'query types' => array('term', 'numeric_range'),
@@ -2060,8 +2057,8 @@ function content_apachesolr_field_mappings() {
       'facet mincount allowed' => TRUE,
     ),
     'text' => array(
-      'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
-      'index_type' => 'text',
+      'indexing_callback' => 'apachesolr_index_content_text_indexing_callback',
+      'index_type' => 'string',
       'facets' => TRUE,
       'query types' => array('term'),
       'query type' => 'term',
