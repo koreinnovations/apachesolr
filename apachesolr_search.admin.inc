@@ -233,7 +233,10 @@ function apachesolr_search_page_settings_form($form, &$form_state, $search_page 
     ),
   );
 
-  $is_default = $search_page->page_id == apachesolr_search_default_search_page();
+  $is_default = FALSE;
+  if (!empty($search_page)) {
+    $is_default = $search_page->page_id == apachesolr_search_default_search_page();
+  }
   $form['make_default'] = array(
     '#type' => 'checkbox',
     '#title' => t('Make this Solr Search Page the default'),
