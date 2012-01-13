@@ -34,8 +34,13 @@ function apachesolr_search_init() {
       if (drupal_match_path($path, $patterns)) {
         $searcher = 'apachesolr@' . $env_id;
         if ($adapter = facetapi_adapter_load($searcher)) {
-          $solr = apachesolr_get_solr($env_id);
-          apachesolr_search_run_empty('apachesolr', $params, $adapter->getSearchPath(), $solr);
+          try {
+            $solr = apachesolr_get_solr($env_id);
+            apachesolr_search_run_empty('apachesolr', $params, $adapter->getSearchPath(), $solr);
+          }
+          catch (Exception $e) {
+            watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
+          }
         }
       }
     }
