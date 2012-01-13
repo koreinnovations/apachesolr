@@ -39,7 +39,7 @@ function apachesolr_access_build_subquery($account) {
   if (!user_access('access content', $account)) {
     throw new Exception('No access');
   }
-  $node_access_query = new SolrFilterSubQuery();
+  $node_access_query = apachesolr_drupal_subquery();
   if (user_access('bypass node access', $account)) {
     // Access all content from the current site, or public content.
     $node_access_query->addFilter('access__all', 0);

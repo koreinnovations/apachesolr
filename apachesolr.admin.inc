@@ -901,7 +901,6 @@ function apachesolr_index_action_form_delete_confirm_submit($form, &$form_state)
 
 /**
  * Submit a batch job to index the remaining, unindexed content.
- * @todo Make the env_id have an impact if we want multi environment indexing
  */
 function apachesolr_index_batch_index_remaining($env_id) {
   $batch = array(

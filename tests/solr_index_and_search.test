@@ -1,12 +1,6 @@
 <?php
 
-/**
- * @file
- *   Unit test class that provides the setUp and tearDown of a solr core on the
- *   default localhost server. This server must be configured for multiple cores
- *   with a solr.xml file.
- */
-class DrupalSolrWebTestCase extends DrupalWebTestCase {
+class DrupalSolrOnlineWebTestCase extends DrupalWebTestCase {
   /**
    * Implementation of setUp().
    */
@@ -105,10 +99,10 @@ class DrupalSolrWebTestCase extends DrupalWebTestCase {
   }
 }
 
-class DrupalSolrMatchTestCase extends DrupalSolrWebTestCase {
+class DrupalSolrMatchTestCase extends DrupalSolrOnlineWebTestCase {
   public static function getInfo() {
     return array(
-      'name' => 'Solr Index Queries',
+      'name' => 'Solr Index Data and test live queries',
       'description' => 'Indexes content and queries it.',
       'group' => 'ApacheSolr',
     );
