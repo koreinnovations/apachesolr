@@ -86,11 +86,17 @@ function apachesolr_search_page_list_pages() {
   );
 
   $search_pages = apachesolr_search_load_all_search_pages();
+  $default_search_page = apachesolr_search_default_search_page();
   foreach ($search_pages as $search_page) {
     $row = array();
 
     // Add the label
     $label = check_plain($search_page['label']);
+    // Is this row our default environment?
+    if ($search_page['page_id'] == $default_search_page) {
+      $label = t('!search_page <em>(Default)</em>', array('!search_page' => $label));
+    }
+
     $row[] = $label;
     // Add the link
     $row[] = array(
@@ -233,6 +239,18 @@ function apachesolr_search_page_settings_form(&$form_state, $search_page = NULL)
     '#dependency' => array(
       'edit-description-enable' => array(1),
     ),
+  );
+
+  $is_default = FALSE;
+  if (!empty($search_page)) {
+    $is_default = $search_page->page_id == apachesolr_search_default_search_page();
+  }
+  $form['make_default'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Make this Solr Search Page the default'),
+    '#description' => t('Useful for eg. making facets to link to this page when they are shown on non-search pages'),
+    '#default_value' => $is_default,
+    '#disabled' => $is_default,
   );
 
   $form['info'] = array(
@@ -481,8 +499,9 @@ function apachesolr_search_page_settings_form_submit($form, &$form_state) {
   $settings['apachesolr_search_spellcheck'] = $form_state['values']['apachesolr_search_spellcheck'];
   $settings['apachesolr_search_allow_user_input'] = $form_state['values']['apachesolr_search_allow_user_input'];
 
-  if (isset($form_state['values']['search_page']->settings)) {
-    $settings = array_merge($form_state['values']['search_page']->settings, $settings);
+  // Set the default search page settings
+  if (!empty($form_state['values']['make_default']) && isset($form_state['values']['page_id'])) {
+    variable_set('apachesolr_search_default_search_page', $form_state['values']['page_id']);
   }
 
   $search_page = new stdClass();
