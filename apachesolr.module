@@ -160,7 +160,6 @@ function apachesolr_menu() {
     'page arguments'     => array('apachesolr_environment_edit_form'),
     'access arguments'   => array('administer search'),
     'file'               => 'apachesolr.admin.inc',
-    'type'               => MENU_LOCAL_ACTION,
   );
   $items['admin/settings/apachesolr/index/confirm/clear'] = array(
     'title'              => 'Confirm the re-indexing of all content',

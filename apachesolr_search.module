@@ -70,7 +70,6 @@ function apachesolr_search_menu() {
     'page callback'    => 'drupal_get_form',
     'page arguments'   => array('apachesolr_search_page_settings_form'),
     'access arguments' => array('administer search'),
-    'type'             => MENU_LOCAL_ACTION,
     'weight'           => 1,
     'file'             => 'apachesolr_search.admin.inc',
   );
@@ -100,7 +99,6 @@ function apachesolr_search_menu() {
     'page callback'    => 'drupal_get_form',
     'page arguments'   => array('apachesolr_search_mlt_add_block_form'),
     'access arguments' => array('administer search'),
-    'type'             => MENU_LOCAL_ACTION,
     'weight'           => 2,
     'file'             => 'apachesolr_search.admin.inc',
   );
@@ -133,6 +131,10 @@ function apachesolr_search_menu_alter(&$items) {
   // Iterates over search pages, builds menu items.
   foreach ($search_pages as $search_page) {
     $search_page = apachesolr_search_page_load($search_page['page_id']);
+    if (!$search_page) {
+      continue;
+    }
+    
     // Validate the environment ID in case of import or missed deletion.
     $environment = apachesolr_environment_load($search_page->env_id);
     if (!$environment) {
@@ -306,7 +308,7 @@ function apachesolr_search_get_value_title($search_page_id = NULL, $value = NULL
  */
 function apachesolr_search_default_search_page($page_id = NULL) {
   static $default_page_id = NULL;
-  
+
   if (isset($page_id)) {
     $default_page_id = $page_id;
   }

@@ -319,7 +319,7 @@ function apachesolr_index_get_entities_to_index($env_id, $entity_type, $limit) {
     return $rows;
   }
 
-  $bundles = apachesolr_index_get_bundles($env_id, $type);
+  $bundles = apachesolr_get_index_bundles($env_id, $type);
 
   $table = apachesolr_get_indexer_table($entity_type);
   // Get $last_entity_id and $last_change.
@@ -401,12 +401,12 @@ function apachesolr_index_delete_entity_from_index($env_id, $entity_type, $entit
  * @return type
  * @todo Add Type support
  */
-function apachesolr_index_mark_for_reindex($env_id, $type = 'node') {
+function apachesolr_index_mark_for_reindex($env_id, $entity_type = 'node') {
   foreach (content_types() as $content_type => $entity_info) {
-    if ($entity_info['extra']['apachesolr']['index']) {
-      $bundles = apachesolr_get_index_bundles($env_id, $type);
+    if (!empty($entity_info['extra']['apachesolr']['index'])) {
+      $bundles = apachesolr_get_index_bundles($env_id, $entity_type);
       if (!empty($bundles)) {
-        $reindex_callback = apachesolr_entity_get_callback($type, 'reindex callback');
+        $reindex_callback = apachesolr_entity_get_callback($entity_type, 'reindex callback');
       }
       if (!empty($reindex_callback)) {
         if (!call_user_func($reindex_callback, $env_id)) {

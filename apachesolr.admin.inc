@@ -1020,7 +1020,7 @@ function apachesolr_index_config_form(&$form_state, $env_id) {
     '#type' => 'checkboxes',
     '#title' => 'node',
     '#options' => $options,
-    '#default_value' => apachesolr_index_get_bundles($env_id, 'node'),
+    '#default_value' => apachesolr_get_index_bundles($env_id, 'node'),
   );
 
   $form['config']['submit'] = array('#type' => 'submit', '#value' => t('Save'));
