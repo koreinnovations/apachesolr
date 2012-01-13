@@ -1,5 +1,7 @@
 Apache Solr integration 6.x-3.x, xxxx-xx-xx
 ------------------------------
+Issue #1398100 by thecarlhall: Fixed Configuration throws exception when starting Solr.
+Issue #1396606 by cpliakas, Nick_vh: Fixed Fatal error 'Call to undefined function apachesolr_index_status()" when visiting admin/config/search/settings.
 Issue #1392742 by Nick_vh, pwolanin: Fixed Add solr.LengthFilterFactory to the text fields.
 Issue #592522 by Nick_vh, pwolanin | quaoar: Fixed Hooks node_type(), taxonomy and user knocks out our database server.
 Issue #1394276 by Nick_vh, pwolanin: Fixed Bad logic for last indexed timestamp.
