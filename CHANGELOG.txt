@@ -1,5 +1,6 @@
 Apache Solr integration 6.x-3.x, xxxx-xx-xx
 ------------------------------
+Issue #1392742 by Nick_vh, pwolanin: Fixed Add solr.LengthFilterFactory to the text fields.
 Issue #592522 by Nick_vh, pwolanin | quaoar: Fixed Hooks node_type(), taxonomy and user knocks out our database server.
 Issue #1394276 by Nick_vh, pwolanin: Fixed Bad logic for last indexed timestamp.
 Issue #1388916 by pwolanin, rwohleb: Fixed Bad port validator.

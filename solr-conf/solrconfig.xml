@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<config name="drupal-3.0-beta11">
+<config name="drupal-3.0-beta14">
 
   <!-- Set this to 'false' if you want solr to continue working after it has
        encountered an severe configuration error.  In a production environment,
@@ -466,7 +466,7 @@
      <!-- Abort any searches longer than 4 seconds -->
      <!-- <int name="timeAllowed">4000</int>  -->
      <str name="mm">
-        2&lt;-35%
+        1
      </str>
      <str name="q.alt">*:*</str>
 
