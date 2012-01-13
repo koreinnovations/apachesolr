@@ -96,6 +96,7 @@ function apachesolr_install() {
 function apachesolr_enable() {
   module_load_include('inc', 'apachesolr', 'apachesolr.index');
   // Completely build the index table.
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $env_id = apachesolr_default_environment();
   apachesolr_index_mark_for_reindex($env_id);
 }
