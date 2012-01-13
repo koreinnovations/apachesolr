@@ -198,12 +198,14 @@ function apachesolr_environment_edit_validate($form, &$form_state) {
     }
   }
   if (isset($parts['port'])) {
-    // TODO: Port range should be 0-65535, but 0 crashes apachesolr
-    if (!ctype_digit($parts['port']) || $parts['port'] < 1 || $parts['port'] > 65535) {
+    // parse_url() should always give an integer for port. Since drupal_http_request()
+    // also uses parse_url(), we don't need to validate anything except the range.
+    preg_match('@://[^:]+:([^/]+)@', $form_state['values']['url'], $m);
+    if (empty($m[1]) || !ctype_digit($m[1]) || $m[1] < 1 || $m[1] > 65535) {
       form_set_error('port', t('The port has to be an integer between 1 and 65535.'));
     }
     else {
-      // Normalize the path to have just a leading slash.
+      // Normalize the url by removing extra slashes and whitespace.
       $form_state['values']['url'] = trim($form_state['values']['url'], "/ \t\r\n\0\x0B");
     }
   }
