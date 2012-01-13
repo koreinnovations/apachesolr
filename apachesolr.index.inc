@@ -670,7 +670,7 @@ function apachesolr_index_node_status_callback($node, $type) {
  */
 function apachesolr_term_reference_indexing_callback($node, $field_name, $index_key, $field_info) {
   // Keep ancestors cached
-  $ancestors = &drupal_static(__FUNCTION__, array());
+  static $ancestors = array();
 
   $fields = array();
   $vocab_names = array();
@@ -730,7 +730,7 @@ function apachesolr_term_reference_indexing_callback($node, $field_name, $index_
  * Helper function - return a safe (PHP identifier) vocabulary name.
  */
 function apachesolr_vocab_name($vid) {
-  $names = &drupal_static(__FUNCTION__, array());
+  static $names = array();
 
   if (!isset($names[$vid])) {
     $vocab_name = dbtng_query('SELECT v.name FROM {taxonomy_vocabulary} v WHERE v.vid = :vid', array(':vid' => $vid))->fetchField();

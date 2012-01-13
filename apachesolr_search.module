@@ -305,8 +305,8 @@ function apachesolr_search_get_value_title($search_page_id = NULL, $value = NULL
  * Get or set the default search page id for the current page.
  */
 function apachesolr_search_default_search_page($page_id = NULL) {
-  $default_page_id = &drupal_static(__FUNCTION__, NULL);
-
+  static $default_page_id = NULL;
+  
   if (isset($page_id)) {
     $default_page_id = $page_id;
   }
