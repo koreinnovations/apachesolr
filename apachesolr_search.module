@@ -564,7 +564,7 @@ function theme_apachesolr_search_mlt_recommendation_block($vars) {
  * Implementation of hook_search().
  */
 function apachesolr_search_search($op = 'search', $keys = NULL) {
-
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   switch ($op) {
     case 'reset':
       $env_id = apachesolr_default_environment();
