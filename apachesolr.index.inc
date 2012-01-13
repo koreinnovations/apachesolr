@@ -567,8 +567,14 @@ function apachesolr_index_node_solr_document(ApacheSolrDocument $document, $node
   }
 
   $document->ss_name = $node->name;
-  // We want the name to ale be searchable for keywords.
+  // We want the name to be searchable for keywords.
   $document->tos_name = $node->name;
+
+  // Index formatted username so it can be searched and sorted on.
+  $account = (object) array('uid' => $node->uid, 'name' => $node->name);
+  $username = format_username($account);
+  $document->ss_name_formatted = $username;
+  $document->tos_name_formatted = $username;
 
   // Everything else uses dynamic fields
   $document->is_uid = $node->uid;
