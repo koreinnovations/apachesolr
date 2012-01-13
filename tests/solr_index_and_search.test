@@ -27,14 +27,14 @@ class DrupalSolrWebTestCase extends DrupalWebTestCase {
       $core_admin_url = "$base_url/admin/cores";
       $filesdir = variable_get('file_public_path');
 
-      //create our 'solr core dir'
+      // Create our 'solr core dir'
       mkdir("$filesdir/solr", 0777, TRUE);
       mkdir("$filesdir/solr/conf");
 
       // Our virtual solr core is located here
       $instancedir = realpath("$filesdir/solr");
 
-      //copy all files in solr-conf dir to our virtual solr core
+      // Copy all files in solr-conf dir to our virtual solr core
       $pattern = dirname(__FILE__) . '/../solr-conf/*';
       foreach (glob($pattern) as $conf_file) {
         copy($conf_file, "$instancedir/conf/" . basename($conf_file));
@@ -45,7 +45,7 @@ class DrupalSolrWebTestCase extends DrupalWebTestCase {
         copy($conf_file, "$instancedir/conf/" . basename($conf_file));
       }
 
-      //copy(dirname(__FILE__) . '/../solr-conf/schema.xml', "$instancedir/conf/schema.xml");
+      // Copy(dirname(__FILE__) . '/../solr-conf/schema.xml', "$instancedir/conf/schema.xml");
       $contents = file_get_contents(dirname(__FILE__) . '/../solr-conf/solrconfig.xml');
 
       // Change the autoCommit time down to 1 second.

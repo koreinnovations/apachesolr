@@ -1,5 +1,6 @@
 Apache Solr integration 6.x-3.x, xxxx-xx-xx
 ------------------------------
+Issue #1361422 by Nick_vh: Fixed coder issues as mentioned by the drupal testing bot.
 Issue #1398100 by thecarlhall: Fixed Configuration throws exception when starting Solr.
 Issue #1396606 by cpliakas, Nick_vh: Fixed Fatal error 'Call to undefined function apachesolr_index_status()" when visiting admin/config/search/settings.
 Issue #1392742 by Nick_vh, pwolanin: Fixed Add solr.LengthFilterFactory to the text fields.

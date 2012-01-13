@@ -19,7 +19,7 @@ function apachesolr_search_install() {
     'apachesolr_search_browse' => 'results',
     'apachesolr_search_spellcheck' => FALSE,
     'apachesolr_search_search_box' => FALSE,
-   );
+  );
   $settings = serialize($settings);
 
   $fields = array(

@@ -2313,7 +2313,8 @@ function user_reference_apachesolr_field_mappings() {
  *  - retains all $_GET parameters that ApacheSolr may not be aware of
  *  - if set, $options['query'] MUST be an array
  *
- * @see http://api.drupal.org/api/function/l/6 for parameters and options.
+ * @see http://api.drupal.org/api/function/l/6
+ *   for parameters and options.
  *
  * @return
  *   an HTML string containing a link to the given path.

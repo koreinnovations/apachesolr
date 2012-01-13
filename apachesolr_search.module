@@ -561,7 +561,7 @@ function theme_apachesolr_search_mlt_recommendation_block($vars) {
 }
 
 /**
- * Implementation of hook_search().
+ * Implements of hook_search().
  */
 function apachesolr_search_search($op = 'search', $keys = NULL) {
   module_load_include('inc', 'apachesolr', 'apachesolr.index');
@@ -592,7 +592,7 @@ function apachesolr_search_search($op = 'search', $keys = NULL) {
 }
 
 /**
- * Implementation of hook_form_[form_id]_alter().
+ * Implements hook_form_[form_id]_alter().
  *
  * This adds the 0 option to the search admin form.
  */
@@ -602,14 +602,14 @@ function apachesolr_search_form_search_admin_settings_alter(&$form, $form_state)
 }
 
 /**
- * Implementation of hook_form_[form_id]_alter().
+ * Implements hook_form_[form_id]_alter().
  */
 function apachesolr_search_form_search_theme_form_alter(&$form, $form_state) {
   apachesolr_search_form_search_block_form_alter($form, $form_state);
 }
 
 /**
- * Implementation of hook_form_[form_id]_alter().
+ * Implements hook_form_[form_id]_alter().
  */
 function apachesolr_search_form_search_block_form_alter(&$form, &$form_state) {
   $search_pages = apachesolr_search_load_all_search_pages();
@@ -748,7 +748,8 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
     apachesolr_failure(t('Solr search'), $keys);
   }
   // Sort options from the conditions array.
-  // @see apachesolr_search_conditions_default to find out how.
+  // @see apachesolr_search_conditions_default()
+  //   See This condition callback to find out how.
   $solrsort = isset($conditions['apachesolr_search_sort']) ? $conditions['apachesolr_search_sort'] : '';
   // What to do when we have an initial empty search
   $empty_search_behavior = isset($search_page->settings['apachesolr_search_browse']) ? $search_page->settings['apachesolr_search_browse'] : '';
@@ -1253,7 +1254,7 @@ function apachesolr_search_get_search_suggestions($env_id) {
         $suggested_keyword = strtr($keyword, $replacements);
         // Show only if suggestion is different than current query.
         if ($keyword != $suggested_keyword) {
-         $suggestions_output[] = $suggested_keyword;
+          $suggestions_output[] = $suggested_keyword;
         }
       }
     }

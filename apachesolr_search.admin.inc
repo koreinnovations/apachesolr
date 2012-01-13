@@ -717,8 +717,8 @@ function apachesolr_search_result_bias_form($env_id) {
   $weights = drupal_map_assoc(array('21.0', '13.0', '8.0', '5.0', '3.0', '2.0', '1.0', '0.8', '0.5', '0.3', '0.2', '0.1'));
   $weights['0'] = t('Ignore');
 
- $form = array();
- $form['result_bias'] = array(
+  $form = array();
+  $form['result_bias'] = array(
     '#type' => 'fieldset',
     '#title' => t('Result biasing'),
     '#collapsible' => TRUE,

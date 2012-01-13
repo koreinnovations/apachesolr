@@ -273,7 +273,7 @@ function apachesolr_settings(&$form_state) {
           'admin/settings/apachesolr/settings/' . $data['env_id'] . '/facets',
           array('query' => array('destination' => $_GET['q']))
         ),
-     );
+      );
     }
     // These are our result and bias settings
     if (module_exists('apachesolr_search')) {
@@ -307,7 +307,7 @@ function apachesolr_settings(&$form_state) {
         array('query' => array('destination' => $_GET['q']))
       ),
     );
-    $env_name = l(check_plain($data['name']), 'admin/settings/apachesolr/settings/' . $data['env_id'] . '/edit', array('query' => array('destination' => $_GET['q'])));
+    $env_name = l($data['name'], 'admin/settings/apachesolr/settings/' . $data['env_id'] . '/edit', array('query' => array('destination' => $_GET['q'])));
     // Is this row our default environment?
     if ($environment_id == $default_environment) {
       $env_name = t('!environment <em>(Default)</em>', array('!environment' => $env_name));

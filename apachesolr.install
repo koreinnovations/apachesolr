@@ -159,8 +159,8 @@ function apachesolr_schema() {
         'api' => 'default_apachesolr_environment_variables',
         'minimum_version' => 1,
         'current_version' => 1,
-       ),
-     ),
+      ),
+    ),
     'fields' => array(
       'env_id' => array(
         'description' => 'Unique identifier for the environment',

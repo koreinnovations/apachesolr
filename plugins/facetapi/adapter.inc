@@ -104,7 +104,7 @@ class ApacheSolrFacetapiAdapter extends FacetapiAdapter {
       }
     }
     if (!$query || NULL === $query->getPath()) {
-       return $this->searchPath;
+      return $this->searchPath;
     }
     else {
       return $query->getPath();
