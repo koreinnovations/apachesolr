@@ -166,17 +166,18 @@ class SolrFilterSubQuery {
             break;
         }
       }
-      // Only allow the regular characters, numeric characters and
-      // + - / . : and spaces
-      if (!drupal_validate_utf8($name)) {
+
+      // For the name we allow any character that fits between the A-Z0-9 range and
+      // any alternative for this in other languages. No special characters allowed
+      if (!preg_match('/^[a-zA-Z0-9_\x7f-\xff]+$/', $name)) {
         return FALSE;
       }
 
-      // For the value we any character that fits between the A-Z0-9 range and
-      // any alternative for this in other languages.
-      if (preg_match('/^[a-zA-Z0-9_\x7f-\xff]+$/', $value)) {
+      // For the value we allow anything that is UTF8
+      if (!drupal_validate_utf8($value)) {
         return FALSE;
       }
+
       // Check our bracket count. If it does not match it is also not valid
       $valid_brackets = TRUE;
       $brackets['opening']['{'] = substr_count($value, '{');
