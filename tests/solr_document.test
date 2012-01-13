@@ -15,7 +15,7 @@ class DrupalSolrDocumentTest extends DrupalUnitTestCase {
     );
   }
 
-  protected function setUp() {
+  function setUp() {
     parent::setUp();
     require_once dirname(dirname(realpath(__FILE__))) . '/apachesolr.module';
     require_once dirname(dirname(realpath(__FILE__))) . '/Apache_Solr_Document.php';

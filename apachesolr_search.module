@@ -134,7 +134,7 @@ function apachesolr_search_menu_alter(&$items) {
     if (!$search_page) {
       continue;
     }
-    
+
     // Validate the environment ID in case of import or missed deletion.
     $environment = apachesolr_environment_load($search_page->env_id);
     if (!$environment) {
@@ -186,10 +186,10 @@ function apachesolr_search_menu_alter(&$items) {
       $items[$search_page->search_path . '/%menu_tail']['title arguments'] = array($search_page->page_id, $position);
     }
     // If we have additional searches in the search/* path
-    if ($core_search) {
+    /*if ($core_search) {
       $items[$search_page->search_path . '/%menu_tail']['tab_root'] = 'search/' . $default_info['path'] . '/%';
       $items[$search_page->search_path . '/%menu_tail']['tab_parent'] = 'search/' . $default_info['path'];
-    }
+    }*/
 
     if ($taxonomy_search) {
       unset($items['taxonomy/term/%taxonomy_term']);
@@ -408,12 +408,12 @@ function apachesolr_search_block_info() {
   // Get all of the moreLikeThis blocks that the user has created
   $blocks = apachesolr_search_load_all_mlt_blocks();
   foreach ($blocks as $delta => $settings) {
-    $blocks[$delta] += array('info' => t('Apache Solr recommendations: !name', array('!name' => $settings['name'])) , 'cache' => DRUPAL_CACHE_PER_PAGE);
+    $blocks[$delta] += array(
+      'info' => t('Apache Solr recommendations: !name', array('!name' => $settings['name'])));
   }
   // Add the sort block.
   $blocks['sort'] = array(
     'info' => t('Apache Solr Core: Sorting'),
-    'cache' => DRUPAL_CACHE_PER_PAGE,
   );
   return $blocks;
 }

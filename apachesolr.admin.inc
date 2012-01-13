@@ -164,17 +164,10 @@ function apachesolr_environment_edit_form(&$form_state, $environment = NULL) {
     );
   }
 
-  // Ensures destination is an internal URL, builds "cancel" link.
-  if (isset($_GET['destination'])) {
-    $destination = $_GET['destination'];
-  }
-  else {
-    $destination = 'admin/settings/apachesolr';
-  }
   $form['actions']['cancel'] = array(
-    '#type' => 'link',
-    '#title' => t('Cancel'),
-    '#href' => $destination,
+    '#type' => 'submit',
+    '#submit' => array('apachesolr_environment_edit_cancel'),
+    '#value' => t('Cancel'),
   );
   return $form;
 }
@@ -223,6 +216,17 @@ function apachesolr_environment_edit_submit($form, &$form_state) {
   cache_clear_all('apachesolr:environments', 'cache_apachesolr');
   drupal_set_message(t('The %name search environment has been saved.', array('%name' => $form_state['values']['name'])));
   $form_state['redirect'] = 'admin/settings/apachesolr/settings';
+}
+
+function apachesolr_environment_edit_cancel($form, &$form_state) {
+  // Ensures destination is an internal URL, builds "cancel" link.
+  if (isset($_GET['destination'])) {
+    $destination = $_GET['destination'];
+  }
+  else {
+    $destination = 'admin/settings/apachesolr/settings';
+  }
+  $form_state['redirect'] = $destination;
 }
 
 /**
@@ -804,6 +808,7 @@ function apachesolr_index_action_form_cron_submit($form, &$form_state) {
  * @see apachesolr_index_action_form_delete_confirm_submit().
  */
 function apachesolr_index_action_form_remaining_confirm(&$form_state, $environment) {
+  $form = array();
   return confirm_form($form,
     t('Are you sure you want index all remaining content?'),
     'admin/settings/apachesolr/settings/' . $environment['env_id'] . '/index',
@@ -836,6 +841,7 @@ function apachesolr_index_action_form_remaining_confirm_submit($form, &$form_sta
  * @see apachesolr_index_action_form_reset_confirm_submit().
  */
 function apachesolr_index_action_form_reset_confirm(&$form_state, $environment) {
+  $form = array();
   return confirm_form($form,
     t('Are you sure you want to queue content for reindexing?'),
     'admin/settings/apachesolr/settings/' . $environment['env_id'] . '/index',
@@ -870,6 +876,7 @@ function apachesolr_index_action_form_reset_confirm_submit($form, &$form_state) 
  * @see apachesolr_index_action_form_delete_confirm_submit().
  */
 function apachesolr_index_action_form_delete_confirm(&$form_state, $environment) {
+  $form = array();
   return confirm_form($form,
     t('Are you sure you want to clear your index?'),
     'admin/settings/apachesolr/settings/' . $environment['env_id'] . '/index',

@@ -96,8 +96,9 @@ function apachesolr_search_page_list_pages() {
     if ($search_page['page_id'] == $default_search_page) {
       $label = t('!search_page <em>(Default)</em>', array('!search_page' => $label));
     }
+    // Add the search page label
+    $row[] = array('data' => $label);
 
-    $row[] = $label;
     // Add the link
     $row[] = array(
       'data' => l($search_page['search_path'], $search_page['search_path']),
@@ -105,7 +106,7 @@ function apachesolr_search_page_list_pages() {
 
     // Add the search environment
     $environment = apachesolr_environment_load($search_page['env_id']);
-    $row[] = $environment ? check_plain($environment['name']) : check_plain(t('<Disabled>'));
+    $row[] = array('data' => $environment ? check_plain($environment['name']) : check_plain(t('<Disabled>')));
     // Operations
     $row[] = array('data' => l(t('Edit'), 'admin/settings/apachesolr/search-pages/' . $search_page['page_id'] . '/edit'));
     $row[] = array('data' => l(t('Clone'), 'admin/settings/apachesolr/search-pages/' . $search_page['page_id'] . '/clone'));
@@ -114,7 +115,7 @@ function apachesolr_search_page_list_pages() {
       $row[] = array('data' => l(t('Delete'), 'admin/settings/apachesolr/search-pages/' . $search_page['page_id'] . '/delete'));
     }
     else {
-      $row[] = '';
+      $row[] = array('data' => '');
     }
     $rows[$search_page['page_id']] = $row;
   }
@@ -123,7 +124,7 @@ function apachesolr_search_page_list_pages() {
   $header['operations']['colspan'] = count(reset($rows)) - 3;
 
   $build['prefix'] = '<h3>Pages</h3>';
-  $build['list'] =  theme('table', $header, array_values($rows));
+  $build['list'] =  theme('table', array_values($header), array_values($rows));
 
   // Print in a similar way as the Drupal 7 version
   $build_print = NULL;
@@ -171,7 +172,7 @@ function apachesolr_search_page_list_blocks() {
   $header['operations']['colspan'] = count(reset($rows)) - 2;
 
   $build['prefix'] = '<h3>Blocks "More Like This"</h3>';
-  $build['list'] =  theme('table', $header, array_values($rows));
+  $build['list'] =  theme('table', array_values($header), array_values($rows));
 
   // Print in a similar way as the Drupal 7 version
   $build_print = NULL;
@@ -400,15 +401,14 @@ function apachesolr_search_page_settings_form(&$form_state, $search_page = NULL)
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save configuration'),
+    '#submit' => array('apachesolr_search_page_settings_form_submit'),
   );
 
   $form['actions']['cancel'] = array(
-    '#type' => 'link',
-    '#title' => t('Cancel'),
-    '#href' => 'admin/settings/apachesolr/search-pages',
+    '#type' => 'submit',
+    '#value' => t('Cancel'),
+    '#submit' => array('apachesolr_search_page_settings_cancel'),
   );
-
-  $form['#submit'][] = 'apachesolr_search_page_settings_form_submit';
 
   return $form;
 }
@@ -520,6 +520,17 @@ function apachesolr_search_page_settings_form_submit($form, &$form_state) {
 
   // Menu rebuild needed to pick up search path.
   menu_rebuild();
+}
+
+function apachesolr_search_page_settings_cancel($form, &$form_state) {
+  // Ensures destination is an internal URL, builds "cancel" link.
+  if (isset($_GET['destination'])) {
+    $destination = $_GET['destination'];
+  }
+  else {
+    $destination = 'admin/settings/apachesolr/search-pages';
+  }
+  $form_state['redirect'] = $destination;
 }
 
 /**
@@ -665,9 +676,7 @@ function apachesolr_bias_settings_page($environment = NULL) {
 function apachesolr_search_bias_form(&$form_state, $env_id, $fields) {
   $form = array();
   $form['#env_id'] = $env_id;
-  $form['bias_tabs'] = array(
-    '#type' => 'vertical_tabs',
-  );
+  $form['bias_tabs'] = array();
   $form += apachesolr_search_result_bias_form($env_id);
   $form += apachesolr_search_type_boost_form($env_id);
   $form += apachesolr_search_field_bias_form($fields, $env_id);

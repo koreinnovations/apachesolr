@@ -668,7 +668,7 @@ function apachesolr_node_type($op, $info) {
         $query = "UPDATE {{$table}} asn
           INNER JOIN {node} n ON asn.entity_id = n.nid SET asn.changed = :changed
           WHERE (n.type = :type OR n.type = :old_type)";
-        $result = db_query($query, array(':changed' => REQUEST_TIME,
+        $result = db_query($query, array(':changed' => APACHESOLR_REQUEST_TIME,
           ':type' => $info->type,
           ':old_type' => $info->old_type,
         ));
@@ -679,7 +679,7 @@ function apachesolr_node_type($op, $info) {
           ->where("type = :new OR type = :old", array(':new' => $info->type, ':old' => $info->old_type));
         $update = db_update($table)
           ->condition('nid', $nids, 'IN')
-          ->fields(array('changed' => REQUEST_TIME))
+          ->fields(array('changed' => APACHESOLR_REQUEST_TIME))
           ->execute();
     }
   }
@@ -1700,9 +1700,9 @@ function apachesolr_content_extra_fields($content_type) {
     $extra['apachesolr'] = array();
   }
   // in Drupal 6 we only support node types
-  $type = 'node';
-  if (isset($default_entity_info[$type])) {
-    $extra['apachesolr'] += $default_entity_info[$type];
+  $entity_type = 'node';
+  if (isset($default_entity_info[$entity_type])) {
+    $extra['apachesolr'] += $default_entity_info[$entity_type];
   }
   $default = array(
     'indexable' => FALSE,
@@ -1764,10 +1764,12 @@ function apachesolr_get_index_bundles($env_id, $entity_type) {
  *   TRUE if this entity should be indexed, FALSE otherwise.
  */
 function apachesolr_entity_should_index($entity, $type) {
-  $info = entity_get_info($type);
-  list($id, $vid, $bundle) = entity_extract_ids($type, $entity);
-
-  if ($bundle && isset($info['bundles'][$bundle]['apachesolr']['index']) && $info['bundles'][$bundle]['apachesolr']['index']) {
+  $info = content_types();
+  $id = $entity->id;
+  $bundle = $entity->bundle;
+  //list($id, $vid, $bundle) = entity_extract_ids($type, $entity);
+  $bundles = apachesolr_get_index_bundles($env_id, $entity_type);
+  if ($bundle && isset($info[$bundle]['extra']['apachesolr']['index']) && $info[$bundle]['extra']['apachesolr']['index']) {
     return TRUE;
   }
   return FALSE;
@@ -1824,14 +1826,13 @@ function apachesolr_entity_update($entity, $type) {
  * Retrieve the indexer table for an entity type.
  */
 function apachesolr_get_indexer_table($type) {
-  //$entity_info = entity_get_info();
-  //if (isset($entity_info[$type]['apachesolr']['index_table'])) {
-  //  $indexer_table = $entity_info[$type]['apachesolr']['index_table'];
-  //}
-  //else {
-  // Drupal 6 nodes only
-  $indexer_table = 'apachesolr_index_entities_node';
-  //}
+  $entity_info = apachesolr_get_index_callbacks();
+  if (isset($entity_info[$type]['index_table'])) {
+    $indexer_table = $entity_info[$type]['index_table'];
+  }
+  else {
+    $indexer_table = 'apachesolr_index_entities';
+  }
   return $indexer_table;
 }
 

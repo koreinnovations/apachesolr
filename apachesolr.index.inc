@@ -10,22 +10,22 @@
  */
 function apachesolr_index_entities($env_id, $limit) {
   $entities_processed = 0;
-  foreach (entity_get_info() as $entity_type => $info) {
-    // With each pass through the callback, retrieve the next group of nids.
-    $rows = apachesolr_index_get_entities_to_index($env_id, $entity_type, $limit);
-    $documents = array();
+  $entity_type = 'node';
+  // With each pass through the callback, retrieve the next group of nids.
+  $rows = apachesolr_index_get_entities_to_index($env_id, $entity_type, $limit);
+  $documents = array();
 
-    foreach ($rows as $row) {
-      $documents = array_merge($documents, apachesolr_index_entity_to_documents($row, $env_id));
-    }
+  foreach ($rows as $row) {
+    $documents = array_merge($documents, apachesolr_index_entity_to_documents($row, $env_id));
+  }
 
-    $indexed = apachesolr_index_send_to_solr($env_id, $documents);
-    if ($indexed !== FALSE && $indexed > 0) {
-      $entities_processed += count($rows);
-      $last_row = end($rows);
-      apachesolr_set_last_index_position($env_id, $entity_type, $last_row->changed, $last_row->entity_id);
-      apachesolr_set_last_index_updated($env_id, REQUEST_TIME);
-    }
+  $indexed = apachesolr_index_send_to_solr($env_id, $documents);
+  if ($indexed !== FALSE && $indexed > 0) {
+    $entities_processed += count($rows);
+    $last_row = end($rows);
+    apachesolr_set_last_index_position($env_id, $entity_type, $last_row->changed, $last_row->entity_id);
+
+    apachesolr_set_last_index_updated($env_id, APACHESOLR_REQUEST_TIME);
   }
   return $entities_processed;
 }
@@ -106,7 +106,8 @@ function apachesolr_index_entity_to_documents($item, $env_id) {
     // If the object failed to load, just stop.
     return FALSE;
   }
-
+  $id = $entity->id;
+  $bundle = $entity->bundle;
   //list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
 
   // Create a new document, and do the bare minimum on it.
@@ -369,7 +370,7 @@ function apachesolr_index_delete_index($env_id) {
   $solr->deleteByQuery($query);
   $solr->commit();
   apachesolr_clear_last_index_position($env_id);
-  apachesolr_set_last_index_updated($env_id, REQUEST_TIME);
+  apachesolr_set_last_index_updated($env_id, APACHESOLR_REQUEST_TIME);
 }
 
 /**
@@ -384,7 +385,7 @@ function apachesolr_index_delete_entity_from_index($env_id, $entity_type, $entit
     $id = $entity->nid;
     $solr = apachesolr_get_solr($env_id);
     $solr->deleteById(apachesolr_document_id($id, $entity_type));
-    apachesolr_set_last_index_updated($env_id, REQUEST_TIME);
+    apachesolr_set_last_index_updated($env_id, APACHESOLR_REQUEST_TIME);
     return TRUE;
   }
   catch (Exception $e) {
@@ -537,7 +538,9 @@ function apachesolr_index_node_solr_document(ApacheSolrDocument $document, $node
 
   // Index formatted username so it can be searched and sorted on.
   $account = (object) array('uid' => $node->uid, 'name' => $node->name);
-  $username = format_username($account);
+
+  $username = check_plain($account->name);
+
   $document->ss_name_formatted = $username;
   $document->tos_name_formatted = $username;
 
@@ -1064,7 +1067,7 @@ function apachesolr_index_nodeapi_mass_update($nodes, $table = NULL) {
     $env_id = apachesolr_default_environment();
     $solr = apachesolr_get_solr($env_id);
     $solr->deleteByMultipleIds($unpublished_ids);
-    apachesolr_set_last_index_updated($env_id, REQUEST_TIME);
+    apachesolr_set_last_index_updated($env_id, APACHESOLR_REQUEST_TIME);
 
     // There was no exception, so update the table.
     if ($published_ids) {
@@ -1116,7 +1119,7 @@ function apachesolr_index_nodeapi_mass_delete($nodes, $table = NULL) {
     $env_id = apachesolr_default_environment();
     $solr = apachesolr_get_solr($env_id);
     $solr->deleteByMultipleIds($ids);
-    apachesolr_set_last_index_updated($env_id, REQUEST_TIME);    // There was no exception, so update the table.
+    apachesolr_set_last_index_updated($env_id, APACHESOLR_REQUEST_TIME);    // There was no exception, so update the table.
     db_delete($table)
       ->condition('nid', $nids, 'IN')
       ->execute();

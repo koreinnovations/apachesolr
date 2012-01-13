@@ -15,6 +15,7 @@ class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
 
   function setUp() {
     parent::setUp('node_access_test', 'apachesolr', 'apachesolr_search', 'apachesolr_access');
+    require_once dirname(dirname(dirname(realpath(__FILE__)))) . '/Apache_Solr_Document.php';
 
      // Create a basic user, which is subject to moderation.
     $permissions = array(

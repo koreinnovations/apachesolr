@@ -70,20 +70,16 @@ function apachesolr_install() {
   // Create one MLT block.
   apachesolr_search_mlt_save_block(array('name' => t('More like this')));
 
-  db_insert('apachesolr_environment')
-    ->fields(array('env_id' => 'solr', 'name' => 'localhost server', 'url' => 'http://localhost:8983/solr'))
-    ->execute();
+  $core_env = array('env_id' => 'solr', 'name' => 'localhost server', 'url' => 'http://localhost:8983/solr');
+  apachesolr_environment_save($core_env);
 
   // Initialize the queue we will use for processing entities into the Solr index.
-  DrupalQueue::get('apachesolr_indexer_entities')->createQueue();
+  //DrupalQueue::get('apachesolr_indexer_entities')->createQueue();
 
   // Initialize the entities to index. We enable all node types by default
-  //$info = entity_get_info('node');
-  //$bundles = array_keys($info['bundles']);
   $env_id = apachesolr_default_environment();
   $bundles = content_types();
   apachesolr_index_set_bundles($env_id, 'node', array_keys($bundles));
-
   drupal_set_message(t('Apache Solr is enabled. Visit the <a href="@settings_link">settings page</a>.', array('@settings_link' => url('admin/settings/apachesolr'))));
 }
 
@@ -93,7 +89,6 @@ function apachesolr_install() {
 function apachesolr_enable() {
   module_load_include('inc', 'apachesolr', 'apachesolr.index');
   // Completely build the index table.
-  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $env_id = apachesolr_default_environment();
   apachesolr_index_mark_for_reindex($env_id);
 }

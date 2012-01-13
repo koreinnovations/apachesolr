@@ -4,7 +4,7 @@ class DrupalSolrOnlineWebTestCase extends DrupalWebTestCase {
   /**
    * Implementation of setUp().
    */
-  function setUp() {
+  public function setUp() {
 
     parent::setUp('apachesolr', 'apachesolr_search', 'search');
     // Load the default server.

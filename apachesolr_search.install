@@ -22,17 +22,15 @@ function apachesolr_search_install() {
   );
   $settings = serialize($settings);
 
-  $fields = array(
-    'page_id' => 'taxonomy_search',
-    'label' => 'Taxonomy Search',
-    'description' => 'Search all items with given term',
-    'search_path' => 'taxonomy/term/%',
-    'env_id' => '',
-    'page_title' => '%value',
-    'settings' => $settings,
-  );
-  db_insert('apachesolr_search_page')->fields($fields)->execute();
-
+  $search_page = new stdClass();
+  $search_page->page_id = 'taxonomy_search';
+  $search_page->label = 'Raxonomy Search';
+  $search_page->description = 'Search all items with given term';
+  $search_page->search_path = 'taxonomy/term/%';
+  $search_page->env_id = '';
+  $search_page->page_title = '%value';
+  $search_page->settings = $settings;
+  apachesolr_search_page_save($search_page);
 }
 
 /**
@@ -64,7 +62,15 @@ function apachesolr_search_enable() {
       'page_title' => 'Site',
       'settings' => $settings,
     );
-    db_insert('apachesolr_search_page')->fields($fields)->execute();
+    $search_page = new stdClass();
+    $search_page->page_id = 'core_search';
+    $search_page->label = 'Core Search';
+    $search_page->description = 'Core Search';
+    $search_page->search_path = 'search/site';
+    $search_page->env_id = 'solr';
+    $search_page->page_title = 'Site';
+    $search_page->settings = $settings;
+    apachesolr_search_page_save($search_page);
   }
 
 
