@@ -1,5 +1,6 @@
 Apache Solr integration 6.x-3.x, xxxx-xx-xx
 ------------------------------
+Issue #1394276 by Nick_vh, pwolanin: Fixed Bad logic for last indexed timestamp.
 Issue #1388916 by pwolanin, rwohleb: Fixed Bad port validator.
 Issue #1391850 by cpliakas: Fixed Fatal error when Solr server is not available on non-search pages that are showing facet blocks.
 Issue #1389306 by Nick_vh: Fixed Wrong helptext link if facetapi is not installed.

@@ -84,9 +84,6 @@ function apachesolr_install() {
   $bundles = content_types();
   apachesolr_index_set_bundles($env_id, 'node', array_keys($bundles));
 
-  // Reset the last run
-  variable_set('apachesolr_index_last_run', 1);
-
   drupal_set_message(t('Apache Solr is enabled. Visit the <a href="@settings_link">settings page</a>.', array('@settings_link' => url('admin/settings/apachesolr'))));
 }
 
@@ -188,7 +185,12 @@ function apachesolr_schema() {
     'primary key' => array('env_id', 'name'),
   );
 
-  // Install the new schema
+  // Technically the entity system does not require an integer ID.
+  // However, documentation mentions :
+  // id: The name of the property that contains the primary id of the
+  // entity. Every entity object passed to the Field API must have this
+  // property and its value must be numeric.
+
   //Predefine an amount of types that get their own table
   $types = array(
       'other' => 'apachesolr_index_entities',
@@ -230,10 +232,14 @@ function apachesolr_schema() {
         ),
       ),
       'indexes' => array(
-        'changed' => array('changed', 'status'),
+        'changed' => array('bundle', 'status', 'changed'),
       ),
       'primary key' => array('entity_id'),
     );
+    if ($type == 'other') {
+      // Need the entity type also in the pkey for multiple entities in one table.
+      $schema[$type]['primary key'][] = 'entity_type';
+    }
   }
 
   $schema['apachesolr_index_bundles'] = array(

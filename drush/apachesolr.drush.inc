@@ -95,6 +95,7 @@ function apachesolr_drush_help($section) {
  *
  */
 function apachesolr_drush_solr_delete_index() {
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $args = func_get_args();
   $env_id = apachesolr_default_environment();
   apachesolr_index_delete_index($env_id);
@@ -102,6 +103,7 @@ function apachesolr_drush_solr_delete_index() {
 }
 
 function apachesolr_drush_solr_mark_for_reindex() {
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $args = func_get_args();
   $env_id = apachesolr_default_environment();
   if (count($args) > 0) {
@@ -117,6 +119,7 @@ function apachesolr_drush_solr_mark_for_reindex() {
 
 function apachesolr_drush_solr_index() {
   module_load_include('inc', 'apachesolr', 'apachesolr.admin');
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $env_id = apachesolr_default_environment();
   apachesolr_index_batch_index_remaining($env_id);
   drush_backend_batch_process();

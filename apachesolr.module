@@ -14,7 +14,6 @@ define('APACHESOLR_REQUEST_TIME', (int) $_SERVER['REQUEST_TIME']);
  * Implements hook_init().
  */
 function apachesolr_init() {
-  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   if (arg(0) == 'admin') {
     // Add the CSS for this module
     drupal_add_css(drupal_get_path('module', 'apachesolr') . '/apachesolr.css');
@@ -528,15 +527,16 @@ function apachesolr_site_hash() {
  * @return
  *   A string combining the parameters with the site hash.
  */
-function apachesolr_document_id($id, $entity = 'node') {
-  return apachesolr_site_hash() . "/$entity/" . $id;
+function apachesolr_document_id($id, $entity_type = 'node') {
+  return apachesolr_site_hash() . "/{$entity_type}/" . $id;
 }
 
 /**
  * Mark one entity as needing re-indexing.
  */
 function apachesolr_mark_entity($entity_type, $entity_id) {
-  $table = apachesolr_index_get_indexer_table($entity_type);
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
+  $table = apachesolr_get_indexer_table($entity_type);
   if (!empty($table)) {
     db_update($table)
       ->condition('entity_id', $entity_id)
@@ -555,7 +555,7 @@ function apachesolr_user($op, &$edit, &$account) {
   switch ($op) {
     case 'update':
       if (isset($edit['name']) && $account->name != $edit['name']) {
-        $table = apachesolr_index_get_indexer_table('node');
+        $table = apachesolr_get_indexer_table('node');
         $entity_ids = db_select('node')->fields('node', array('nid'))->where("uid = :uid", array(':uid' => $account->uid));
         db_update($table)
           ->condition('entity_id', $entity_ids, 'IN')
@@ -575,7 +575,7 @@ function apachesolr_user($op, &$edit, &$account) {
  */
 function apachesolr_taxonomy($op, $type, $edit) {
   if ($type == 'term' && ($op == 'update')) {
-    $table = apachesolr_index_get_indexer_table('node');
+    $table = apachesolr_get_indexer_table('node');
     $entity_ids = db_select('taxonomy_index')->fields('taxonomy_index', array('nid'))->where("tid = :tid", array(':tid' => $edit['tid']));
     db_update($table)
       ->condition('nid', $entity_ids, 'IN')
@@ -613,6 +613,7 @@ function apachesolr_comment($edit, $op) {
  * Mark nodes as needing re-indexing if a node type name changes.
  */
 function apachesolr_node_type($op, $info) {
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $env_id = apachesolr_default_environment();
   if ($op == 'delete') {
     apachesolr_index_mark_for_reindex($env_id, $info->type);
@@ -622,7 +623,7 @@ function apachesolr_node_type($op, $info) {
     $entity_ids = db_select('node')
       ->fields('node', array('nid'))
       ->where("type = :new OR type = :old", array(':new' => $info->type, ':old' => $info->old_type));
-    $table = apachesolr_index_get_indexer_table('node');
+    $table = apachesolr_get_indexer_table('node');
     db_update($table)
       ->condition('entity_id', $entity_ids, 'IN')
       ->fields(array('changed' => APACHESOLR_REQUEST_TIME))
@@ -761,6 +762,62 @@ function apachesolr_block_view($delta = '') {
 }
 
 /**
+ * Returns last changed and last ID for an environment and entity type.
+ */
+function apachesolr_get_last_index_position($env_id, $entity_type) {
+  $stored = variable_get('apachesolr_index_last', array());
+  return isset($stored[$env_id][$entity_type]) ? $stored[$env_id][$entity_type] : array('last_changed' => 0, 'last_entity_id' => 0);
+}
+
+/**
+ * Sets last changed and last ID for an environment and entity type.
+ */
+function apachesolr_set_last_index_position($env_id, $entity_type, $last_changed, $last_entity_id) {
+  $stored = variable_get('apachesolr_index_last', array());
+  $stored[$env_id][$entity_type] = array('last_changed' => $last_changed, 'last_entity_id' => $last_entity_id);
+  variable_set('apachesolr_index_last', $stored);
+}
+
+/**
+ * Clear a specific environment, or clear all.
+ */
+function apachesolr_clear_last_index_position($env_id, $entity_type = NULL) {
+  $stored = variable_get('apachesolr_index_last', array());
+  if ($entity_type) {
+    unset($stored[$env_id][$entity_type]);
+  }
+  else {
+    unset($stored[$env_id]);
+  }
+  variable_set('apachesolr_index_last', $stored);
+}
+
+/**
+ * Set the timestamp of the last index update
+ * @param $timestamp
+ *   A timestamp or zero. If zero, the variable is deleted.
+ */
+function apachesolr_set_last_index_updated($env_id, $timestamp = 0) {
+  $updated = variable_get('apachesolr_index_updated', array());
+  if ($timestamp > 0) {
+    $updated[$env_id] = $timestamp;
+  }
+  else {
+    unset($updated[$env_id]);
+  }
+  variable_set('apachesolr_index_updated', $updated);
+}
+
+/**
+ * Get the timestamp of the last index update.
+ * @return integer (timestamp)
+ */
+function apachesolr_get_last_index_updated($env_id) {
+  $updated = variable_get('apachesolr_index_updated', array());
+  return isset($updated[$env_id]) ? $updated[$env_id] : 0;
+}
+
+/**
  * We run the indexing process only for the default environment
  * Implements hook_cron().
  * @todo See if we can add info to the content type array for the cron_check
@@ -773,9 +830,11 @@ function apachesolr_cron($env_id = NULL) {
   if (apachesolr_environment_variable_get($env_id, 'apachesolr_read_only', APACHESOLR_READ_WRITE) == APACHESOLR_READ_ONLY) {
     return;
   }
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
 
   // For every entity type that requires extra validation
-  $bundles = apachesolr_index_get_bundles($env_id, 'node');
+  // Drupal 6 node only
+  $bundles = apachesolr_get_index_bundles($env_id, 'node');
 
   // If we're not checking any bundles of this entity type, just skip them all.
   if (empty($bundles)) {
@@ -797,20 +856,19 @@ function apachesolr_cron($env_id = NULL) {
     if ($optimize_interval && ($time - $last > $optimize_interval)) {
       $solr->optimize(FALSE, FALSE);
       variable_set('apachesolr_last_optimize', $time);
-      apachesolr_index_set_last_updated($time);
+      apachesolr_set_last_index_updated($env_id, $time);
     }
     // Only clear the cache if the index changed.
     // TODO: clear on some schedule if running multi-site.
-    $updated = apachesolr_index_get_last_updated();
-
-    if (is_numeric($updated)) {
+    $updated = apachesolr_get_last_index_updated($env_id);
+    if ($updated > 0) {
       $solr->clearCache();
       // Re-populate the luke cache.
       $solr->getLuke();
       // TODO: an admin interface for setting this.  Assume for now 5 minutes.
       if ($time - $updated >= variable_get('apachesolr_cache_delay', 300)) {
         // Clear the updated flag.
-        apachesolr_index_set_last_updated();
+        apachesolr_set_last_index_updated($env_id);
       }
     }
   }
@@ -818,20 +876,10 @@ function apachesolr_cron($env_id = NULL) {
     watchdog('Apache Solr', nl2br(check_plain($e->getMessage())) . ' in apachesolr_cron', NULL, WATCHDOG_ERROR);
   }
 
-  $entities_processed = 0;
   // We can safely process the apachesolr_cron_limit nodes at a time without a
   // timeout or out of memory error.
   $limit = variable_get('apachesolr_cron_limit', 50);
-  // With each pass through the callback, retrieve the next group of nids.
-  $rows = apachesolr_index_get_entities_to_index($limit, $env_id);
-  $documents = array();
-  $entities_processed = 0;
-  foreach ($rows as $row) {
-    $documents = array_merge($documents, apachesolr_index_index_entity($row, $env_id));
-    $entities_processed++;
-  }
-  apachesolr_index_send_to_solr($documents);
-  apachesolr_index_set_last_updated(APACHESOLR_REQUEST_TIME);
+  apachesolr_index_entities($env_id, $limit);
 }
 
 /**
@@ -1547,8 +1595,6 @@ function apachesolr_get_index_callbacks() {
  * Implements hook_content_extra_fields().
  */
 function apachesolr_content_extra_fields($content_type) {
-  module_load_include('inc', 'apachesolr', 'apachesolr.index');
-
   $default_entity_info = apachesolr_get_index_callbacks();
   // First set defaults so that we needn't worry about NULL keys.
   if (!isset($extra['apachesolr'])) {
@@ -1572,7 +1618,7 @@ function apachesolr_content_extra_fields($content_type) {
   $extra['apachesolr'] += $default;
   if ($extra['apachesolr']['indexable']) {
     $env_id = apachesolr_default_environment();
-    $supported = apachesolr_index_get_bundles($env_id, $type);
+    $supported = apachesolr_get_index_bundles($env_id, $entity_type);
     if (in_array($content_type, $supported)) {
       $extra['apachesolr']['index'] = TRUE;
     }
@@ -1581,6 +1627,51 @@ function apachesolr_content_extra_fields($content_type) {
     }
   }
   return $extra;
+}
+
+/**
+ * Gets a list of the bundles on the specified entity type that should be indexed.
+ *
+ * @param string $core
+ *   The Solr environment for which to index entities.
+ * @param string $entity_type
+ *   The entity type to index.
+ * @return array
+ *   The bundles that should be indexed.
+ */
+function apachesolr_get_index_bundles($env_id, $entity_type) {
+  // This could be called before the schema is installed so it is wise to
+  // Verify this
+  if (db_table_exists('apachesolr_index_bundles')) {
+    return dbtng_query("SELECT bundle FROM {apachesolr_index_bundles} WHERE env_id = :env_id AND entity_type = :entity_type", array(
+      ':env_id' => $env_id,
+      ':entity_type' => $entity_type,
+      ))->fetchCol();
+  }
+  return array();
+}
+
+/**
+ * Determines if we should index the provided entity.
+ *
+ * Whether or not a given entity is indexed is determined on a per-bundle basis.
+ * Entities/Bundles that have no index flag are presumed to not get indexed.
+ *
+ * @param stdClass $entity
+ *   The entity we may or may not want to index.
+ * @param string $type
+ *   The type of entity.
+ * @return boolean
+ *   TRUE if this entity should be indexed, FALSE otherwise.
+ */
+function apachesolr_entity_should_index($entity, $type) {
+  $info = entity_get_info($type);
+  list($id, $vid, $bundle) = entity_extract_ids($type, $entity);
+
+  if ($bundle && isset($info['bundles'][$bundle]['apachesolr']['index']) && $info['bundles'][$bundle]['apachesolr']['index']) {
+    return TRUE;
+  }
+  return FALSE;
 }
 
 /**
@@ -1612,7 +1703,7 @@ function apachesolr_entity_update($entity, $type) {
     if (is_callable($status_callback)) {
       $status = $status_callback($entity, $type);
     }
-    $indexer_table = apachesolr_index_get_indexer_table($type);
+    $indexer_table = apachesolr_get_indexer_table($type);
 
     // If we haven't seen this entity before it may not be there, so merge
     // instead of update.
@@ -1631,15 +1722,32 @@ function apachesolr_entity_update($entity, $type) {
 }
 
 /**
+ * Retrieve the indexer table for an entity type.
+ */
+function apachesolr_get_indexer_table($type) {
+  //$entity_info = entity_get_info();
+  //if (isset($entity_info[$type]['apachesolr']['index_table'])) {
+  //  $indexer_table = $entity_info[$type]['apachesolr']['index_table'];
+  //}
+  //else {
+  // Drupal 6 nodes only
+  $indexer_table = 'apachesolr_index_entities_node';
+  //}
+  return $indexer_table;
+}
+
+/**
  * Helper function for the hook_nodeapi().
  *
  * @see apachesolr_node_delete().
  */
 function apachesolr_entity_delete($entity, $type) {
-  if (apachesolr_index_delete_entity_from_index($type, $entity)) {
+  $env_id = apachesolr_default_environment();
+   module_load_include('inc', 'apachesolr', 'apachesolr.index');
+  if (apachesolr_index_delete_entity_from_index($env_id, $type, $entity)) {
     // There was no exception, so delete from the table.
     $id = $entity->nid;
-    $indexer_table = apachesolr_index_get_indexer_table($type);
+    $indexer_table = apachesolr_get_indexer_table($type);
     db_delete($indexer_table)
       ->condition('entity_type', $type)
       ->condition('entity_id', $id)
@@ -1746,55 +1854,17 @@ function content_apachesolr_index_document_build(ApacheSolrDocument $document, $
 }
 
 /**
- * Implements hook_apachesolr_index_document_node_book_build().
+ * Implements hook_apachesolr_index_document_build_node().
  *
  * Adds book module support
  */
-function apachesolr_apachesolr_index_document_node_book_build(ApacheSolrDocument $document, $entity, $entity_type) {
+function apachesolr_apachesolr_index_document_build_node(ApacheSolrDocument $document, $entity, $env_id) {
   // Index book module data.
   if (!empty($entity->book['bid'])) {
     // Hard-coded - must change if apachesolr_index_key() changes.
     $document->is_book_bid = (int) $entity->book['bid'];
   }
 }
-
-/**
- * Implements hook_apachesolr_index_document_node_build().
- *
- * Retrieves the comments from the core hook node_update_index into the
- * node entity document that is being prepared to be sent to Solr.
- *
- * @param ApacheSolrDocument $document
- * @param array $entity
- * @param string $entity_type
- */
-function apachesolr_apachesolr_index_document_node_build(ApacheSolrDocument $document, $node, $entity_type) {
-    // Fetch extra data normally not visible, including comments.
-    // We do this manually (with module_implements instead of node_invoke_nodeapi)
-    // because we want a keyed array to come back. Only in this way can we decide
-    // whether to index comments or not.
-    $extra = array();
-    foreach (module_implements('node_update_index') as $module) {
-      // Invoke nodeapi if this module has not been excluded, for example,
-      // exclude 'comment' for a type to skip indexing its comments.
-      if (empty($exclude_nodeapi[$module])) {
-        $function = $module . '_node_update_index';
-        if ($output = $function($node)) {
-          $extra[$module] = $output;
-        }
-      }
-    }
-    if (isset($extra['comment'])) {
-      $comments = $extra['comment'];
-      unset($extra['comment']);
-      $document->ts_comments = apachesolr_clean_text($comments);
-      // @todo: do we want to reproduce apachesolr_add_tags_to_document() for comments?
-    }
-    // Use an omit-norms text field since this is generally going to be short; not
-    // really a full-text field.
-    $document->tos_content_extra = apachesolr_clean_text(implode(' ', $extra));
-}
-
 
 /**
  * Strip html tags and also control characters that cause Jetty/Solr to fail.
@@ -1951,7 +2021,8 @@ function apachesolr_entity_get_callback($entity_type, $callback, $bundle = NULL)
 function apachesolr_get_nodes_to_index($namespace, $limit) {
   $env_id = apachesolr_default_environment();
   // Hardcode node as an entity type
-  apachesolr_index_get_entities_to_index($limit, $env_id, 'node');
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
+  apachesolr_index_get_entities_to_index($env_id, 'node', $limit);
 }
 
 
@@ -1992,9 +2063,6 @@ function apachesolr_hook_info() {
     'apachesolr_field_mappings_alter' => array(
       'group' => 'apachesolr',
     ),
-    'apachesolr_update_index' => array(
-      'group' => 'apachesolr',
-    ),
     'apachesolr_query_prepare' => array(
       'group' => 'apachesolr',
     ),
@@ -2012,18 +2080,9 @@ function apachesolr_hook_info() {
   $hooks['apachesolr_index_document_build'] = array(
     'group' => 'apachesolr',
   );
-  $hooks['apachesolr_index_document_alter'] = array(
-    'group' => 'apachesolr',
-  );
   $hooks['apachesolr_index_document_node_build'] = array(
     'group' => 'apachesolr',
   );
-  foreach (content_types() as $bundle => $bundle_info) {
-    $hooks['apachesolr_index_document_node_' . $bundle . '_build'] = array(
-      'group' => 'apachesolr',
-    );
-  }
-
   return $hooks;
 }
 
