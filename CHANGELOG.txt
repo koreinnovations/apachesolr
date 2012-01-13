@@ -1,5 +1,6 @@
 Apache Solr integration 6.x-3.x, xxxx-xx-xx
 ------------------------------
+Issue #1389306 by Nick_vh: Fixed Wrong helptext link if facetapi is not installed.
 Issue #1252648 by cpliakas, Nick_vh: Added Allow for enabling facet blocks on non-search pages.
 Issue #1161608 by scor, Nick_vh: Added Index format_username()($account).
 Issue #1380448 by Nick_vh | longwave: Fixed Menu item description for /admin/reports/apachesolr.
