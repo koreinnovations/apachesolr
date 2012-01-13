@@ -1,5 +1,6 @@
 Apache Solr integration 6.x-3.x, xxxx-xx-xx
 ------------------------------
+Issue #1379128 by Nick_vh, bdragon: Fixed Treat cardinality=1 fields as single-value + caching stats response - Follow up.
 Issue #370855 by Damien Tournoud, Nick_vh: Add configuration option to a search page if we allow user input using the url or not.
 Issue #1392940 by Nick_vh | pwolanin: Create a 3.x solrconfig.xml that sets luceneMatchVersion.
 Issue #1031250 by EugenMayer, Nick_vh: Added an option to index as another user instead of only anonymous.

@@ -357,7 +357,6 @@ function apachesolr_facetapi_facet_info($searcher_info) {
 }
 
 function apachesolr_default_node_facet_info($searcher_info) {
-  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $facets = apachesolr_common_node_facets();
   foreach (apachesolr_entity_fields('node') as $field_nm => $field_info) {
     if (!empty($field_info['facets'])) {
@@ -1354,6 +1353,77 @@ function apachesolr_server_status($url, $class = NULL) {
   }
   return $status[$key];
 }
+/**
+ * Construct a dynamic index name based on information about a field.
+ *
+ * array('index_type' => 'integer',
+ *        'multiple' => TRUE,
+ *        'name' => 'fieldname',
+ *        ),
+ */
+function apachesolr_index_key($field) {
+  $index_type = !empty($field['index_type']) ? $field['index_type'] : NULL;
+  switch ($index_type) {
+    case 'text':
+      $type_prefix = 't';
+      break;
+    case 'text-omitNorms':
+      $type_prefix = 'to';
+      break;
+    case 'text-edgeNgram':
+      $type_prefix = 'te';
+      break;
+    case 'text-whiteSpace':
+      $type_prefix = 'tw';
+      break;
+    case 'integer':
+      $type_prefix = 'i'; // long integer
+      break;
+    case 'half-int':
+      $type_prefix = 'h'; // 32 bit integer
+      break;
+    case 'float':
+      $type_prefix = 'f'; // float; sortable.
+      break;
+    case 'double':
+      $type_prefix = 'p'; // double; sortable d was used for date.
+      break;
+    case 'sint':
+      $type_prefix = 'is'; // long integer sortable (deprecated)
+      break;
+    case 'boolean':
+      $type_prefix = 'b';
+      break;
+    case 'date':
+      $type_prefix = 'd'; // date trie
+      break;
+    case 'tint':
+      $type_prefix = 'it'; // long integer trie; sortable, best for range queries
+      break;
+    case 'thalf-int':
+      $type_prefix = 'ht'; // 32 bit integer trie (sortable)
+      break;
+    case 'tfloat':
+      $type_prefix = 'ft'; // float trie; sortable, best for range queries.
+      break;
+    case 'tdouble':
+      $type_prefix = 'pt'; // double trie; d was used for date.
+      break;
+    case 'sfloat':
+      $type_prefix = 'fs'; // float, sortable (use for sorting missing last).
+      break;
+    case 'sdouble':
+      $type_prefix = 'ps'; // double sortable; (use for sorting missing last).
+      break;
+    case 'string':
+    default:
+      $type_prefix = 's'; // String
+  }
+  $sm = !empty($field['multiple']) ? 'm_' : 's_';
+  // Block deltas are limited to 32 chars.
+  return substr($type_prefix . $sm . $field['name'], 0, 32);
+}
+
 
 /**
  * Execute a keyword search based on a query object.
@@ -1506,7 +1576,6 @@ function apachesolr_current_query($env_id, DrupalSolrQueryInterface $query = NUL
  * Try to map a schema field name to a human-readable description.
  */
 function apachesolr_field_name_map($field_name) {
-  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   static $map;
 
   if (!isset($map)) {
@@ -1746,7 +1815,6 @@ function apachesolr_entity_delete($entity, $type) {
  * Returns array containing information about node fields that should be indexed
  */
 function apachesolr_entity_fields($entity_type = 'node') {
-  module_load_include('inc', 'apachesolr', 'apachesolr.index');
   static $fields = array();
   if (!isset($fields[$entity_type])) {
     $fields[$entity_type] = array();
