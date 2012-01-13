@@ -1,5 +1,6 @@
 Apache Solr integration 6.x-3.x, xxxx-xx-xx
 ------------------------------
+Issue #1388498 by Nick_vh | pwolanin: Remove s (sortable) fields from schema.xml.
 Issue #1379128 by Nick_vh, bdragon: Fixed Treat cardinality=1 fields as single-value + caching stats response.
 Issue #1361422 by Nick_vh: Fixed coder issues as mentioned by the drupal testing bot.
 Issue #1398100 by thecarlhall: Fixed Configuration throws exception when starting Solr.
