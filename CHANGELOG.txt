@@ -1,5 +1,7 @@
 Apache Solr integration 6.x-3.x, xxxx-xx-xx
 ------------------------------
+Issue #1380448 by Nick_vh | longwave: Fixed Menu item description for /admin/reports/apachesolr.
+Issue #1387272 by cpliakas, Nick_vh: Fixed The cancel links and button submission redirects in facet configuration forms are broken.
 Issue #1387088 by Nick_vh, swentel: Fixed apachesolr_index_mark_for_reindex() not found during enable/disable and drush can't load apachesolr.index.inc.
 Issue #1387628 by Nick_vh: Backport 7.x-1.x to 6.x-3.x.
 

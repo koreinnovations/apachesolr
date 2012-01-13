@@ -182,7 +182,7 @@ function apachesolr_menu() {
   $env_id = apachesolr_default_environment();
   $items['admin/reports/apachesolr'] = array(
     'title'              => 'Apache Solr search index',
-    'description'        => 'Infromation about the contents of the index the server',
+    'description'        => 'Information about the contents of the index the server',
     'page callback'      => 'apachesolr_index_report',
     'page arguments'     => array($env_id),
     'access arguments'   => array('access site reports'),
