@@ -1075,12 +1075,20 @@ function apachesolr_get_solr($env_id = NULL) {
     $env_id = apachesolr_default_environment();
   }
 
+  // @Todo
+  // Extra service classes should include their file on their own responsability
   $class = $environments[$env_id]['service_class'];
 
   if (empty($solr_cache[$env_id])) {
     // Use the default class if none is specified.
-    if (empty($class)) {
-      $class = variable_get('apachesolr_service_class', 'DrupalApacheSolrService');
+    $class_info = variable_get('apachesolr_service_class', array(
+      'file' => 'Drupal_Apache_Solr_Service',
+      'module' => 'apachesolr',
+      'class' => 'DrupalApacheSolrService'));
+
+    if (!class_exists($class) && isset($class_info['file']) && isset($class_info['module'])) {
+      module_load_include('php', $class_info['module'], $class_info['file']);
+      $class = $class_info['class'];
     }
     // Takes advantage of auto-loading.
     $solr = new $class($environments[$env_id]['url'], $env_id);
@@ -1330,9 +1338,17 @@ function apachesolr_environment_variable_del($env_id, $name) {
  */
 function apachesolr_server_status($url, $class = NULL) {
   static $status = array();
+  // @Todo
+  // Extra service classes should include their file on their own responsability
 
-  if (empty($class)) {
-    $class = variable_get('apachesolr_service_class', 'DrupalApacheSolrService');
+  // Use the default class if none is specified.
+  $class_info = variable_get('apachesolr_service_class', array(
+    'file' => 'Drupal_Apache_Solr_Service',
+    'module' => 'apachesolr',
+    'class' => 'DrupalApacheSolrService'));
+  if (!class_exists($class) && isset($class_info['file']) && isset($class_info['module'])) {
+    $class = $class_info['class'];
+    module_load_include('php', $class_info['module'], $class_info['file']);
   }
 
   $key = $url . '|' . $class;

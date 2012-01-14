@@ -202,7 +202,7 @@ function apachesolr_environment_edit_validate($form, &$form_state) {
       $form_state['values']['url'] = trim($form_state['values']['url'], "/ \t\r\n\0\x0B");
     }
   }
-  $env_id = strtolower(preg_replace(array('/[^a-zA-Z0-9]+/','/-+/','/^-+/','/-+$/',), array('_', '_', '', ''), $form_state['values']['page_id']));
+  $env_id = strtolower(preg_replace(array('/[^a-zA-Z0-9]+/','/-+/','/^-+/','/-+$/',), array('_', '_', '', ''), $form_state['values']['env_id']));
   if ($form_state['values']['env_id'] != $env_id && !empty($env_id)) {
     form_set_error('env_id', t('A unique machine-readable identifier for the search page configuration. It must only contain lowercase letters, numbers, and underscores.'));
   }
@@ -260,8 +260,8 @@ function apachesolr_settings(&$form_state) {
   $id = apachesolr_default_environment();
   $environments = apachesolr_load_all_environments();
   $default_environment = apachesolr_default_environment();
-  apachesolr_check_facetapi();
 
+  apachesolr_check_facetapi();
   // Reserve a row for the default one
   $rows[$default_environment] = array();
 
@@ -361,8 +361,13 @@ function apachesolr_settings(&$form_state) {
     $rows[$environment_id]['data'] = array_merge($rows[$environment_id]['data'], $ops);
   }
 
+  $links['add_page'] = array(
+      'title' => 'Add search environment',
+      'href' => 'admin/settings/apachesolr/settings/add',
+  );
+
   $form['apachesolr_host_settings']['actions'] = array(
-    '#markup' => '<ul class="action-links">' . drupal_render($actions) . '</ul>',
+    '#value' => '<ul class="action-links">' . theme('links', $links) . '</ul>',
   );
   $form['apachesolr_host_settings']['table'] = array(
     '#value' => theme('table', $headers, array_values($rows), array('class' => array('admin-apachesolr'))),

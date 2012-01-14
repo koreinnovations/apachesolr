@@ -70,8 +70,10 @@ function apachesolr_install() {
   // Create one MLT block.
   apachesolr_search_mlt_save_block(array('name' => t('More like this')));
 
-  $core_env = array('env_id' => 'solr', 'name' => 'localhost server', 'url' => 'http://localhost:8983/solr');
-  apachesolr_environment_save($core_env);
+  // Insert our default environment
+  db_query(
+    "INSERT INTO {apachesolr_environment} (env_id, name, url, service_class)
+     VALUES ('%s', '%s', '%s', '%s')", array('solr', 'localhost server', 'http://localhost:8983/solr', ''));
 
   // Initialize the queue we will use for processing entities into the Solr index.
   //DrupalQueue::get('apachesolr_indexer_entities')->createQueue();

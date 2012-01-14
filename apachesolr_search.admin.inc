@@ -38,6 +38,15 @@ function _apachesolr_search_browse_form($default_value) {
  * @return array $build
  */
 function apachesolr_search_page_list_all() {
+  $links['add_page'] = array(
+      'title' => 'Add Apache Solr environment.',
+      'href' => 'admin/settings/apachesolr/search-pages/add',
+  );
+  $links['add_mlt'] = array(
+      'title' => 'Add search block "More Like This"',
+      'href' => 'admin/settings/apachesolr/search-pages/addblock',
+  );
+  $build['links'] = theme('links', $links);
   $build['pages'] = apachesolr_search_page_list_pages();
   $build['blocks'] = apachesolr_search_page_list_blocks();
   $build['config'] = drupal_get_form('apachesolr_search_pages_config_form');

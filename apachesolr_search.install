@@ -20,8 +20,6 @@ function apachesolr_search_install() {
     'apachesolr_search_spellcheck' => FALSE,
     'apachesolr_search_search_box' => FALSE,
   );
-  $settings = serialize($settings);
-
   $search_page = new stdClass();
   $search_page->page_id = 'taxonomy_search';
   $search_page->label = 'Raxonomy Search';
@@ -29,8 +27,22 @@ function apachesolr_search_install() {
   $search_page->search_path = 'taxonomy/term/%';
   $search_page->env_id = '';
   $search_page->page_title = '%value';
-  $search_page->settings = $settings;
-  apachesolr_search_page_save($search_page);
+  $search_page->settings = serialize($settings);
+
+  if (!empty($search_page)) {
+    db_merge('apachesolr_search_page')
+      ->key(array('page_id' => $search_page->page_id))
+      ->fields(array(
+        'label' => $search_page->label,
+        'page_id' => $search_page->page_id,
+        'description' => $search_page->description,
+        'env_id' => $search_page->env_id,
+        'search_path' => $search_page->search_path,
+        'page_title' => $search_page->page_title,
+        'settings' => serialize($search_page->settings),
+      ))
+      ->execute();
+  }
 }
 
 /**
@@ -51,17 +63,6 @@ function apachesolr_search_enable() {
       'apachesolr_search_not_removable' => TRUE,
       'apachesolr_search_search_box' => TRUE,
     );
-    $settings = serialize($settings);
-
-    $fields = array(
-      'page_id' => 'core_search',
-      'label' => 'Core Search',
-      'description' => 'Core Search',
-      'search_path' => 'search/site',
-      'env_id' => 'solr',
-      'page_title' => 'Site',
-      'settings' => $settings,
-    );
     $search_page = new stdClass();
     $search_page->page_id = 'core_search';
     $search_page->label = 'Core Search';
@@ -69,10 +70,23 @@ function apachesolr_search_enable() {
     $search_page->search_path = 'search/site';
     $search_page->env_id = 'solr';
     $search_page->page_title = 'Site';
-    $search_page->settings = $settings;
-    apachesolr_search_page_save($search_page);
-  }
+    $search_page->settings = serialize($settings);
 
+    if (!empty($search_page)) {
+      db_merge('apachesolr_search_page')
+        ->key(array('page_id' => $search_page->page_id))
+        ->fields(array(
+          'label' => $search_page->label,
+          'page_id' => $search_page->page_id,
+          'description' => $search_page->description,
+          'env_id' => $search_page->env_id,
+          'search_path' => $search_page->search_path,
+          'page_title' => $search_page->page_title,
+          'settings' => $search_page->settings,
+        ))
+        ->execute();
+    }
+  }
 
   $active = variable_get('search_active_modules', array('node', 'user'));
   $active[] = 'apachesolr_search';
