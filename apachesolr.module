@@ -557,25 +557,10 @@ function apachesolr_user($op, &$edit, &$account) {
     case 'update':
       if (isset($edit['name']) && $account->name != $edit['name']) {
         $table = apachesolr_get_indexer_table('node');
-        switch (db_driver()) {
-          case 'mysql' :
-            $table = db_escape_table($table);
-            $query = "UPDATE {{$table}} asn
-              INNER JOIN {node} n ON asn.entity_id = n.nid SET asn.changed = :changed
-              WHERE n.uid = :uid";
-            $result = db_query($query, array(':changed' => APACHESOLR_REQUEST_TIME,
-              ':uid' => $account->uid,
-            ));
-            break;
-          default :
-            $nids = db_select('node')
-              ->fields('node', array('nid'))
-              ->where("uid = :uid", array(':uid' => $account->uid));
-            $update = db_update($table)
-              ->condition('nid', $nids, 'IN')
-              ->fields(array('changed' => APACHESOLR_REQUEST_TIME))
-              ->execute();
-        }
+        $query = "UPDATE {{$table}} asn
+          INNER JOIN {node} n ON asn.entity_id = n.nid SET asn.changed = '%s'
+          WHERE n.uid = '%s'";
+        $result = db_query($query, array(APACHESOLR_REQUEST_TIME, $account->uid));
       }
       break;
   }
@@ -595,25 +580,10 @@ function apachesolr_user($op, &$edit, &$account) {
 function apachesolr_taxonomy($op, $type, $edit) {
   if ($type == 'term' && ($op == 'update')) {
     $table = apachesolr_get_indexer_table('node');
-      switch (db_driver()) {
-      case 'mysql' :
-        $table = db_escape_table($table);
-        $query = "UPDATE {{$table}} asn
-          INNER JOIN {taxonomy_index} ti ON asn.entity_id = ti.nid SET asn.changed = :changed
-          WHERE ti.tid = :tid";
-        $result = db_query($query, array(':changed' => APACHESOLR_REQUEST_TIME,
-          ':tid' => $term->tid,
-        ));
-        break;
-      default :
-        $nids = db_select('taxonomy_index')
-          ->fields('taxonomy_index', array('nid'))
-          ->where("tid = :tid", array(':tid' => $term->tid));
-        $update = db_update($table)
-          ->condition('nid', $nids, 'IN')
-          ->fields(array('changed' => APACHESOLR_REQUEST_TIME))
-          ->execute();
-    }
+    $query = "UPDATE {{$table}} asn
+      INNER JOIN {taxonomy_index} ti ON asn.entity_id = ti.nid SET asn.changed = '%s'
+      WHERE ti.tid = '%s'";
+    $result = db_query($query, array(APACHESOLR_REQUEST_TIME, $term->tid));
   }
   // TODO: the rest, such as term deletion.
 }
@@ -658,30 +628,11 @@ function apachesolr_node_type($op, $info) {
   }
   elseif (!empty($info->old_type) && $info->old_type != $info->type) {
     // We cannot be sure we are going before or after node module.
-    $entity_ids = db_select('node')
-      ->fields('node', array('nid'))
-      ->where("type = :new OR type = :old", array(':new' => $info->type, ':old' => $info->old_type));
     $table = apachesolr_get_indexer_table('node');
-    switch (db_driver()) {
-      case 'mysql' :
-        $table = db_escape_table($table);
-        $query = "UPDATE {{$table}} asn
-          INNER JOIN {node} n ON asn.entity_id = n.nid SET asn.changed = :changed
-          WHERE (n.type = :type OR n.type = :old_type)";
-        $result = db_query($query, array(':changed' => APACHESOLR_REQUEST_TIME,
-          ':type' => $info->type,
-          ':old_type' => $info->old_type,
-        ));
-        break;
-      default :
-        $nids = db_select('node')
-          ->fields('node', array('nid'))
-          ->where("type = :new OR type = :old", array(':new' => $info->type, ':old' => $info->old_type));
-        $update = db_update($table)
-          ->condition('nid', $nids, 'IN')
-          ->fields(array('changed' => APACHESOLR_REQUEST_TIME))
-          ->execute();
-    }
+    $query = "UPDATE {{$table}} asn
+      INNER JOIN {node} n ON asn.entity_id = n.nid SET asn.changed = '%s'
+      WHERE (n.type = '%s' OR n.type = '%s')";
+    $result = db_query($query, array(APACHESOLR_REQUEST_TIME, $info->type, $info->old_type));
   }
 }
 
@@ -1116,12 +1067,14 @@ function apachesolr_load_all_environments() {
     $environments = $cache->data;
   }
   else {
-    $environments = dbtng_query('SELECT * FROM {apachesolr_environment}')->fetchAllAssoc('env_id', PDO::FETCH_ASSOC);
-    foreach ($environments as $id => &$environment) {
-      $conf = dbtng_query('SELECT name, value FROM {apachesolr_environment_variable} WHERE env_id = :env_id', array('env_id' => $id))->fetchAllAssoc('name', PDO::FETCH_ASSOC);
-      foreach ($conf as $name => $data) {
-        $environment['conf'][$name] = unserialize($data['value']);
+    $environments = array();
+    $result = db_query('SELECT * FROM {apachesolr_environment}');
+    while($environment = db_fetch_array($result)) {
+      $result_conf = db_query("SELECT name, value FROM {apachesolr_environment_variable} WHERE env_id = '%s'", array($environment['env_id']));
+      while($environment_conf = db_fetch_array($result_conf)) {
+        $environment['conf'][$environment_conf['name']] = unserialize($environment_conf['value']);
       }
+      $environments[$environment['env_id']] = $environment;
     }
     cache_set('apachesolr:environments', $environments, 'cache_apachesolr');
   }
@@ -1209,15 +1162,15 @@ function apachesolr_environment_clone($env_id) {
   // Remove any unexpected fields.
   // @todo - get this from the schema?.
   $environment = array_intersect_key($environment, $default);
-  db_insert('apachesolr_environment')
-      ->fields($environment)
-      ->execute();
+  $query = "INSERT INTO {apachesolr_environment} (env_id, name, url, service_class) VALUES ('%s', '%s', '%s', '%s')";
+  db_query($query, $environment);
+
   // Update the environment variables (if any).
   foreach ($conf as $name => $value) {
-    db_merge('apachesolr_environment_variable')
-      ->key(array('env_id' => $environment['env_id'], 'name' => $name))
-      ->fields(array('value' => serialize($value)))
-      ->execute();
+    $query = "INSERT INTO {apachesolr_environment_variable} (env_id, name, value)
+      VALUES ('%s','%s','%s')
+      ON DUPLICATE KEY UPDATE env_id='%s', name='%s', value='%s'";
+    db_query($query, array($environment['env_id'], $name, serialize($value)));
   }
   cache_clear_all('apachesolr:environments', 'cache_apachesolr');
   $environments = NULL;
@@ -1257,27 +1210,25 @@ function apachesolr_environment_save($environment) {
   static $solr_cache;
   $default = array('env_id' => NULL, 'name' => '', 'url' => '', 'service_class' => '');
   $is_new = !apachesolr_environment_load($environment['env_id']);
-  $conf = isset($environment['conf']) ? $environment['conf'] : array();
   // Remove any unexpected fields.
   // @todo - get this from the schema?.
   $environment = array_intersect_key($environment, $default);
   if ($is_new) {
-    db_insert('apachesolr_environment')
-      ->fields($environment)
-      ->execute();
+    $query = "INSERT INTO {apachesolr_environment} (env_id, name, url, service_class) VALUES ('%s', '%s', '%s', '%s')";
+    db_query($query, array($environment['env_id'], $environment['name'], $environment['url'], $environment['service_class']));
   }
   else {
-    db_update('apachesolr_environment')
-      ->fields($environment)
-      ->condition('env_id', $environment['env_id'])
-      ->execute();
+    $query = "UPDATE {apachesolr_environment} SET env_id = '%s', name = '%s', url = '%s', service_class = '%s'";
+    db_query($query, array($environment['env_id'], $environment['name'], $environment['url'], $environment['service_class']));
   }
+  $conf = isset($environment['conf']) ? $environment['conf'] : array();
   // Update the environment variables (if any).
   foreach ($conf as $name => $value) {
-    db_merge('apachesolr_environment_variable')
-      ->key(array('env_id' => $environment['env_id'], 'name' => $name))
-      ->fields(array('value' => serialize($value)))
-      ->execute();
+    // Update the environment variables (if any).
+    $query = "INSERT INTO {apachesolr_environment_variable} (env_id, name, value)
+      VALUES ('%s','%s','%s')
+      ON DUPLICATE KEY UPDATE env_id = '%s', name = '%s', value = '%s'";
+    db_query($query, array($environment['env_id'], $name, serialize($value)));
   }
   cache_clear_all('apachesolr:environments', 'cache_apachesolr');
   $environments = NULL;
@@ -1758,10 +1709,13 @@ function apachesolr_get_index_bundles($env_id, $entity_type) {
   // This could be called before the schema is installed so it is wise to
   // Verify this
   if (db_table_exists('apachesolr_index_bundles')) {
-    return dbtng_query("SELECT bundle FROM {apachesolr_index_bundles} WHERE env_id = :env_id AND entity_type = :entity_type", array(
-      ':env_id' => $env_id,
-      ':entity_type' => $entity_type,
-      ))->fetchCol();
+    $bundles = array();
+    $query = "SELECT bundle FROM {apachesolr_index_bundles} WHERE env_id = '%s' AND entity_type = '%s'";
+    $result = db_query($query, array($env_id, $entity_type));
+    while ($bundle = db_fetch_array($result)) {
+      $bundles[] = $bundle['bundle'];
+    }
+    return $bundles;
   }
   return array();
 }
@@ -1849,7 +1803,7 @@ function apachesolr_get_indexer_table($type) {
   else {
     $indexer_table = 'apachesolr_index_entities';
   }
-  return $indexer_table;
+  return db_escape_table($indexer_table);
 }
 
 /**
@@ -2286,10 +2240,9 @@ function date_apachesolr_field_mappings() {
 function apachesolr_get_min_date(array $facet) {
   // FieldAPI date fields.
   $table = 'field_data_' . $facet['field api name'];
+  $table = db_escape_table($table);
   $column = $facet['field api name'] . '_value';
-  $query = db_select($table, 't');
-  $query->addExpression('MIN(' . $column . ')', 'min');
-  $query_min = $query->execute()->fetch()->min;
+  $query_min = db_result(db_query("SELECT MIN('%s') min FROM {{$table}} t", array($column)));
   // Update to unix timestamp if this is an ISO or other format.
   if (!is_int($query_min)) {
     $return = strtotime($query_min);
@@ -2318,10 +2271,9 @@ function apachesolr_get_max_date(array $facet) {
 
   // FieldAPI date fields.
   $table = 'field_data_' . $facet['field api name'];
+  $table = db_escape_table($table);
   $column = $facet['field api name'] . '_value';
-  $query = db_select($table, 't');
-  $query->addExpression('MAX(' . $column . ')', 'max');
-  $query_max = $query->execute()->fetch()->max;
+  $query_max = db_result(db_query("SELECT MAX('%s') min FROM {{$table}} t", array($column)));
   // Update to unix timestamp if this is an ISO or other format.
   if (!is_int($query_max)) {
     $return = strtotime($query_max);

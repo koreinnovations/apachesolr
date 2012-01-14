@@ -238,8 +238,7 @@ function apachesolr_environment_edit_cancel($form, &$form_state) {
  */
 function apachesolr_check_facetapi() {
   if (!module_exists('facetapi')) {
-    $filename = dbtng_query_range("SELECT filename FROM {system} WHERE type = 'module' AND name = 'facetapi'", 0, 1)
-      ->fetchField();
+    $filename = db_result(db_query("SELECT filename FROM {system} WHERE type = 'module' AND name = 'facetapi' LIMIT 1"));
     if ($filename && file_exists($filename)) {
       drupal_set_message(t('If you <a href="@modules">enable the facetapi module</a>, Apache Solr Search will provide you with configurable facets.', array('@modules' => url('admin/modules'))));
     }

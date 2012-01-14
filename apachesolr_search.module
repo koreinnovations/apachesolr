@@ -327,7 +327,7 @@ function apachesolr_search_page_load($page_id) {
   static $pages = array();
 
   if (!isset($pages[$page_id])) {
-    $page = dbtng_query('SELECT * FROM {apachesolr_search_page} s WHERE s.page_id = :page_id', array(':page_id' => $page_id))->fetchObject();
+    $page = db_fetch_object(db_query("SELECT * FROM {apachesolr_search_page} s WHERE s.page_id = '%s'", array($page_id)));
     if ($page) {
       $page->settings = unserialize($page->settings);
       // Special case page - always uses the default environment.
@@ -487,7 +487,11 @@ function apachesolr_search_block_save($delta = '', $edit = array()) {
  */
 function apachesolr_search_load_all_search_pages() {
   // Get all search_pages and their id
-  $search_pages = dbtng_query('SELECT * FROM {apachesolr_search_page}')->fetchAllAssoc('page_id', PDO::FETCH_ASSOC);
+  $search_pages = array();
+  $result = db_query('SELECT * FROM {apachesolr_search_page}');
+  while($search_page = db_fetch_array($result)) {
+    $search_pages[$search_page['page_id']] = $search_page;
+  }
   return $search_pages;
 }
 
@@ -1322,8 +1326,8 @@ function apachesolr_search_node_result($doc, &$result, &$extra) {
 /**
  * Returns whether a search page exists.
  */
-function apachesolr_search_page_exists($search_page_id) {
-  return dbtng_query('SELECT 1 FROM {apachesolr_search_page} WHERE page_id = :page_id', array(':page_id' => $search_page_id))->fetchField();
+function apachesolr_search_page_exists($page_id) {
+  $page = db_result(db_query("SELECT 1 FROM {apachesolr_search_page} WHERE page_id = '%s'", array($page_id)));
 }
 
 /**

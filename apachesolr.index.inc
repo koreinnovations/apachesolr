@@ -37,36 +37,35 @@ function apachesolr_index_status($env_id) {
   $remaining = 0;
   $total = 0;
   $type = 'node';
-  $last_change = variable_get('apachesolr_index_last_run', 1);
   $bundles = apachesolr_get_index_bundles($env_id, $type);
   $table = apachesolr_get_indexer_table($type);
 
-  $query = db_select($table, 'asn')->condition('asn.status', 1)->condition('asn.bundle', $bundles);
-  $total += $query->countQuery()->execute()->fetchField();
+  $query = "SELECT count(*)
+    FROM {{$table}} asn
+    WHERE (asn.status = 1) AND (asn.bundle IN (" . db_placeholders($bundles) . "))";
+  $total += db_result(db_query($query), $bundles);
 
   // Get $last_entity_id and $last_change.
   extract(apachesolr_get_last_index_position($env_id, $type));
 
+
   // Find the next batch of entities to index for this entity type.  Note that
   // for ordering we're grabbing the oldest first and then ordering by ID so
   // that we get a definitive order.
-  $query = db_select($table, 'aie')
-    ->condition('aie.status', 1)
-    ->condition('aie.entity_type', $type)
-    ->condition('aie.bundle', $bundles)
-    ->condition(db_or()
-      ->condition('aie.changed', $last_changed, '>')
-      ->condition(db_and()
-        ->condition('aie.changed', $last_changed, '=')
-        ->condition('aie.entity_id', $last_entity_id, '>')))
-    ->orderBy('aie.entity_id', 'ASC');
-
+  $query = "SELECT count(*)
+   FROM {{$table}} aie
+   WHERE (aie.status = 1)
+   AND (aie.bundle IN (" . db_placeholders($bundles, 'varchar') . "))
+   AND (aie.entity_type = '%s')
+   AND ((aie.changed > %d) OR ((aie.changed = %d) AND (aie.entity_id > %d)))";
+  $arguments = array_merge($bundles, array($type, $last_changed, $last_changed, $last_entity_id));
   if ($table == 'apachesolr_index_entities') {
     // Other, entity-specific tables don't need this condition.
-    $query->condition('aie.entity_type', $type);
+    $query .= " AND aie.entity_type = '%s'";
+    $arguments[] = $type;
   }
-
-  $remaining += $query->countQuery()->execute()->fetchField();
+  $query .= " ORDER BY aie.entity_id ASC";
+  $remaining += db_result(db_query($query, $arguments));
 
   return array('remaining' => $remaining, 'total' => $total);
 }
@@ -329,27 +328,25 @@ function apachesolr_index_get_entities_to_index($env_id, $entity_type, $limit) {
   // Find the next batch of entities to index for this entity type.  Note that
   // for ordering we're grabbing the oldest first and then ordering by ID so
   // that we get a definitive order.
-  $query = db_select($table, 'aie')
-   ->fields('aie', array('entity_type', 'entity_id', 'changed'))
-   ->condition('aie.status', 1)
-   ->condition('aie.bundle', $bundles)
-   ->condition(db_or()
-     ->condition('aie.changed', $last_changed, '>')
-     ->condition(db_and()
-       ->condition('aie.changed', $last_changed, '=')
-       ->condition('aie.entity_id', $last_entity_id, '>')))
-   ->orderBy('aie.entity_id', 'ASC');
-
+  $query = "SELECT aie.entity_type, aie.entity_id, aie.changed
+   FROM {{$table}} aie
+   WHERE (aie.status = 1)
+   AND (aie.bundle IN (" . db_placeholders($bundles, 'varchar') . "))
+   AND (aie.entity_type = '%s')
+   AND ((aie.changed > %d) OR ((aie.changed = %d) AND (aie.entity_id > %d)))";
+  $arguments = array_merge($bundles, array($type, $last_changed, $last_changed, $last_entity_id));
   if ($table == 'apachesolr_index_entities') {
     // Other, entity-specific tables don't need this condition.
-    $query->condition('aie.entity_type', $type);
+    $query .= " AND aie.entity_type = '%s'";
+    $arguments[] = $type;
   }
-  $query->range(0, $limit);
-  $records = $query->execute();
+  $query .= " ORDER BY aie.entity_id ASC LIMIT";
+  $result = db_query_range($query, 0, $limit);
 
-  foreach ($records as $record) {
+  while ($record = db_fetch_array($result)) {
     $rows[] = $record;
   }
+
   return $rows;
 }
 
@@ -434,23 +431,13 @@ function apachesolr_index_mark_for_reindex($env_id, $entity_type = 'node') {
 function apachesolr_index_set_bundles($env_id, $entity_type, array $bundles) {
   $transaction = db_transaction();
   try {
-    db_delete('apachesolr_index_bundles')
-      ->condition('env_id', $env_id)
-      ->condition('entity_type', $entity_type)
-      ->execute();
-
+    $query = "DELETE FROM {apachesolr_index_bundles} WHERE env_id = '%s' AND entity_type = '%s'";
+    db_query($query, array($env_id, $entity_type));
     if ($bundles) {
-      $insert = db_insert('apachesolr_index_bundles')
-        ->fields(array('env_id', 'entity_type', 'bundle'));
-
       foreach ($bundles as $bundle) {
-        $insert->values(array(
-          'env_id' => $env_id,
-          'entity_type' => $entity_type,
-          'bundle' => $bundle,
-        ));
+        $query = "INSERT INTO {apachesolr_index_bundles} (env_id, entity_type, bundle) VALUES ('%s', '%s', '%s')";
+        db_query($query, array($env_id, $entity_type, $bundle));
       }
-      $insert->execute();
     }
   }
   catch (Exception $e) {
@@ -633,26 +620,18 @@ function apachesolr_index_node_solr_document(ApacheSolrDocument $document, $node
 function apachesolr_index_node_solr_reindex($env_id) {
   $indexer_table = apachesolr_get_indexer_table('node');
   $transaction = db_transaction();
+  $bundles = apachesolr_get_index_bundles($env_id, 'node');
   try {
-    db_delete($indexer_table)
-      ->condition('entity_type', 'node')
-      ->execute();
-    $select = db_select('node', 'n');
-    $select->addExpression("'node'", 'entity_type');
-    $select->addField('n', 'nid', 'entity_id');
-    $select->addField('n', 'type', 'bundle');
-    $select->addField('n', 'status', 'status');
-    $select->addExpression(APACHESOLR_REQUEST_TIME, 'changed');
-    $select->condition('n.type', apachesolr_get_index_bundles($env_id, 'node'), 'IN');
+    db_query("DELETE FROM {{$indexer_table}} WHERE entity_type = 'node'");
 
-    $insert = db_insert($indexer_table)
-      ->fields(array('entity_id', 'bundle', 'status', 'entity_type', 'changed'))
-      ->from($select)
-      ->execute();
+    $query = "INSERT INTO {{$indexer_table}} (entity_id, bundle, status, entity_type, changed) (
+      SELECT n.nid AS entity_id, n.type AS bundle, n.status AS status, 'node' AS entity_type, %d AS changed
+      FROM node n
+      WHERE (n.type IN (". db_placeholders($bundles) .")))";
+    db_query($query, array_merge(array(APACHESOLR_REQUEST_TIME), $bundles));
   }
   catch (Exception $e) {
     $transaction->rollback();
-    //drupal_set_message($e->getMessage(), 'error');
     watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
     return FALSE;
   }
@@ -736,7 +715,7 @@ function apachesolr_vocab_name($vid) {
   static $names = array();
 
   if (!isset($names[$vid])) {
-    $vocab_name = dbtng_query('SELECT v.name FROM {taxonomy_vocabulary} v WHERE v.vid = :vid', array(':vid' => $vid))->fetchField();
+    $vocab_name = db_result(db_query("SELECT v.name FROM {taxonomy_vocabulary} v WHERE v.vid = '%s'", array($vid)));
     $names[$vid] = preg_replace('/[^a-zA-Z0-9_\x7f-\xff]/', '_', $vocab_name);
     // Fallback for names ending up all as '_'.
     $check = rtrim($names[$vid], '_');
@@ -1000,11 +979,11 @@ function apachesolr_add_tags_to_document($document, $text) {
 function apachesolr_index_node_check_table() {
   // Check for unpublished content that wasn't deleted from the index.
   $table = apachesolr_get_indexer_table('node');
-  $query = db_select($table, 'aien')
-    ->fields('n', array('nid', 'status'))
-    ->where('aien.status <> n.status');
-  $query->innerJoin('node', 'n', 'n.nid = aien.entity_id');
-  $nodes = $query->execute()->fetchAllAssoc('nid');
+  $result = db_query("SELECT n.nid, n.status FROM {{$table}} aien INNER JOIN node n ON n.nid = aien.entity_id WHERE aien.status <> n.status");
+  $nodes = array();
+  while($record = db_fetch_array($result)) {
+    $nodes[$record['nid']] = $record;
+  }
 
   // Update or delete at most this many in each Solr query.
   $limit = variable_get('apachesolr_cron_mass_limit', 500);
@@ -1017,12 +996,13 @@ function apachesolr_index_node_check_table() {
       break;
     }
   }
+
   // Check for deleted content that wasn't deleted from the index.
-  $query = db_select($table, 'aien')
-    ->fields('aien', array('entity_id'))
-    ->isNull('n.nid');
-  $query->leftJoin('node', 'n', 'n.nid = aien.entity_id');
-  $nodes = $query->execute()->fetchAllAssoc('nid');
+  $result = db_query("SELECT aien.entity_id FROM {{$table}} aien LEFT JOIN node n ON n.nid = aien.entity_id WHERE n.nid = NULL");
+  $nodes = array();
+  while($record = db_fetch_array($result)) {
+    $nodes[$record['nid']] = $record;
+  }
   $node_lists = array_chunk($nodes, $limit, TRUE);
 
   foreach ($node_lists as $nodes) {

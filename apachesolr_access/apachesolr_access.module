@@ -13,8 +13,9 @@ function apachesolr_access_apachesolr_index_document_build_node($document, $node
 
   if (!node_access('view', $node, $account)) {
     // Get node access grants.
-    $result = dbtng_query('SELECT * FROM {node_access} WHERE (nid = 0 OR nid = :nid) AND grant_view = 1', array(':nid' => $node->nid));
-    foreach ($result as $grant) {
+    $query = "SELECT * FROM {node_access} WHERE (nid = 0 OR nid = '%s' AND grant_view = 1)";
+    $result = db_query($query, array($node->nid));
+    while ($grant = db_fetch_object($result)) {
       $grant_realm = apachesolr_access_clean_realm_name($grant->realm);
       $key = 'access_node_' . apachesolr_site_hash() . '_' . $grant_realm;
       $document->setMultiValue($key, $grant->gid);

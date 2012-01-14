@@ -71,8 +71,7 @@ function apachesolr_install() {
   apachesolr_search_mlt_save_block(array('name' => t('More like this')));
 
   // Insert our default environment
-  db_query(
-    "INSERT INTO {apachesolr_environment} (env_id, name, url, service_class)
+  db_query("INSERT INTO {apachesolr_environment} (env_id, name, url, service_class)
      VALUES ('%s', '%s', '%s', '%s')", array('solr', 'localhost server', 'http://localhost:8983/solr', ''));
 
   // Initialize the queue we will use for processing entities into the Solr index.
