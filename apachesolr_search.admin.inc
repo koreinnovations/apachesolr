@@ -38,8 +38,9 @@ function _apachesolr_search_browse_form($default_value) {
  * @return array $build
  */
 function apachesolr_search_page_list_all() {
+
   $links['add_page'] = array(
-      'title' => 'Add Apache Solr environment.',
+      'title' => 'Add search page',
       'href' => 'admin/settings/apachesolr/search-pages/add',
   );
   $links['add_mlt'] = array(
@@ -528,6 +529,7 @@ function apachesolr_search_page_settings_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/settings/apachesolr/search-pages';
 
   // Menu rebuild needed to pick up search path.
+  menu_cache_clear_all();
   menu_rebuild();
 }
 
@@ -584,20 +586,20 @@ function apachesolr_search_delete_search_page_confirm(&$form_state, $search_page
 function apachesolr_search_delete_search_page_confirm_submit($form, &$form_state) {
   // Deletes the index configuration settings.
   // @todo Invoke a hook that allows backends and indexers to delete their stuff.
-  db_delete('apachesolr_search_page')
-    ->condition('page_id', $form_state['values']['page_id'])
-    ->execute();
+  if (!empty($form_state['values']['page_id'])) {
+    $query = "DELETE FROM {apachesolr_search_page} WHERE page_id = '%s'";
+    db_query($query, array($form_state['values']['page_id']));
 
-  // Sets message, logs action.
-  drupal_set_message(t(
-    'The %label search page configuration has been deleted.',
-    array('%label' => $form_state['values']['label'])
-  ));
-  watchdog('apachesolr_search', 'Deleted search page configuration "@page_id".', array('@page_id' => $form_state['values']['page_id']), WATCHDOG_NOTICE);
+    // Sets message, logs action.
+    drupal_set_message(t(
+      'The %label search page configuration has been deleted.',
+      array('%label' => $form_state['values']['label'])
+    ));
+    watchdog('apachesolr_search', 'Deleted search page configuration "@page_id".', array('@page_id' => $form_state['values']['page_id']), WATCHDOG_NOTICE);
 
-  // Rebuilds the menu cache.
-  menu_rebuild();
-
+    // Rebuilds the menu cache.
+    menu_rebuild();
+  }
   // Returns back to search page list page.
   $form_state['redirect'] = 'admin/settings/apachesolr/search-pages';
 }

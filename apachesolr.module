@@ -536,10 +536,8 @@ function apachesolr_mark_entity($entity_type, $entity_id) {
   module_load_include('inc', 'apachesolr', 'apachesolr.index');
   $table = apachesolr_get_indexer_table($entity_type);
   if (!empty($table)) {
-    db_update($table)
-      ->condition('entity_id', $entity_id)
-      ->fields(array('changed' => APACHESOLR_REQUEST_TIME))
-      ->execute();
+    $query = "UPDATE {{$table}} asn SET asn.changed = '%s' WHERE asn.entity_id = '%s'";
+    db_query($query, array(APACHESOLR_REQUEST_TIME, $entity_id));
   }
 }
 
@@ -1018,8 +1016,11 @@ function apachesolr_default_environment($env_id = NULL) {
  *
  * @throws Exception
  */
-function apachesolr_get_solr($env_id = NULL) {
+function apachesolr_get_solr($env_id = NULL, $reset = FALSE) {
   static $solr_cache;
+  if ($reset) {
+    $solr_cache = array();
+  }
   $environments = apachesolr_load_all_environments();
 
   if (empty($env_id) || empty($environments[$env_id])) {
@@ -1054,14 +1055,17 @@ function apachesolr_get_solr($env_id = NULL) {
  * @return $environments
  *   The environments in the database
  */
-function apachesolr_load_all_environments() {
+function apachesolr_load_all_environments($reset = FALSE) {
   static $environments;
+  if ($reset) {
+    $environments = array();
+  }
 
   if (isset($environments)) {
-    return $environments;
+   // return $environments;
   }
   // Use cache_get to avoid DB when using memcache, etc.
-  $cache = cache_get('apachesolr:environments', 'cache_apachesolr');
+  //$cache = cache_get('apachesolr:environments', 'cache_apachesolr');
 
   if (!empty($cache->data)) {
     $environments = $cache->data;
@@ -1122,17 +1126,18 @@ function apachesolr_environment_delete_page_access($permission, $environment) {
 function apachesolr_environment_delete($env_id) {
   static $environments;
   static $solr_cache;
+
   $environment = apachesolr_environment_load($env_id);
   if ($environment) {
     db_delete('apachesolr_environment')
       ->condition('env_id', $env_id)
       ->execute();
-    db_delete('apachesolr_environment_variable')
-      ->condition('env_id', $env_id)
-      ->execute();
+    $query = "DELETE FROM {apachesolr_environment} WHERE env_id = '%s'";
+    db_query($query, $env_id);
+    $query = "DELETE FROM {apachesolr_environment_variable} WHERE env_id = '%s'";
+    db_query($query, $env_id);
 
     module_invoke_all('apachesolr_environment_delete', $environment);
-
     cache_clear_all('apachesolr:environments', 'cache_apachesolr');
     $environments = NULL;
     $solr_cache = NULL;
@@ -1149,6 +1154,7 @@ function apachesolr_environment_delete($env_id) {
 function apachesolr_environment_clone($env_id) {
   static $environments;
   static $solr_cache;
+
   $default = array('env_id' => NULL, 'name' => '', 'url' => '', 'service_class' => '');
   $environment = apachesolr_environment_load($env_id);
   $conf = isset($environment['conf']) ? $environment['conf'] : array();
@@ -1208,7 +1214,7 @@ function apachesolr_create_unique_id($existing, $id) {
 function apachesolr_environment_save($environment) {
   static $environments;
   static $solr_cache;
-  $default = array('env_id' => NULL, 'name' => '', 'url' => '', 'service_class' => '');
+  $default = array('env_id' => NULL, 'name' => '', 'url' => '', 'service_class' => '', 'conf' => array());
   $is_new = !apachesolr_environment_load($environment['env_id']);
   // Remove any unexpected fields.
   // @todo - get this from the schema?.
@@ -1218,17 +1224,14 @@ function apachesolr_environment_save($environment) {
     db_query($query, array($environment['env_id'], $environment['name'], $environment['url'], $environment['service_class']));
   }
   else {
-    $query = "UPDATE {apachesolr_environment} SET env_id = '%s', name = '%s', url = '%s', service_class = '%s'";
-    db_query($query, array($environment['env_id'], $environment['name'], $environment['url'], $environment['service_class']));
+    $query = "UPDATE {apachesolr_environment} SET name = '%s', url = '%s', service_class = '%s' WHERE env_id = '%s'";
+    db_query($query, array($environment['name'], $environment['url'], $environment['service_class'], $environment['env_id']));
   }
   $conf = isset($environment['conf']) ? $environment['conf'] : array();
   // Update the environment variables (if any).
   foreach ($conf as $name => $value) {
     // Update the environment variables (if any).
-    $query = "INSERT INTO {apachesolr_environment_variable} (env_id, name, value)
-      VALUES ('%s','%s','%s')
-      ON DUPLICATE KEY UPDATE env_id = '%s', name = '%s', value = '%s'";
-    db_query($query, array($environment['env_id'], $name, serialize($value)));
+    apachesolr_environment_variable_set($environment['env_id'], $name, $value);
   }
   cache_clear_all('apachesolr:environments', 'cache_apachesolr');
   $environments = NULL;
@@ -1256,10 +1259,10 @@ function apachesolr_environment_variable_get($env_id, $name, $default = NULL) {
 function apachesolr_environment_variable_set($env_id, $name, $value) {
   static $environments;
   static $solr_cache;
-  db_merge('apachesolr_environment_variable')
-    ->key(array('env_id' => $env_id, 'name' => $name))
-    ->fields(array('value' => serialize($value)))
-    ->execute();
+  $query = "INSERT INTO {apachesolr_environment_variable} (env_id, name, value)
+    VALUES ('%s','%s','%s')
+    ON DUPLICATE KEY UPDATE env_id = '%s', name = '%s', value = '%s'";
+  db_query($query, array($env_id, $name, serialize($value), $env_id, $name, serialize($value)));
   cache_clear_all('apachesolr:environments', 'cache_apachesolr');
   $environments = NULL;
   $solr_cache = NULL;
@@ -1273,10 +1276,8 @@ function apachesolr_environment_variable_set($env_id, $name, $value) {
 function apachesolr_environment_variable_del($env_id, $name) {
   static $environments;
   static $solr_cache;
-  db_delete('apachesolr_environment_variable')
-    ->condition('env_id', $env_id)
-    ->condition('name', $name)
-    ->execute();
+  $query = "DELETE FROM {apachesolr_environment_variable} WHERE env_id = '%s' AND name = '%s'";
+  db_query($query, array($env_id, $name));
   cache_clear_all('apachesolr:environments', 'cache_apachesolr');
   $environments = NULL;
   $solr_cache = NULL;
@@ -1735,10 +1736,10 @@ function apachesolr_get_index_bundles($env_id, $entity_type) {
  */
 function apachesolr_entity_should_index($entity, $type) {
   $info = content_types();
-  $id = $entity->id;
-  $bundle = $entity->bundle;
-  //list($id, $vid, $bundle) = entity_extract_ids($type, $entity);
-  $bundles = apachesolr_get_index_bundles($env_id, $entity_type);
+  $id = $entity->nid;
+  $bundle = $entity->type;
+  $env_id = apachesolr_default_environment();
+  $bundles = apachesolr_get_index_bundles($env_id, 'node');
   if ($bundle && isset($info[$bundle]['extra']['apachesolr']['index']) && $info[$bundle]['extra']['apachesolr']['index']) {
     return TRUE;
   }
@@ -1778,17 +1779,10 @@ function apachesolr_entity_update($entity, $type) {
 
     // If we haven't seen this entity before it may not be there, so merge
     // instead of update.
-    db_merge($indexer_table)
-      ->key(array(
-      'entity_type' => $type,
-      'entity_id' => $id,
-      ))
-      ->fields(array(
-        'bundle' => $bundle,
-        'status' => $status,
-        'changed' => APACHESOLR_REQUEST_TIME,
-      ))
-      ->execute();
+    $query = "INSERT INTO {{$indexer_table}} (entity_type, entity_id, bundle, status, changed)
+      VALUES ('%s', %d, '%s', %d, %d)
+      ON DUPLICATE KEY UPDATE entity_type = '%s', entity_id = %d, bundle = '%s', status = %d, changed = %d";
+    db_query($query, array($type, $id, $bundle, $status, APACHESOLR_REQUEST_TIME, $type, $id, $bundle, $status, APACHESOLR_REQUEST_TIME));
   }
 }
 
@@ -1818,10 +1812,8 @@ function apachesolr_entity_delete($entity, $type) {
     // There was no exception, so delete from the table.
     $id = $entity->nid;
     $indexer_table = apachesolr_get_indexer_table($type);
-    db_delete($indexer_table)
-      ->condition('entity_type', $type)
-      ->condition('entity_id', $id)
-      ->execute();
+    $query = "DELETE FRON {{$indexer_table}} WHERE entity_type = '%s' AND entity_id = %d";
+    db_query($query, array($type, $id));
   }
 }
 

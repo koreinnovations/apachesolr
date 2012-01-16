@@ -306,9 +306,12 @@ function apachesolr_search_get_value_title($search_page_id = NULL, $value = NULL
 /**
  * Get or set the default search page id for the current page.
  */
-function apachesolr_search_default_search_page($page_id = NULL) {
+function apachesolr_search_default_search_page($page_id = NULL, $reset = FALSE) {
   static $default_page_id = NULL;
 
+  if ($reset) {
+    $default_page_id = array();
+  }
   if (isset($page_id)) {
     $default_page_id = $page_id;
   }
@@ -323,8 +326,12 @@ function apachesolr_search_default_search_page($page_id = NULL) {
  * @param string $page_id
  * @return array
  */
-function apachesolr_search_page_load($page_id) {
+function apachesolr_search_page_load($page_id, $reset = FALSE) {
   static $pages = array();
+
+  if ($reset) {
+    $pages = array();
+  }
 
   if (!isset($pages[$page_id])) {
     $page = db_fetch_object(db_query("SELECT * FROM {apachesolr_search_page} s WHERE s.page_id = '%s'", array($page_id)));
@@ -342,18 +349,26 @@ function apachesolr_search_page_load($page_id) {
 
 function apachesolr_search_page_save($search_page) {
   if (!empty($search_page)) {
-    db_merge('apachesolr_search_page')
-      ->key(array('page_id' => $search_page->page_id))
-      ->fields(array(
-        'label' => $search_page->label,
-        'page_id' => $search_page->page_id,
-        'description' => $search_page->description,
-        'env_id' => $search_page->env_id,
-        'search_path' => $search_page->search_path,
-        'page_title' => $search_page->page_title,
-        'settings' => serialize($search_page->settings),
-      ))
-      ->execute();
+    $query = "INSERT INTO {apachesolr_search_page} (page_id, label, description, env_id, search_path, page_title, settings)
+      VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')
+      ON DUPLICATE KEY UPDATE page_id = '%s', label = '%s', description = '%s', env_id = '%s', search_path = '%s', page_title = '%s', settings = '%s'";
+    $arguments = array(
+      $search_page->page_id,
+      $search_page->label,
+      $search_page->description,
+      $search_page->env_id,
+      $search_page->search_path,
+      $search_page->page_title,
+      serialize($search_page->settings),
+      $search_page->page_id,
+      $search_page->label,
+      $search_page->description,
+      $search_page->env_id,
+      $search_page->search_path,
+      $search_page->page_title,
+      serialize($search_page->settings),
+    );
+    db_query($query, $arguments);
   }
 }
 
@@ -1388,12 +1403,9 @@ function apachesolr_search_preprocess_search_results(&$variables) {
  * Implements hook_apachesolr_environment_delete().
  */
 function apachesolr_search_apachesolr_environment_delete($server) {
-  db_update('apachesolr_search_page')
-    ->fields(array(
-      'env_id' => '',
-    ))
-    ->condition('env_id', $server['env_id'])
-    ->execute();
+  $query = "UPDATE {apachesolr_search_page} SET env_id = '' WHERE env_id = '%s'";
+  db_query($query, array($server['env_id']));
+
   apachesolr_environment_variable_del($server['env_id'], 'apachesolr_search_show_facets');
   apachesolr_environment_variable_del($server['env_id'], 'apachesolr_search_facet_pages');
   menu_rebuild();

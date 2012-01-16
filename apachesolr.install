@@ -81,7 +81,7 @@ function apachesolr_install() {
   $env_id = apachesolr_default_environment();
   $bundles = content_types();
   apachesolr_index_set_bundles($env_id, 'node', array_keys($bundles));
-  drupal_set_message(t('Apache Solr is enabled. Visit the <a href="@settings_link">settings page</a>.', array('@settings_link' => url('admin/settings/apachesolr'))));
+  drupal_set_message(t('Apache Solr is installed. Visit the <a href="@settings_link">settings page</a>.', array('@settings_link' => url('admin/settings/apachesolr'))));
 }
 
 /**

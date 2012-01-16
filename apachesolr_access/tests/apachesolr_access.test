@@ -14,16 +14,17 @@ class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
   }
 
   function setUp() {
-    parent::setUp('node_access_test', 'apachesolr', 'apachesolr_search', 'apachesolr_access');
+    parent::setUp('content', 'nodeaccess', 'apachesolr', 'apachesolr_search', 'apachesolr_access');
     require_once dirname(dirname(dirname(realpath(__FILE__)))) . '/Apache_Solr_Document.php';
+    require_once dirname(dirname(dirname(realpath(__FILE__)))) . '/tests/Dummy_Solr.php';
 
      // Create a basic user, which is subject to moderation.
     $permissions = array(
       'access content',
       'create page content',
       'edit own page content',
-      'create article content',
-      'edit own article content',
+      'create story content',
+      'edit own story content',
     );
     $this->basic_user = $this->drupalCreateUser($permissions);
   }
@@ -41,7 +42,7 @@ class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
     $edit['uid'] = $basic_user->uid;
     $author_restricted_node = $this->drupalCreateNode($edit);
     // Delete the generic node access grant for all nodes.
-    db_delete('node_access')->condition('nid', '0')->execute();
+    db_query("DELETE FROM {node_access} WHERE nid = 0");
 
     $roles = array_keys($basic_user->roles);
     // The assigned role will be the last in the array.
@@ -66,8 +67,8 @@ class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
     node_access_write_grants($author_restricted_node, array($author_grant));
 
     // This loads the document class too.
-    $solr = apachesolr_get_solr($env_id);
     $env_id = apachesolr_default_environment();
+    $solr = apachesolr_get_solr($env_id);
 
     $document = new ApacheSolrDocument();
     apachesolr_access_apachesolr_index_document_build_node($document, $role_restricted_node, $env_id);
@@ -80,19 +81,16 @@ class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
     $field = 'access_node_' . apachesolr_site_hash() . '_nodeaccess_author';
     $this->assertEqual($document->{$field}[0], $basic_user->uid, 'Solr Document being indexed is restricted by the proper author');
 
-    // Test addition of filters to query.
-    $subquery = apachesolr_access_build_subquery($basic_user);
-
     $expected_criterion = array(
       'access__all' => 0,
       'access_node_' . apachesolr_site_hash() . '_all' => 0,
-      // The node access_test module writes this as of core 7.3.
-      'access_node_' . apachesolr_site_hash() . '_node_access_test_author' => $basic_user->uid,
-      // @todo - we need to check grants provided by node_access_test module.
- //     'access_node_' . apachesolr_site_hash() . '_nodeaccess_rid' => array(2, $assigned_role),
- //     'access_node_' . apachesolr_site_hash() . '_nodeaccess_uid' => $basic_user->uid,
+      'access_node_' . apachesolr_site_hash() . '_nodeaccess_author' => $basic_user->uid,
+      'access_node_' . apachesolr_site_hash() . '_nodeaccess_rid' => array(2, $assigned_role),
+      'access_node_' . apachesolr_site_hash() . '_nodeaccess_uid' => $basic_user->uid,
     );
 
+    // Test addition of filters to query.
+    $subquery = apachesolr_access_build_subquery($basic_user);
     $fields = $subquery->getFilters();
 
     foreach ($fields as $field) {
@@ -108,6 +106,7 @@ class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
     }
 
     $this->assertEqual($expected_criterion, $found_criterion, 'All Criteria was accounted for in fields. If not accounted for, Unaccounted Criteria [' . var_export(array_diff($expected_criterion, $found_criterion), 1) . ']');
+
     // Run a query through the MLT code to be sure access filters are added.
     $solr = new DummySolr();
     $settings = apachesolr_search_mlt_block_defaults();
@@ -122,9 +121,18 @@ class DrupalApacheSolrNodeAccess extends DrupalWebTestCase {
     // Do some manipulation to avoid having to guess the order.
     $filter = trim(end($search['params']['fq']), ')(');
     $parts = explode(' OR ', $filter);
-    $this->assertEqual(count($expected_criterion), count($parts), 'Number of parts is the same as the number of critera');
-    foreach ($expected_criterion as $k => $v) {
-      $this->assertTrue(in_array("$k:$v", $parts), "Filter $k:$v found in the parts");
+    // We add 1 value since we have 2 roles in access_node_' . apachesolr_site_hash() . '_nodeaccess_rid
+    $this->assertEqual(count($expected_criterion)+1, count($parts), 'Number of parts is the same as the number of critera');
+
+    foreach ($expected_criterion as $name => $value) {
+      if (is_array($value)) {
+        foreach ($value as $value_item) {
+          $this->assertTrue(in_array("$name:$value_item", $parts), "Filter $name:$value_item found in the parts");
+        }
+      } else {
+        $this->assertTrue(in_array("$name:$value", $parts), "Filter $name:$value found in the parts");
+      }
+
     }
   }
 }

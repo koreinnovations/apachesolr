@@ -26,7 +26,7 @@ class DrupalSolrOfflineEnvironmentWebTestCase extends DrupalWebTestCase {
    * Implementation of setUp().
    */
   function setUp() {
-    parent::setUp('apachesolr', 'search', 'apachesolr_test', 'autoload', 'dbtng');
+    parent::setUp('content', 'search', 'apachesolr', 'apachesolr_test');
     // Create a basic user, which is subject to moderation.
     $permissions = array(
       'access content',
@@ -102,10 +102,7 @@ class DrupalSolrOfflineEnvironmentWebTestCase extends DrupalWebTestCase {
     $edit = array('name' => 'new description foo bar', 'url' => 'http://localhost:8983/solr/core_does_not_exists');
     $this->drupalPost($this->getUrl(), $edit, t('Save'));
     $this->assertResponse(200);
-    apachesolr_load_all_environments();
-    // Reset vars
-    static $environments;
-    static $solr_cache;
+    apachesolr_load_all_environments(TRUE);
     $environments = NULL;
     $solr_cache = NULL;
 
@@ -126,10 +123,7 @@ class DrupalSolrOfflineEnvironmentWebTestCase extends DrupalWebTestCase {
     $this->drupalPost($this->getUrl(), array(), t('Clone'));
     $this->assertResponse(200);
     // Reset vars
-    static $environments;
-    static $solr_cache;
-    $environments = NULL;
-    $solr_cache = NULL;
+    apachesolr_load_all_environments(TRUE);
 
     $this->drupalGet('admin/settings/apachesolr/settings');
     $this->assertText(t('localhost server [cloned]'), t('Search Environment was succesfully cloned'));
@@ -148,11 +142,6 @@ class DrupalSolrOfflineEnvironmentWebTestCase extends DrupalWebTestCase {
     $edit = array('url' => 'http://localhost:8983/solr', 'name' => 'my test description', 'env_id' => 'solr_test');
     $this->drupalPost($this->getUrl(), $edit, t('Save'));
     $this->assertResponse(200);
-    // Reset vars
-    static $environments;
-    static $solr_cache;
-    $environments = NULL;
-    $solr_cache = NULL;
 
     $this->drupalGet('admin/settings/apachesolr/settings');
     $this->assertText(t('my test description'), t('Search Environment was succesfully created'));
@@ -165,17 +154,12 @@ class DrupalSolrOfflineEnvironmentWebTestCase extends DrupalWebTestCase {
     $edit = array('make_default' => 1, 'conf[apachesolr_read_only]' => APACHESOLR_READ_ONLY);
     $this->drupalPost($this->getUrl(), $edit, t('Save'));
     $this->assertResponse(200);
-    // Reset vars
-    static $environments;
-    static $solr_cache;
-    $environments = NULL;
-    $solr_cache = NULL;
+    cache_clear_all();
 
     $this->drupalGet('admin/settings/apachesolr/settings');
     $this->assertText(t('my test description (Default)'), t('New Search environment was succesfully changed to default environment'));
     // Load it, to fill our cache.
-    $environments = apachesolr_load_all_environments();
-
+    $environments = apachesolr_load_all_environments(TRUE);
     $mode = apachesolr_environment_variable_get('solr_test', 'apachesolr_read_only', APACHESOLR_READ_WRITE);
     $this->assertEqual($mode, APACHESOLR_READ_ONLY, t('Environment succesfully changed to read only'));
   }
@@ -212,7 +196,7 @@ class DrupalSolrOfflineSearchPagesWebTestCase extends DrupalWebTestCase {
    * Implementation of setUp().
    */
   function setUp() {
-    parent::setUp('apachesolr', 'apachesolr_search', 'search', 'apachesolr_test');
+    parent::setUp('content', 'search', 'apachesolr', 'apachesolr_search');
     // Create a basic user, which is subject to moderation.
     $permissions = array(
       'access content',
@@ -228,6 +212,7 @@ class DrupalSolrOfflineSearchPagesWebTestCase extends DrupalWebTestCase {
       'administer search',
     );
     $admin_user = $this->drupalCreateUser($permissions);
+
 
     // Assign users to their test suite-wide properties.
     $this->basic_user = $basic_user;
@@ -260,17 +245,17 @@ class DrupalSolrOfflineSearchPagesWebTestCase extends DrupalWebTestCase {
     );
     $this->drupalPost($this->getUrl(), $edit, t('Save configuration'));
     $this->assertResponse(200);
-    // Make sure the menu is recognized
-    apachesolr_search_page_load();
     // Reset static var
-    static $pages;
-    $pages = array();
-
-    menu_cache_clear_all();
-    menu_rebuild();
+    apachesolr_search_page_load('core_search', TRUE);
     $this->drupalGet('admin/settings/apachesolr/search-pages');
     $this->assertText(t('Test Search Page'), t('Search page was succesfully edited'));
     $this->assertText('search/searchdifferentpath', t('Search path was updated'));
+
+    // Reset static var
+    apachesolr_search_page_load('core_search', TRUE);
+
+    cache_clear_all();
+    menu_rebuild();
     $this->drupalGet('search/searchdifferentpath');
     $this->assertText(t('The Apache Solr search engine is not available. Please contact your site administrator.'), t('Search path was sucessfully created and is accessible'));
   }
@@ -281,14 +266,16 @@ class DrupalSolrOfflineSearchPagesWebTestCase extends DrupalWebTestCase {
   function testCloneSearchPage() {
     $this->drupalLogin($this->admin_user);
     $this->drupalGet('admin/settings/apachesolr/search-pages');
+    // Reset static var
+    apachesolr_search_page_load('core_search', TRUE);
+
     $this->assertText(t('Clone'), t('Clone button is available'));
     $this->drupalGet('admin/settings/apachesolr/search-pages/core_search/clone');
-    $this->assertText(t('Are you sure you want to clone search page Core Search?'), t('Clone confirmation page was succesfully loaded'));
+    $this->assertText(t('Are you sure you want to clone search page'), t('Clone confirmation page was succesfully loaded'));
     $this->drupalPost($this->getUrl(), array(), t('Clone'));
     $this->assertResponse(200);
     // Reset static var
-    static $pages;
-    $pages = array();
+    apachesolr_search_page_load('core_search', TRUE);
 
     $this->drupalGet('admin/settings/apachesolr/search-pages');
     $this->assertText(t('Core Search [cloned]'), t('Search Environment was succesfully cloned'));
@@ -316,8 +303,7 @@ class DrupalSolrOfflineSearchPagesWebTestCase extends DrupalWebTestCase {
     $this->assertResponse(200);
     // Make sure the menu is recognized
     // Reset static var
-    static $pages;
-    $pages = array();
+    apachesolr_search_page_load('core_search', TRUE);
 
     menu_cache_clear_all();
     menu_rebuild();
@@ -329,9 +315,9 @@ class DrupalSolrOfflineSearchPagesWebTestCase extends DrupalWebTestCase {
     $this->assertText(t('search page configuration will be deleted.This action cannot be undone.'), t('Delete confirmation page was succesfully loaded'));
     $this->drupalPost($this->getUrl(), array(), t('Delete page'));
     $this->assertResponse(200);
+
     // Reset static var
-    static $pages;
-    $pages = array();
+    apachesolr_search_page_load('core_search', TRUE);
 
     $this->drupalGet('admin/settings/apachesolr/search-pages');
     $this->assertNoText(t('Test Search Page'), t('Search Environment was succesfully deleted'));

@@ -18,7 +18,7 @@ function apachesolr_search_install() {
  */
 function apachesolr_search_enable() {
   // Make sure the default core search page is installed.
-  $search_page = apachesolr_search_page_load('core_search');
+  $search_page = apachesolr_search_page_load('core_search', TRUE);
   if (empty($search_page)) {
     // Add Default search page (core search)
     // This is a duplication from update_7004 but it is intended
@@ -38,22 +38,11 @@ function apachesolr_search_enable() {
     $search_page->search_path = 'search/site';
     $search_page->env_id = 'solr';
     $search_page->page_title = 'Site';
-    $search_page->settings = serialize($settings);
-
-    if (!empty($search_page)) {
-      $query = "INSERT INTO {apachesolr_search_page} (label, page_id, description, env_id, search_path, page_title, settings)
-        VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')";
-      db_query($query, array(
-        $search_page->label,
-        $search_page->page_id,
-        $search_page->description,
-        $search_page->env_id,
-        $search_page->search_path,
-        $search_page->page_title,
-        serialize($search_page->settings)));
-    }
+    $search_page->settings = $settings;
+    apachesolr_search_page_save($search_page);
   }
-  $search_page = apachesolr_search_page_load('taxonomy_search');
+
+  $search_page = apachesolr_search_page_load('taxonomy_search', TRUE);
   if (empty($search_page)) {
     // Add a taxonomy search page to the database
     $settings = array(
@@ -65,25 +54,13 @@ function apachesolr_search_enable() {
     );
     $search_page = new stdClass();
     $search_page->page_id = 'taxonomy_search';
-    $search_page->label = 'Raxonomy Search';
+    $search_page->label = 'Taxonomy Search';
     $search_page->description = 'Search all items with given term';
     $search_page->search_path = 'taxonomy/term/%';
     $search_page->env_id = '';
     $search_page->page_title = '%value';
-    $search_page->settings = serialize($settings);
-
-    if (!empty($search_page)) {
-      $query = "INSERT INTO {apachesolr_search_page} (label, page_id, description, env_id, search_path, page_title, settings)
-        VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')";
-      db_query($query, array(
-        $search_page->label,
-        $search_page->page_id,
-        $search_page->description,
-        $search_page->env_id,
-        $search_page->search_path,
-        $search_page->page_title,
-        serialize($search_page->settings)));
-    }
+    $search_page->settings = $settings;
+    apachesolr_search_page_save($search_page);
   }
 
   $active = variable_get('search_active_modules', array('node', 'user'));

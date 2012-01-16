@@ -13,7 +13,7 @@ function apachesolr_access_apachesolr_index_document_build_node($document, $node
 
   if (!node_access('view', $node, $account)) {
     // Get node access grants.
-    $query = "SELECT * FROM {node_access} WHERE (nid = 0 OR nid = '%s' AND grant_view = 1)";
+    $query = "SELECT * FROM {node_access} WHERE (nid = 0 OR nid = %d AND grant_view = 1)";
     $result = db_query($query, array($node->nid));
     while ($grant = db_fetch_object($result)) {
       $grant_realm = apachesolr_access_clean_realm_name($grant->realm);

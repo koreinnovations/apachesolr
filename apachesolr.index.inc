@@ -429,7 +429,6 @@ function apachesolr_index_mark_for_reindex($env_id, $entity_type = 'node') {
  *   The machine names of the bundles to index.
  */
 function apachesolr_index_set_bundles($env_id, $entity_type, array $bundles) {
-  $transaction = db_transaction();
   try {
     $query = "DELETE FROM {apachesolr_index_bundles} WHERE env_id = '%s' AND entity_type = '%s'";
     db_query($query, array($env_id, $entity_type));
@@ -441,7 +440,6 @@ function apachesolr_index_set_bundles($env_id, $entity_type, array $bundles) {
     }
   }
   catch (Exception $e) {
-    $transaction->rollback();
     watchdog('Apache Solr','Could not set bundles', WATCHDOG_ERROR);
   }
 }
@@ -619,7 +617,6 @@ function apachesolr_index_node_solr_document(ApacheSolrDocument $document, $node
  */
 function apachesolr_index_node_solr_reindex($env_id) {
   $indexer_table = apachesolr_get_indexer_table('node');
-  $transaction = db_transaction();
   $bundles = apachesolr_get_index_bundles($env_id, 'node');
   try {
     db_query("DELETE FROM {{$indexer_table}} WHERE entity_type = 'node'");
@@ -631,7 +628,6 @@ function apachesolr_index_node_solr_reindex($env_id) {
     db_query($query, array_merge(array(APACHESOLR_REQUEST_TIME), $bundles));
   }
   catch (Exception $e) {
-    $transaction->rollback();
     watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
     return FALSE;
   }
@@ -1051,16 +1047,12 @@ function apachesolr_index_nodeapi_mass_update($nodes, $table = NULL) {
 
     // There was no exception, so update the table.
     if ($published_ids) {
-      db_update($table)
-        ->fields(array('changed' => APACHESOLR_REQUEST_TIME, 'status' => 1))
-        ->condition('nid', array_keys($published_ids), 'IN')
-        ->execute();
+      $query = "UPDATE {{$table}} asn SET asn.changed = '%s' WHERE asn.entity_id IN " . db_placeholders($published_ids);
+      db_query($query, array_merge(array(APACHESOLR_REQUEST_TIME), $published_ids));
     }
     if ($unpublished_ids) {
-      db_update($table)
-        ->fields(array('changed' => APACHESOLR_REQUEST_TIME, 'status' => 0))
-        ->condition('nid', array_keys($unpublished_ids), 'IN')
-        ->execute();
+      $query = "UPDATE {{$table}} asn SET asn.changed = '%s', asn.status = 0 WHERE asn.entity_id IN " . db_placeholders($unpublished_ids);
+      db_query($query, array_merge(array(APACHESOLR_REQUEST_TIME), $unpublished_ids));
     }
     return TRUE;
   }

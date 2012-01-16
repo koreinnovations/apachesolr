@@ -6,7 +6,7 @@ class DrupalSolrOnlineWebTestCase extends DrupalWebTestCase {
    */
   public function setUp() {
 
-    parent::setUp('apachesolr', 'apachesolr_search', 'search');
+    parent::setUp('content', 'search', 'apachesolr', 'apachesolr_search');
     // Load the default server.
     $env_id = apachesolr_default_environment();
     $environment = apachesolr_environment_load($env_id);
