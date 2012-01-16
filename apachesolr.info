@@ -1,11 +1,11 @@
 name = Apache Solr framework
 description = Framework for searching with Solr
 package = Search Toolkit
+core = 6.x
+configure = admin/settings/apachesolr/settings
 dependencies[] = search
 dependencies[] = content
 dependencies[] = drupal_queue
-core = 6.x
-configure = admin/settings/apachesolr/settings
 
 files[] = apachesolr.install
 files[] = apachesolr.module

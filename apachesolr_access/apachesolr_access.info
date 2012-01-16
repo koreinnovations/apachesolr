@@ -3,6 +3,9 @@ description = Integrates node access and other permissions with Apache Solr sear
 dependencies[] = apachesolr
 package = Search Toolkit
 core = 6.x
+dependencies[] = nodeaccess
+dependencies[] = apachesolr
+dependencies[] = apachesolr_search
 
 files[] = apachesolr_access.module
 files[] = tests/apachesolr_access.test
