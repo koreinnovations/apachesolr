@@ -224,7 +224,7 @@ function apachesolr_menu() {
           'file path'        => $file_path,
           'file'             => 'facetapi.admin.inc',
           'type'             => MENU_LOCAL_TASK,
-          'context'          => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+          //'context'          => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
         );
       }
       else {
@@ -235,7 +235,7 @@ function apachesolr_menu() {
           'weight'           => -5,
           'access arguments' => array('administer search'),
           'type'             => MENU_LOCAL_TASK,
-          'context'          => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+          //'context'          => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
           'file path'        => $file_path,
           'file'             => 'facetapi.admin.inc',
         );
@@ -855,11 +855,10 @@ function apachesolr_cron($env_id = NULL) {
     // Optimize the index (by default once a day).
     $optimize_interval = variable_get('apachesolr_optimize_interval', 60 * 60 * 24);
     $last = variable_get('apachesolr_last_optimize', 0);
-    $time = APACHESOLR_REQUEST_TIME;
-    if ($optimize_interval && ($time - $last > $optimize_interval)) {
+    if ($optimize_interval && (APACHESOLR_REQUEST_TIME - $last > $optimize_interval)) {
       $solr->optimize(FALSE, FALSE);
-      variable_set('apachesolr_last_optimize', $time);
-      apachesolr_set_last_index_updated($env_id, $time);
+      variable_set('apachesolr_last_optimize', APACHESOLR_REQUEST_TIME);
+      apachesolr_set_last_index_updated($env_id, APACHESOLR_REQUEST_TIME);
     }
     // Only clear the cache if the index changed.
     // TODO: clear on some schedule if running multi-site.
@@ -869,7 +868,7 @@ function apachesolr_cron($env_id = NULL) {
       // Re-populate the luke cache.
       $solr->getLuke();
       // TODO: an admin interface for setting this.  Assume for now 5 minutes.
-      if ($time - $updated >= variable_get('apachesolr_cache_delay', 300)) {
+      if (APACHESOLR_REQUEST_TIME - $updated >= variable_get('apachesolr_cache_delay', 300)) {
         // Clear the updated flag.
         apachesolr_set_last_index_updated($env_id);
       }

@@ -97,6 +97,8 @@ function apachesolr_index_entity_to_documents($item, $env_id) {
 
   // Pull out all of our pertinent data.
   $entity_type = $item->entity_type;
+  $id = $item->entity_id;
+  $bundle = $item->bundle;
 
   // TRUE on reset to bypass static caching and not blow out our memory limit.
   $entity = node_load($item->entity_id, NULL, TRUE);
@@ -105,9 +107,6 @@ function apachesolr_index_entity_to_documents($item, $env_id) {
     // If the object failed to load, just stop.
     return FALSE;
   }
-  $id = $entity->id;
-  $bundle = $entity->bundle;
-  //list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
 
   // Create a new document, and do the bare minimum on it.
   $document = _apachesolr_index_process_entity_get_document($entity, $entity_type);
@@ -281,7 +280,7 @@ function _apachesolr_index_process_entity_get_document($entity, $entity_type) {
   }
   if (empty($entity->language)) {
     // 'und' is the language-neutral code in Drupal 7.
-    $document->language = LANGUAGE_NONE;
+    $document->language = 'und';
   }
   else {
     $document->language = $entity->language;
@@ -328,9 +327,9 @@ function apachesolr_index_get_entities_to_index($env_id, $entity_type, $limit) {
   // Find the next batch of entities to index for this entity type.  Note that
   // for ordering we're grabbing the oldest first and then ordering by ID so
   // that we get a definitive order.
-  $query = "SELECT aie.entity_type, aie.entity_id, aie.changed
+  $query = "SELECT aie.entity_type, aie.entity_id, aie.changed, aie.bundle
    FROM {{$table}} aie
-   WHERE (aie.status = 1)
+   WHERE aie.status = 1
    AND (aie.bundle IN (" . db_placeholders($bundles, 'varchar') . "))
    AND (aie.entity_type = '%s')
    AND ((aie.changed > %d) OR ((aie.changed = %d) AND (aie.entity_id > %d)))";
@@ -340,13 +339,12 @@ function apachesolr_index_get_entities_to_index($env_id, $entity_type, $limit) {
     $query .= " AND aie.entity_type = '%s'";
     $arguments[] = $type;
   }
-  $query .= " ORDER BY aie.entity_id ASC LIMIT";
-  $result = db_query_range($query, 0, $limit);
+  $query .= " ORDER BY aie.entity_id ASC";
 
-  while ($record = db_fetch_array($result)) {
+  $result = db_query_range($query, $arguments, 0, $limit);
+  while ($record = db_fetch_object($result)) {
     $rows[] = $record;
   }
-
   return $rows;
 }
 
@@ -538,7 +536,7 @@ function apachesolr_index_node_solr_document(ApacheSolrDocument $document, $node
   $document->bs_translate = $node->translate;
   if (empty($node->language)) {
     // 'und' is the language-neutral code in Drupal 7.
-    $document->ss_language = LANGUAGE_NONE;
+    $document->ss_language = 'und';
   }
   else {
     $document->ss_language = $node->language;
