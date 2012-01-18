@@ -1,5 +1,6 @@
 Apache Solr integration 6.x-3.x, xxxx-xx-xx
 ------------------------------
+Issue #1408192 by becw: Fixed Add apachesolr.interface.inc to the .info file (patch).
 Issue #1402746 by Nick_vh: Clean up apachesolr_do_query() so the page variable will be inside the query object.
 Issue #1408856 by Nick_vh: Remove DrupalQueue from the install.php.
 Issue #1397138 by Nick_vh: Create Simpletests to verify base functionality of the module.
