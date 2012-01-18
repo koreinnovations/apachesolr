@@ -5,7 +5,6 @@ core = 6.x
 configure = admin/settings/apachesolr/settings
 dependencies[] = search
 dependencies[] = content
-dependencies[] = drupal_queue
 
 files[] = apachesolr.install
 files[] = apachesolr.module

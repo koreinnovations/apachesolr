@@ -74,9 +74,6 @@ function apachesolr_install() {
   db_query("INSERT INTO {apachesolr_environment} (env_id, name, url, service_class)
      VALUES ('%s', '%s', '%s', '%s')", array('solr', 'localhost server', 'http://localhost:8983/solr', ''));
 
-  // Initialize the queue we will use for processing entities into the Solr index.
-  //DrupalQueue::get('apachesolr_indexer_entities')->createQueue();
-
   // Initialize the entities to index. We enable all node types by default
   $env_id = apachesolr_default_environment();
   $bundles = content_types();
