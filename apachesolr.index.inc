@@ -1034,13 +1034,13 @@ function apachesolr_index_nodeapi_mass_update($nodes, $table = NULL) {
     if ($published_ids) {
       db_update($table)
         ->fields(array('changed' => REQUEST_TIME, 'status' => 1))
-        ->condition('nid', array_keys($published_ids), 'IN')
+        ->condition('entity_id', array_keys($published_ids), 'IN')
         ->execute();
     }
     if ($unpublished_ids) {
       db_update($table)
         ->fields(array('changed' => REQUEST_TIME, 'status' => 0))
-        ->condition('nid', array_keys($unpublished_ids), 'IN')
+        ->condition('entity_id', array_keys($unpublished_ids), 'IN')
         ->execute();
     }
     return TRUE;
@@ -1083,7 +1083,7 @@ function apachesolr_index_nodeapi_mass_delete($nodes, $table = NULL) {
     apachesolr_set_last_index_updated($env_id, REQUEST_TIME);
     // There was no exception, so update the table.
     db_delete($table)
-      ->condition('nid', $nids, 'IN')
+      ->condition('entity_id', $nids, 'IN')
       ->execute();
     return TRUE;
   }

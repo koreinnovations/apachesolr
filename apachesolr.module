@@ -543,7 +543,7 @@ function apachesolr_mark_entity($entity_type, $entity_id) {
            ->fields('node', array('nid'))
            ->where("uid = :uid", array(':uid' => $account->uid));
          $update = db_update($table)
-           ->condition('nid', $nids, 'IN')
+           ->condition('entity_id', $nids, 'IN')
            ->fields(array('changed' => REQUEST_TIME))
            ->execute();
      }
@@ -578,7 +578,7 @@ function apachesolr_taxonomy_term_update($term) {
         ->fields('taxonomy_index', array('nid'))
         ->where("tid = :tid", array(':tid' => $term->tid));
       $update = db_update($table)
-        ->condition('nid', $nids, 'IN')
+        ->condition('entity_id', $nids, 'IN')
         ->fields(array('changed' => REQUEST_TIME))
         ->execute();
   }
@@ -663,7 +663,7 @@ function apachesolr_node_type_update($info) {
           ->fields('node', array('nid'))
           ->where("type = :new OR type = :old", array(':new' => $info->type, ':old' => $info->old_type));
         $update = db_update($table)
-          ->condition('nid', $nids, 'IN')
+          ->condition('entity_id', $nids, 'IN')
           ->fields(array('changed' => REQUEST_TIME))
           ->execute();
     }

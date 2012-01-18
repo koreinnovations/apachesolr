@@ -1,5 +1,7 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+Issue #1405040 by Nick_vh | chrisssi: Fixed SQLSTATE[42S22]: Column not found: 1054.
+
 
 Apache Solr integration 7.x-1.x-beta15, 2012-01-12
 ------------------------------
