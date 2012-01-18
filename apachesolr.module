@@ -1129,9 +1129,6 @@ function apachesolr_environment_delete($env_id) {
 
   $environment = apachesolr_environment_load($env_id);
   if ($environment) {
-    db_delete('apachesolr_environment')
-      ->condition('env_id', $env_id)
-      ->execute();
     $query = "DELETE FROM {apachesolr_environment} WHERE env_id = '%s'";
     db_query($query, $env_id);
     $query = "DELETE FROM {apachesolr_environment_variable} WHERE env_id = '%s'";

@@ -1092,9 +1092,7 @@ function apachesolr_index_nodeapi_mass_delete($nodes, $table = NULL) {
     $solr = apachesolr_get_solr($env_id);
     $solr->deleteByMultipleIds($ids);
     apachesolr_set_last_index_updated($env_id, APACHESOLR_REQUEST_TIME);    // There was no exception, so update the table.
-    db_delete($table)
-      ->condition('nid', $nids, 'IN')
-      ->execute();
+    db_query("DELETE FROM {{$table}} WHERE entity_id IN " . db_placeholders($nids), $nids);
     return TRUE;
   }
   catch (Exception $e) {
