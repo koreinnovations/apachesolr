@@ -1,5 +1,6 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1398100 by thecarlhall: Fixed Configuration throws exception when starting Solr. Follow up for 7.x-1.x
 #1409076 by Nick_vh, sdrycroft: Fixed Entities that use the 'apachesolr_index_entities()" table are not indexed.
 #1409146 by Nick_vh: Fixed Add all possible index_types() to apachesolr_index_key().
 #1408856 by Nick_vh: Remove DrupalQueue from the install.php.
