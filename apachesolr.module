@@ -987,7 +987,12 @@ function apachesolr_default_environment($env_id = NULL) {
  * number of solr objects to be used based on a name whie maps to
  * the host, port, path combination.
  * Get an instance like this:
- *   $solr = apachesolr_get_solr();
+ *   try {
+ *     $solr = apachesolr_get_solr();
+ *   }
+ *   catch (Exception $e) {
+ *     watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
+ *   }
  *
  * @throws Exception
  */
@@ -999,18 +1004,23 @@ function apachesolr_get_solr($env_id = NULL) {
     $env_id = apachesolr_default_environment();
   }
 
-  $class = $environments[$env_id]['service_class'];
+  if (isset($environments[$env_id])) {
+    $class = $environments[$env_id]['service_class'];
 
-  if (empty($solr_cache[$env_id])) {
-    // Use the default class if none is specified.
-    if (empty($class)) {
-      $class = variable_get('apachesolr_service_class', 'DrupalApacheSolrService');
+    if (empty($solr_cache[$env_id])) {
+      // Use the default class if none is specified.
+      if (empty($class)) {
+        $class = variable_get('apachesolr_service_class', 'DrupalApacheSolrService');
+      }
+      // Takes advantage of auto-loading.
+      $solr = new $class($environments[$env_id]['url'], $env_id);
+      $solr_cache[$env_id] = $solr;
     }
-    // Takes advantage of auto-loading.
-    $solr = new $class($environments[$env_id]['url'], $env_id);
-    $solr_cache[$env_id] = $solr;
+    return $solr_cache[$env_id];
   }
-  return $solr_cache[$env_id];
+  else {
+    throw new Exception('No default Apache Solr environment.');
+  }
 }
 
 /**

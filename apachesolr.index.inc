@@ -349,17 +349,22 @@ function apachesolr_index_get_entities_to_index($env_id, $entity_type, $limit) {
  */
 function apachesolr_index_delete_index($env_id) {
   // Instantiate a new Solr object.
-  $solr = apachesolr_get_solr($env_id);
-  $query = '*:*';
+  try {
+    $solr = apachesolr_get_solr($env_id);
+    $query = '*:*';
 
-  // Allow other modules to modify the delete query.
-  // For example, use the site hash so that you only delete this site's
-  // content:  $query = 'hash:' . apachesolr_site_hash()
-  drupal_alter('apachesolr_delete_index', $query);
-  $solr->deleteByQuery($query);
-  $solr->commit();
-  apachesolr_clear_last_index_position($env_id);
-  apachesolr_set_last_index_updated($env_id, REQUEST_TIME);
+    // Allow other modules to modify the delete query.
+    // For example, use the site hash so that you only delete this site's
+    // content:  $query = 'hash:' . apachesolr_site_hash()
+    drupal_alter('apachesolr_delete_index', $query);
+    $solr->deleteByQuery($query);
+    $solr->commit();
+    apachesolr_clear_last_index_position($env_id);
+    apachesolr_set_last_index_updated($env_id, REQUEST_TIME);
+  }
+  catch (Exception $e) {
+    watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
+  }
 }
 
 /**
