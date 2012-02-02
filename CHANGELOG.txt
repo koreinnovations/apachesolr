@@ -1,5 +1,6 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1418136 by zengenuity, pwolanin: fix for undefined function apachesolr_index_set_last_updated() in apachesolr_access.
 #995526  by chx, pwolanin: another fix for Key length greater than 1000 bytes causes install error on MyISAM.
 #1409878 by becw: Fixed Uncaught exception when the default environment does not exist (patch).
 #1398100 by thecarlhall: Fixed Configuration throws exception when starting Solr. Follow up for 7.x-1.x

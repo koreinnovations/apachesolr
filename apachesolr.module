@@ -760,9 +760,12 @@ function apachesolr_set_last_index_position($env_id, $entity_type, $last_changed
 /**
  * Clear a specific environment, or clear all.
  */
-function apachesolr_clear_last_index_position($env_id, $entity_type = NULL) {
+function apachesolr_clear_last_index_position($env_id = NULL, $entity_type = NULL) {
   $stored = variable_get('apachesolr_index_last', array());
-  if ($entity_type) {
+  if (empty($env_id)) {
+    $stored = array();
+  }
+  elseif ($entity_type) {
     unset($stored[$env_id][$entity_type]);
   }
   else {
