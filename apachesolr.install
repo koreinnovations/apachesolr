@@ -96,12 +96,30 @@ function apachesolr_schema() {
 
   $schema['apachesolr_environment'] = array(
     'description' => 'The Solr search environment table.',
+    // Enable CTools exportables based on this table.
     'export' => array(
+      // Environment machine name.
       'key' => 'env_id',
-      'identifier' => 'name',
+      // Description of key.
+      'key name' => 'Environment machine name',
+      // Apache Solr doesn't allow disabling environments.
+      'can disable' => FALSE,
+      // Variable name to use in exported code.
+      'identifier' => 'environment',
+      // Use the environment load callback directly.
+      'load callback' => 'apachesolr_environment_load',
+      // Thin wrapper for the environment save callback.
+      'save callback' => 'apachesolr_ctools_environment_save',
+      // Thin wrapper for the environment delete callback.
+      'delete callback' => 'apachesolr_ctools_environment_delete',
+      // Includes the environment variables in 'conf' as well as the fields in this table.
+      'export callback' => 'apachesolr_ctools_environment_export',
+      // Use the same hook as the API name below.
+      'default hook' => 'apachesolr_environments',
+      // CTools API implementation.
       'api' => array(
         'owner' => 'apachesolr',
-        'api' => 'default_apachesolr_environments',
+        'api' => 'apachesolr_environments',
         'minimum_version' => 1,
         'current_version' => 1,
       ),
@@ -138,17 +156,6 @@ function apachesolr_schema() {
   );
   $schema['apachesolr_environment_variable'] = array(
     'description' => 'Variable values for each Solr search environment.',
-    'export' => array(
-      'key' => 'name',
-      'identifier' => 'name',
-      'default hook' => 'default_apachesolr_environment_variable',
-      'api' => array(
-        'owner' => 'apachesolr',
-        'api' => 'default_apachesolr_environment_variables',
-        'minimum_version' => 1,
-        'current_version' => 1,
-      ),
-    ),
     'fields' => array(
       'env_id' => array(
         'description' => 'Unique identifier for the environment',
