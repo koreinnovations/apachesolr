@@ -1,5 +1,6 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1411354 by Nick_vh: fix for Incorrect reporting of documents indexed.
 #1357588 by becw, Bußmeyer, pwolanin: improved ctools export/import support.
 #1418136 by zengenuity, pwolanin: fix for undefined function apachesolr_index_set_last_updated() in apachesolr_access.
 #995526  by chx, pwolanin: another fix for Key length greater than 1000 bytes causes install error on MyISAM.
