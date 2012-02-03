@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<config name="drupal-3.0-beta14">
+<config name="drupal-3.0-beta16-solr3">
   <!-- Controls what version of Lucene various components of Solr
        adhere to.  Generally, you want to use the latest version to
        get all bug fixes and improvements. It is highly recommended
@@ -80,7 +80,7 @@
 
      Other implementations of MergePolicy must have a no-argument constructor
      -->
-    <!--<mergePolicy>org.apache.lucene.index.LogByteSizeMergePolicy</mergePolicy>-->
+    <mergePolicy>org.apache.lucene.index.LogByteSizeMergePolicy</mergePolicy>
 
     <!--
      Expert:
