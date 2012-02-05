@@ -1,5 +1,6 @@
 Apache Solr integration 7.x-1.x-xxxx, xxxx-xx-xx
 ------------------------------
+#1429230 by Nick_vh: Fixed Default values for for mapping per-field is not added correctly.
 #1427288 by Nick_vh: Fixed Change the MergePolicy for all the solrconfigs to use LogByteMergePolicy.
 
 Apache Solr integration 7.x-1.0-beta16, 2012-02-02

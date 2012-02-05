@@ -1820,22 +1820,29 @@ function apachesolr_entity_fields($entity_type = 'node') {
     $fields[$entity_type] = array();
 
     $mappings = module_invoke_all('apachesolr_field_mappings');
-
     foreach (array_keys($mappings) as $key) {
       // Set all values with defaults.
-      $mappings[$key] += array(
-        'dependency plugins' => array('bundle', 'role'),
-        'map callback' => FALSE,
-        'name callback' => '',
-        'hierarchy callback' => FALSE,
-        'indexing_callback' => '',
-        'index_type' => 'string',
-        'facets' => FALSE,
-        'facet missing allowed' => FALSE,
-        'facet mincount allowed' => FALSE,
-        // Field API allows any field to be multi-valued.
-        'multiple' => TRUE,
-      );
+      $defaults = array(
+          'dependency plugins' => array('bundle', 'role'),
+          'map callback' => FALSE,
+          'name callback' => '',
+          'hierarchy callback' => FALSE,
+          'indexing_callback' => '',
+          'index_type' => 'string',
+          'facets' => FALSE,
+          'facet missing allowed' => FALSE,
+          'facet mincount allowed' => FALSE,
+          // Field API allows any field to be multi-valued.
+          'multiple' => TRUE,
+        );
+      if ($key !== 'per-field') {
+        $mappings[$key] += $defaults;
+      }
+      else {
+        foreach (array_keys($mappings[$key]) as $field_key) {
+          $mappings[$key][$field_key] += $defaults;
+        }
+      }
     }
 
     // Allow other modules to add or alter mappings.
