@@ -446,6 +446,7 @@ function apachesolr_process_response($response, $query, $params) {
       $function($results);
     }
   }
+  $results['total'] = $total;
   return $results;
 }
 
